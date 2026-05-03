@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能客服</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        * {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        ::-webkit-scrollbar {
+            display: none;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            padding-top: 100px;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 25px 80px -20px rgba(0, 0, 0, 0.15);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+        .chat-message {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .chat-message.user {
+            flex-direction: row-reverse;
+        }
+        .message-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        .message-avatar.user {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            box-shadow: 0 4px 15px rgba(245, 87, 108, 0.3);
+        }
+        .message-avatar.human {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            box-shadow: 0 4px 15px rgba(56, 239, 125, 0.3);
+        }
+        .message-bubble {
+            max-width: 70%;
+            padding: 14px 18px;
+            border-radius: 20px;
+            line-height: 1.6;
+            word-wrap: break-word;
+        }
+        .message-bubble.assistant {
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            color: #1f2937;
+            border-bottom-left-radius: 6px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        }
+        .message-bubble.user {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            border-bottom-right-radius: 6px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        .message-bubble.human {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: #fff;
+            border-bottom-left-radius: 6px;
+            box-shadow: 0 4px 15px rgba(56, 239, 125, 0.3);
+        }
+        .bot-label {
+            display: inline-block;
+            font-size: 12px;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+        .human-label {
+            display: inline-block;
+            font-size: 12px;
+            font-weight: 600;
+            color: #11998e;
+            margin-bottom: 8px;
+        }
+        .typing-logo {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 14px;
+            animation: pulse 1.5s infinite;
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.08); opacity: 0.85; }
+        }
+        .typing-text {
+            font-size: 14px;
+            color: #666;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .typing-dots {
+            display: inline-flex;
+            gap: 4px;
+        }
+        .typing-dots span {
+            width: 6px;
+            height: 6px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            animation: typingBounce 1.4s infinite;
+        }
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typingBounce {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-8px); }
+        }
+        .chat-header-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .input-focus:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .btn-glow:hover {
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
+        }
+        .platform-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 12px;
+            max-width: 280px;
+        }
+        .platform-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 14px 18px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .platform-card:hover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #667eea;
+            color: white;
+            transform: translateX(4px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.25);
+        }
+        .platform-card .platform-icon {
+            font-size: 20px;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            border-radius: 10px;
+            color: #6b7280;
+            transition: all 0.3s ease;
+        }
+        .platform-card:hover .platform-icon {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+        .platform-card .platform-name {
+            font-size: 15px;
+            font-weight: 500;
+            color: #374151;
+            transition: all 0.3s ease;
+        }
+        .platform-card:hover .platform-name {
+            color: white;
+        }
+        .clickable-area {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .clickable-area:hover {
+            transform: scale(1.02);
+        }
+        .queue-indicator {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 2px solid #f59e0b;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .queue-spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f59e0b;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: queueSpin 1s linear infinite;
+        }
+        @keyframes queueSpin {
+            to { transform: rotate(360deg); }
+        }
+        .queue-text {
+            color: #92400e;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .offline-indicator {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            border: 2px solid #ef4444;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            color: #991b1b;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .human-image-upload {
+            width: 50px;
+            height: 50px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+        }
+        .human-image-upload:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
+        }
+        .message-image {
+            max-width: 280px;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+        .menu-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        .menu-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .side-menu {
+            position: fixed;
+            top: 0;
+            right: -300px;
+            width: 300px;
+            height: 100%;
+            background: white;
+            z-index: 1000;
+            transition: all 0.3s ease;
+            box-shadow: -10px 0 30px rgba(0, 0, 0, 0.2);
+        }
+        .side-menu.active {
+            right: 0;
+        }
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 24px;
+            color: #374151;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .menu-item:hover {
+            background: #f8fafc;
+            color: #667eea;
+        }
+        .menu-item i {
+            width: 24px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- 侧边菜单遮罩 -->
+    <div id="menuOverlay" class="menu-overlay" onclick="closeMenu()"></div>
+    
+    <!-- 侧边菜单 -->
+    <div id="sideMenu" class="side-menu">
+        <div class="p-6 border-b border-gray-200">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 gradient-bg rounded-xl flex items-center justify-center">
+                    <i class="fas fa-robot text-white"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-gray-900">KDX丨ZHX</h3>
+                    <p class="text-xs text-gray-500">综合服务平台</p>
+                </div>
+            </div>
+        </div>
+        <div class="py-4">
+            <a href="/shop" class="menu-item">
+                <i class="fas fa-store"></i>
+                <span>商城首页</span>
+            </a>
+            <a href="/chat" class="menu-item">
+                <i class="fas fa-robot"></i>
+                <span>智能客服</span>
+            </a>
+            <a href="/orders" class="menu-item">
+                <i class="fas fa-shopping-bag"></i>
+                <span>我的订单</span>
+            </a>
+            <a href="/admin" class="menu-item">
+                <i class="fas fa-cog"></i>
+                <span>管理后台</span>
+            </a>
+            <div class="border-t border-gray-200 mt-4 pt-4">
+                <a href="#" class="menu-item">
+                    <i class="fas fa-code"></i>
+                    <span>开发者</span>
+                </a>
+                <a href="/message" class="menu-item">
+                    <i class="fas fa-envelope"></i>
+                    <span>留言板</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 顶部导航栏 - 永远固定 -->
+    <header class="bg-white shadow-sm fixed top-0 left-0 right-0 z-50">
+        <div class="container-wide py-4">
+            <div class="flex items-center justify-between">
+                <!-- Logo - 左侧 -->
+                <a href="/shop" class="flex items-center gap-3">
+                    <h1 class="text-xl font-bold text-black">KDX丨ZHX</h1>
+                </a>
+
+                <!-- 标签栏 - 中间 -->
+                <nav class="flex items-center gap-8">
+                    <button class="tab-button px-4 py-4 font-medium text-black hover:text-gray-600 transition" data-tab="home" onclick="window.location.href='/shop'">首页</button>
+                    <button class="tab-button px-4 py-4 font-medium text-gray-600 hover:text-black transition" data-tab="products" onclick="window.location.href='/shop'">商品</button>
+                    <button class="tab-button px-4 py-4 font-medium text-gray-600 hover:text-black transition" data-tab="orders" onclick="window.location.href='/orders'">订单</button>
+                    <button class="tab-button px-4 py-4 font-medium text-black hover:text-gray-600 transition" data-tab="chat" onclick="window.location.href='/chat'">智能客服</button>
+                </nav>
+
+                <!-- 功能按钮 - 右侧 -->
+                <div class="flex items-center gap-4">
+                    <button onclick="window.location.href='chat'" class="text-gray-600 hover:text-black transition">
+                        <i class="fas fa-headset text-xl"></i>
+                    </button>
+                    
+                    <!-- 登录按钮 -->
+                    <div id="userSection">
+                        <button id="loginBtn" onclick="window.location.href='/auth?returnUrl=' + encodeURIComponent(window.location.pathname + window.location.search)" class="bg-black text-white px-6 py-2 rounded-lg font-medium hover:bg-gray-800 transition">
+                            登录
+                        </button>
+                        <div id="userInfo" class="hidden items-center gap-3 bg-gray-100 rounded-lg px-4 py-2">
+                            <span id="userName" class="font-medium text-gray-800"></span>
+                            <button onclick="handleLogout()" class="text-gray-500 hover:text-red-600 transition">
+                                <i class="fas fa-sign-out-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-4xl mx-auto">
+        <div class="glass-card rounded-3xl p-6 mb-5">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-14 h-14 rounded-2xl flex items-center justify-center clickable-area" id="headerLogo" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);">
+                        <i class="fas fa-robot text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-900 clickable-area" id="headerTitle">智能客服</h1>
+                        <p class="text-gray-500 text-sm">专业购物客服 7×24小时在线</p>
+                    </div>
+                </div>
+                <a href="/message" class="btn-primary px-5 py-2.5 rounded-xl font-semibold flex items-center gap-2">
+                    <i class="fas fa-envelope"></i>
+                    <span>发送留言</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="glass-card rounded-3xl overflow-hidden">
+            <div class="chat-header-gradient px-6 py-4 flex items-center gap-3 clickable-area" id="chatHeader">
+                <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center p-1" style="box-shadow: 0 4px 15px rgba(255,255,255,0.2);">
+                    <i class="fas fa-robot text-white text-xl" id="headerAvatarIcon"></i>
+                </div>
+                <div>
+                    <div class="text-white font-semibold" id="chatTitle">智能客服</div>
+                    <div class="text-white/80 text-sm flex items-center gap-1" id="chatStatus">
+                        <span class="w-2.5 h-2.5 bg-green-400 rounded-full" id="statusDot" style="box-shadow: 0 0 10px rgba(74, 222, 128, 0.6);"></span>
+                        <span id="statusText">在线</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="chatMessages" class="h-96 overflow-y-auto p-6">
+            </div>
+
+            <div class="p-5 border-t border-gray-200 bg-white">
+                <div id="queueIndicator" class="queue-indicator hidden">
+                    <div class="queue-spinner"></div>
+                    <div class="queue-text" id="queueText">正在排队中，请稍候...</div>
+                </div>
+                
+                <div id="offlineIndicator" class="offline-indicator hidden">
+                    <i class="fas fa-clock mr-2"></i>
+                    <span>人工客服当前离线，请使用智能客服或稍后再试</span>
+                </div>
+                
+                <div id="humanImageUploadArea" class="mb-3 hidden">
+                    <button id="humanImageUploadBtn" class="human-image-upload">
+                        <i class="fas fa-image text-xl"></i>
+                    </button>
+                    <input type="file" id="humanImageInput" accept="image/*" class="hidden">
+                </div>
+                
+                <div class="flex gap-3 items-end">
+                    <textarea 
+                        id="chatInput" 
+                        class="flex-1 bg-gray-50 border-2 border-gray-200 rounded-2xl px-5 py-3.5 text-base focus:outline-none resize-none input-focus" 
+                        placeholder="请输入您的购物相关问题..." 
+                        rows="1"
+                    ></textarea>
+                    <button id="chatSendBtn" class="w-12 h-12 rounded-full btn-primary text-white flex items-center justify-center hover:scale-105 transition-transform btn-glow">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="passwordModal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl p-8 w-full max-w-md">
+            <h3 class="text-xl font-bold text-gray-900 mb-4">管理员验证</h3>
+            <input type="password" id="adminPassword" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 mb-4 focus:outline-none focus:border-purple-500" placeholder="请输入管理员密码">
+            <div class="flex gap-3">
+                <button id="cancelPasswordBtn" class="flex-1 py-3 rounded-xl bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition">取消</button>
+                <button id="confirmPasswordBtn" class="flex-1 py-3 rounded-xl btn-primary font-semibold">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="imageModal" class="fixed inset-0 bg-black/90 z-50 hidden items-center justify-center p-4">
+        <button class="absolute top-4 right-4 w-12 h-12 rounded-full bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition" onclick="closeImageModal()">
+            <i class="fas fa-times text-2xl"></i>
+        </button>
+        <img id="modalImage" src="" alt="Image" class="max-w-90 max-h-90 object-contain">
+    </div>
+
+    <script>
+        let chatHistory = [];
+        let isHumanMode = false;
+        let isInQueue = false;
+        let clickCount = 0;
+        let clickTimer = null;
+        let selectedImageData = null;
+        let userPlatform = null;
+        let conversationStarted = false;
+        let lastHumanActivityTime = null;
+        let humanInactivityTimer = null;
+        let queuePosition = 0;
+        const ADMIN_PASSWORD = 'admin123';
+        const HUMAN_INACTIVITY_TIMEOUT = 180000;
+
+        let isHumanOnline = true;
+
+        const forbiddenWords = ['违禁词1', '违禁词2', '违禁词3', '违禁词4', '违禁词5', '违禁词6', '违禁词7', '违禁词8', '违禁词9', '违禁词10', '敏感词1', '敏感词2', '敏感词3'];
+
+        function containsForbiddenWords(text) {
+            const lowerText = text.toLowerCase();
+            return forbiddenWords.some(word => lowerText.includes(word.toLowerCase()));
+        }
+
+        function saveChatToStorage() {
+            let conversations = JSON.parse(localStorage.getItem('conversations') || '[]');
+            const conversationId = localStorage.getItem('currentConversationId') || Date.now().toString();
+            
+            if (!localStorage.getItem('currentConversationId')) {
+                localStorage.setItem('currentConversationId', conversationId);
+            }
+
+            let conversation = conversations.find(c => c.id === conversationId);
+            if (!conversation) {
+                conversation = {
+                    id: conversationId,
+                    createdAt: new Date().toISOString(),
+                    messages: []
+                };
+                conversations.push(conversation);
+            }
+            
+            conversation.messages = chatHistory;
+            localStorage.setItem('conversations', JSON.stringify(conversations));
+        }
+
+        function addMessage(content, isUser, isHuman = false, imageData = null, showPlatformCards = false, platforms = []) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'chat-message ' + (isUser ? 'user' : '');
+            
+            const avatarDiv = document.createElement('div');
+            avatarDiv.className = 'message-avatar ' + (isUser ? 'user' : '') + ' ' + (isHuman ? 'human' : '');
+            
+            if (isUser) {
+                avatarDiv.innerHTML = '<i class="fas fa-user text-white text-lg"></i>';
+            } else if (isHuman) {
+                avatarDiv.innerHTML = '<i class="fas fa-user-tie text-white text-lg"></i>';
+            } else {
+                avatarDiv.innerHTML = '<i class="fas fa-robot text-white text-lg"></i>';
+            }
+            
+            const wrapperDiv = document.createElement('div');
+            
+            if (!isUser) {
+                const labelDiv = document.createElement('div');
+                labelDiv.className = isHuman ? 'human-label' : 'bot-label';
+                labelDiv.textContent = isHuman ? '人工客服' : '小K';
+                wrapperDiv.appendChild(labelDiv);
+            }
+            
+            const bubbleDiv = document.createElement('div');
+            bubbleDiv.className = 'message-bubble ' + (isUser ? 'user' : 'assistant') + ' ' + (isHuman ? 'human' : '');
+            
+            if (imageData) {
+                const imageDiv = document.createElement('div');
+                imageDiv.className = 'message-image';
+                imageDiv.onclick = () => openImageModal(imageData);
+                
+                const img = document.createElement('img');
+                img.src = imageData;
+                img.alt = 'Message Image';
+                
+                imageDiv.appendChild(img);
+                bubbleDiv.appendChild(imageDiv);
+                
+                if (content) {
+                    const textDiv = document.createElement('div');
+                    textDiv.style.marginTop = '8px';
+                    textDiv.textContent = content;
+                    bubbleDiv.appendChild(textDiv);
+                }
+            } else if (showPlatformCards && platforms.length > 0) {
+                const contentDiv = document.createElement('div');
+                contentDiv.textContent = content;
+                contentDiv.style.marginBottom = '12px';
+                bubbleDiv.appendChild(contentDiv);
+                
+                const cardsContainer = document.createElement('div');
+                cardsContainer.className = 'platform-cards';
+                
+                platforms.forEach(platform => {
+                    const card = document.createElement('div');
+                    card.className = 'platform-card';
+                    card.onclick = () => selectPlatform(platform);
+                    card.innerHTML = '<div class="platform-icon"><i class="fas ' + platform.icon + '"></i></div><div class="platform-name">' + platform.name + '</div>';
+                    cardsContainer.appendChild(card);
+                });
+                
+                wrapperDiv.appendChild(bubbleDiv);
+                wrapperDiv.appendChild(cardsContainer);
+                messageDiv.appendChild(avatarDiv);
+                messageDiv.appendChild(wrapperDiv);
+                chatMessages.appendChild(messageDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                return;
+            } else {
+                bubbleDiv.textContent = content;
+            }
+            
+            wrapperDiv.appendChild(bubbleDiv);
+            
+            messageDiv.appendChild(avatarDiv);
+            messageDiv.appendChild(wrapperDiv);
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function addTypingIndicator() {
+            const chatMessages = document.getElementById('chatMessages');
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'chat-message assistant';
+            typingDiv.id = 'typingIndicator';
+            
+            const avatarDiv = document.createElement('div');
+            avatarDiv.className = 'message-avatar';
+            avatarDiv.innerHTML = '<i class="fas fa-robot text-white text-lg"></i>';
+            
+            const indicatorDiv = document.createElement('div');
+            indicatorDiv.className = 'message-bubble assistant';
+            indicatorDiv.innerHTML = '<div style="display:flex;flex-direction:column;gap:10px;"><div class="typing-logo"><i class="fas fa-robot text-white text-2xl"></i></div><div class="typing-text">KDX丨ZHX<div class="typing-dots"><span></span><span></span><span></span></div></div></div>';
+            
+            typingDiv.appendChild(avatarDiv);
+            typingDiv.appendChild(indicatorDiv);
+            chatMessages.appendChild(typingDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function removeTypingIndicator() {
+            const typingIndicator = document.getElementById('typingIndicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+
+        function updateQueueIndicator() {
+            const queueIndicator = document.getElementById('queueIndicator');
+            const queueText = document.getElementById('queueText');
+            
+            if (isInQueue) {
+                queueIndicator.classList.remove('hidden');
+                if (queuePosition > 0) {
+                    queueText.textContent = '排队中...您前面还有 ' + queuePosition + ' 位';
+                } else {
+                    queueText.textContent = '正在为您接入人工客服...';
+                }
+            } else {
+                queueIndicator.classList.add('hidden');
+            }
+        }
+
+        function showOfflineIndicator() {
+            const offlineIndicator = document.getElementById('offlineIndicator');
+            offlineIndicator.classList.remove('hidden');
+        }
+
+        function hideOfflineIndicator() {
+            const offlineIndicator = document.getElementById('offlineIndicator');
+            offlineIndicator.classList.add('hidden');
+        }
+
+        function startHumanInactivityTimer() {
+            if (humanInactivityTimer) {
+                clearTimeout(humanInactivityTimer);
+            }
+            
+            lastHumanActivityTime = Date.now();
+            
+            humanInactivityTimer = setTimeout(() => {
+                exitHumanMode();
+            }, HUMAN_INACTIVITY_TIMEOUT);
+        }
+
+        function resetHumanInactivityTimer() {
+            if (isHumanMode) {
+                startHumanInactivityTimer();
+            }
+        }
+
+        function exitHumanMode() {
+            isHumanMode = false;
+            isInQueue = false;
+            
+            document.getElementById('chatTitle').textContent = '智能客服';
+            document.getElementById('statusText').textContent = '在线';
+            document.getElementById('statusDot').style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+            document.getElementById('statusDot').style.boxShadow = '0 0 10px rgba(102, 126, 234, 0.6)';
+            document.getElementById('headerAvatarIcon').className = 'fas fa-robot text-white text-xl';
+            document.getElementById('humanImageUploadArea').classList.add('hidden');
+            document.getElementById('queueIndicator').classList.add('hidden');
+            hideOfflineIndicator();
+            
+            if (humanInactivityTimer) {
+                clearTimeout(humanInactivityTimer);
+                humanInactivityTimer = null;
+            }
+            
+            addMessage('人工客服会话已结束，已切换回智能客服小K。', false, false);
+            chatHistory.push({ role: 'assistant', content: '人工客服会话已结束，已切换回智能客服小K。', isHuman: false });
+            saveChatToStorage();
+        }
+
+        function switchToHumanMode() {
+            if (!isHumanOnline) {
+                showOfflineIndicator();
+                return;
+            }
+            
+            hideOfflineIndicator();
+            isInQueue = true;
+            queuePosition = Math.floor(Math.random() * 3) + 1;
+            updateQueueIndicator();
+            
+            const queueInterval = setInterval(() => {
+                queuePosition--;
+                updateQueueIndicator();
+                
+                if (queuePosition <= 0) {
+                    clearInterval(queueInterval);
+                    isInQueue = false;
+                    isHumanMode = true;
+                    updateQueueIndicator();
+                    
+                    document.getElementById('chatTitle').textContent = '人工客服';
+                    document.getElementById('statusText').textContent = '人工在线';
+                    document.getElementById('statusDot').style.background = 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)';
+                    document.getElementById('statusDot').style.boxShadow = '0 0 10px rgba(56, 239, 125, 0.6)';
+                    document.getElementById('headerAvatarIcon').className = 'fas fa-user-tie text-white text-xl';
+                    document.getElementById('humanImageUploadArea').classList.remove('hidden');
+                    
+                    startHumanInactivityTimer();
+                    
+                    addMessage('您好，人工客服已接入！请问有什么可以帮您的？', false, true);
+                    chatHistory.push({ role: 'assistant', content: '您好，人工客服已接入！请问有什么可以帮您的？', isHuman: true });
+                    saveChatToStorage();
+                }
+            }, 2000);
+        }
+
+        function selectPlatform(platform) {
+            if (platform.name === '其他' && platform.showAll) {
+                userPlatform = '其他平台';
+                addMessage('我来自其他平台', true, false);
+                chatHistory.push({ role: 'user', content: '我来自其他平台' });
+                saveChatToStorage();
+                
+                setTimeout(() => {
+                    addMessage('欢迎您！有什么可以帮您的？', false, false);
+                    chatHistory.push({ role: 'assistant', content: '欢迎您！有什么可以帮您的？' });
+                    saveChatToStorage();
+                }, 500);
+            } else if (platform.name === '其他') {
+                const morePlatforms = [
+                    { name: '支付宝', icon: 'fa-wallet' },
+                    { name: '微信', icon: 'fa-comments' },
+                    { name: '京东', icon: 'fa-shopping-cart' },
+                    { name: '拼多多', icon: 'fa-store' },
+                    { name: '其他', icon: 'fa-ellipsis-h', showAll: true }
+                ];
+                addMessage('请选择您的平台：', false, false, null, true, morePlatforms);
+                chatHistory.push({ role: 'assistant', content: '请选择您的平台：' });
+                saveChatToStorage();
+            } else {
+                userPlatform = platform.name;
+                addMessage('我来自' + platform.name, true, false);
+                chatHistory.push({ role: 'user', content: '我来自' + platform.name });
+                saveChatToStorage();
+                
+                setTimeout(() => {
+                    const platformWelcome = {
+                        '抖音': '欢迎来自抖音的用户！有什么可以帮您的？',
+                        '闲鱼': '欢迎来自闲鱼的用户！我可以帮您查询订单、了解商品信息、处理退换货等。比如小天才数据线等商品相关问题，都可以问我哦！',
+                        '淘宝': '欢迎来自淘宝的用户！有什么可以帮您的？',
+                        '支付宝': '欢迎来自支付宝的用户！有什么可以帮您的？',
+                        '微信': '欢迎来自微信的用户！有什么可以帮您的？',
+                        '京东': '欢迎来自京东的用户！有什么可以帮您的？',
+                        '拼多多': '欢迎来自拼多多的用户！有什么可以帮您的？'
+                    };
+                    
+                    const welcomeMsg = platformWelcome[platform.name] || '欢迎您！有什么可以帮您的？';
+                    addMessage(welcomeMsg, false, false);
+                    chatHistory.push({ role: 'assistant', content: welcomeMsg });
+                    saveChatToStorage();
+                }, 500);
+            }
+        }
+
+        function showPasswordModal() {
+            document.getElementById('passwordModal').classList.remove('hidden');
+            document.getElementById('passwordModal').classList.add('flex');
+        }
+
+        function hidePasswordModal() {
+            document.getElementById('passwordModal').classList.add('hidden');
+            document.getElementById('passwordModal').classList.remove('flex');
+            document.getElementById('adminPassword').value = '';
+        }
+
+        function openImageModal(imageData) {
+            document.getElementById('modalImage').src = imageData;
+            document.getElementById('imageModal').classList.remove('hidden');
+            document.getElementById('imageModal').classList.add('flex');
+        }
+
+        function closeImageModal() {
+            document.getElementById('imageModal').classList.add('hidden');
+            document.getElementById('imageModal').classList.remove('flex');
+        }
+
+        function handleHumanImageSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                selectedImageData = e.target.result;
+                sendChatMessage();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function checkPassword() {
+            const password = document.getElementById('adminPassword').value;
+            if (password === ADMIN_PASSWORD) {
+                hidePasswordModal();
+                window.location.href = '/admin';
+            } else {
+                alert('密码错误！');
+            }
+        }
+
+        async function sendChatMessage() {
+            const chatInput = document.getElementById('chatInput');
+            const chatSendBtn = document.getElementById('chatSendBtn');
+            const message = chatInput.value.trim();
+            
+            if (!isHumanMode && selectedImageData) {
+                addMessage('图片上传功能仅在人工客服模式下可用。', false);
+                selectedImageData = null;
+                document.getElementById('humanImageInput').value = '';
+                return;
+            }
+            
+            if (!message && !selectedImageData) return;
+            
+            if (message && containsForbiddenWords(message)) {
+                addMessage('您的消息包含违禁词，请重新输入。', false);
+                return;
+            }
+            
+            if (message) {
+                const humanKeywords = ['人工客服', '转人工', '转接人工', '我要找人工', 'human', '人工服务', '人工帮助'];
+                const isHumanRequest = humanKeywords.some(keyword => message.includes(keyword));
+                
+                if (isHumanRequest) {
+                    if (message.includes('确定转人工')) {
+                        addMessage(message, true, isHumanMode, selectedImageData);
+                        chatInput.value = '';
+                        selectedImageData = null;
+                        document.getElementById('humanImageInput').value = '';
+                        chatSendBtn.disabled = false;
+                        switchToHumanMode();
+                        return;
+                    } else {
+                        addMessage('如需转人工客服，请输入"确定转人工"进行确认。', false);
+                        chatInput.value = '';
+                        selectedImageData = null;
+                        document.getElementById('humanImageInput').value = '';
+                        chatSendBtn.disabled = false;
+                        return;
+                    }
+                }
+            }
+            
+            resetHumanInactivityTimer();
+            
+            addMessage(message, true, isHumanMode, selectedImageData);
+            chatInput.value = '';
+            chatSendBtn.disabled = true;
+            
+            const hasImage = selectedImageData !== null;
+            const imageToProcess = selectedImageData;
+            selectedImageData = null;
+            document.getElementById('humanImageInput').value = '';
+            
+            chatHistory.push({ 
+                role: 'user', 
+                content: message,
+                imageData: imageToProcess
+            });
+            saveChatToStorage();
+            
+            if (isHumanMode) {
+                addMessage('您的消息已发送，人工客服正在查看中...', false, true);
+                chatHistory.push({ role: 'assistant', content: '您的消息已发送，人工客服正在查看中...', isHuman: true });
+                saveChatToStorage();
+                chatSendBtn.disabled = false;
+                return;
+            }
+            
+            addTypingIndicator();
+            
+            try {
+                const response = await fetch('/api/ai', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ messages: chatHistory })
+                });
+                
+                if (!response.ok) throw new Error('API Error');
+                
+                const data = await response.json();
+                
+                if (data.choices && data.choices[0] && data.choices[0].message) {
+                    let assistantMessage = data.choices[0].message.content;
+                    
+                    if (containsForbiddenWords(assistantMessage)) {
+                        assistantMessage = '抱歉，我无法回答这个问题。';
+                    }
+                    
+                    chatHistory.push({ role: 'assistant', content: assistantMessage });
+                    saveChatToStorage();
+                    removeTypingIndicator();
+                    addMessage(assistantMessage, false);
+                }
+            } catch (error) {
+                console.error('API error:', error);
+                removeTypingIndicator();
+                addMessage('抱歉，我现在无法响应，请稍后再试。', false);
+            } finally {
+                chatSendBtn.disabled = false;
+            }
+        }
+
+        function handleClickArea() {
+            clickCount++;
+            clearTimeout(clickTimer);
+            
+            clickTimer = setTimeout(() => {
+                if (clickCount >= 5) {
+                    showPasswordModal();
+                }
+                clickCount = 0;
+            }, 1000);
+        }
+
+        function initConversation() {
+            conversationStarted = true;
+            
+            const platforms = [
+                { name: '闲鱼', icon: 'fa-store' },
+                { name: '抖音', icon: 'fa-music' },
+                { name: '淘宝', icon: 'fa-shopping-bag' },
+                { name: '其他', icon: 'fa-ellipsis-h' }
+            ];
+            
+            addMessage('您好！我是智能客服小K。请问您来自哪个平台呢？', false, false, null, true, platforms);
+            chatHistory.push({ role: 'assistant', content: '您好！我是智能客服小K。请问您来自哪个平台呢？' });
+            saveChatToStorage();
+        }
+
+        function openMenu() {
+            document.getElementById('menuOverlay').classList.add('active');
+            document.getElementById('sideMenu').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeMenu() {
+            document.getElementById('menuOverlay').classList.remove('active');
+            document.getElementById('sideMenu').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const chatSendBtn = document.getElementById('chatSendBtn');
+            const chatInput = document.getElementById('chatInput');
+            const humanImageUploadBtn = document.getElementById('humanImageUploadBtn');
+            const humanImageInput = document.getElementById('humanImageInput');
+            const headerLogo = document.getElementById('headerLogo');
+            const headerTitle = document.getElementById('headerTitle');
+            const chatHeader = document.getElementById('chatHeader');
+            const cancelPasswordBtn = document.getElementById('cancelPasswordBtn');
+            const confirmPasswordBtn = document.getElementById('confirmPasswordBtn');
+
+            chatSendBtn.addEventListener('click', sendChatMessage);
+            
+            humanImageUploadBtn.addEventListener('click', () => {
+                if (isHumanMode) {
+                    humanImageInput.click();
+                }
+            });
+            
+            humanImageInput.addEventListener('change', handleHumanImageSelect);
+
+            chatInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendChatMessage();
+                }
+            });
+
+            chatInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+            });
+
+            headerLogo.addEventListener('click', handleClickArea);
+            headerTitle.addEventListener('click', handleClickArea);
+            chatHeader.addEventListener('click', handleClickArea);
+
+            cancelPasswordBtn.addEventListener('click', hidePasswordModal);
+            confirmPasswordBtn.addEventListener('click', checkPassword);
+            document.getElementById('adminPassword').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    checkPassword();
+                }
+            });
+
+            checkLoginStatus();
+            initConversation();
+        });
+
+        function checkLoginStatus() {
+            const user = localStorage.getItem('user');
+            if (user) {
+                const currentUser = JSON.parse(user);
+                document.getElementById('loginBtn').classList.add('hidden');
+                document.getElementById('userInfo').classList.remove('hidden');
+                document.getElementById('userInfo').classList.add('flex');
+                document.getElementById('userName').textContent = currentUser.username;
+            } else {
+                document.getElementById('loginBtn').classList.remove('hidden');
+                document.getElementById('userInfo').classList.add('hidden');
+                document.getElementById('userInfo').classList.remove('flex');
+            }
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+            checkLoginStatus();
+        }
+    </script>
+    <script src="/ai-assistant.js"></script>
+</body>
+</html>

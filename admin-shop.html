@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#000000">
+    <title>管理后台 - KDX丨ZHX</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/mobile.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f1f5f9;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .sidebar {
+            transition: all 0.3s ease;
+        }
+        .sidebar-item {
+            transition: all 0.2s ease;
+        }
+        .sidebar-item:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+        .sidebar-item.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div class="flex min-h-screen">
+        <aside class="sidebar w-64 bg-white shadow-lg">
+            <div class="p-6 border-b">
+                <a href="/shop" class="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity">
+                    <div class="w-12 h-12 gradient-bg rounded-xl flex items-center justify-center shadow-lg">
+                        <i class="fas fa-store text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold text-gray-900">KDX丨ZHX</h1>
+                        <p class="text-xs text-gray-500">管理后台</p>
+                    </div>
+                </a>
+            </div>
+
+            <nav class="p-4">
+                <ul class="space-y-2">
+                    <li>
+                        <button onclick="switchTab('dashboard')" class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-xl active" id="tab-dashboard">
+                            <i class="fas fa-tachometer-alt w-5"></i>
+                            <span>数据概览</span>
+                        </button>
+                    </li>
+                    <li>
+                        <button onclick="switchTab('products')" class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700" id="tab-products">
+                            <i class="fas fa-box w-5"></i>
+                            <span>商品管理</span>
+                        </button>
+                    </li>
+                    <li>
+                        <button onclick="switchTab('orders')" class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700" id="tab-orders">
+                            <i class="fas fa-receipt w-5"></i>
+                            <span>订单管理</span>
+                        </button>
+                    </li>
+                    <li>
+                        <button onclick="switchTab('refunds')" class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700" id="tab-refunds">
+                            <i class="fas fa-undo w-5"></i>
+                            <span>售后管理</span>
+                        </button>
+                    </li>
+                    <li>
+                        <button onclick="switchTab('ai')" class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700" id="tab-ai">
+                            <i class="fas fa-brain w-5"></i>
+                            <span>AI 智能助手</span>
+                        </button>
+                    </li>
+                    <li>
+                        <button onclick="switchTab('shortcuts')" class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700" id="tab-shortcuts">
+                            <i class="fab fa-apple w-5"></i>
+                            <span>Apple Shortcuts</span>
+                        </button>
+                    </li>
+                </ul>
+            </nav>
+
+            <div class="absolute bottom-0 left-0 right-0 p-4 border-t">
+                <button onclick="logout()" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-600 hover:bg-red-50 transition">
+                    <i class="fas fa-sign-out-alt w-5"></i>
+                    <span>退出登录</span>
+                </button>
+            </div>
+        </aside>
+
+        <main class="flex-1 p-8">
+            <div id="page-dashboard" class="page-content">
+                <h2 class="text-2xl font-bold text-gray-900 mb-8">数据概览</h2>
+                <div id="stats" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-2xl p-6 shadow-lg">
+                        <h3 class="text-lg font-bold text-gray-900 mb-4">快速操作</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <button onclick="switchTab('products'); setTimeout(() => showAddProductModal(), 100)" class="p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl hover:shadow-md transition">
+                                <i class="fas fa-plus text-purple-600 text-xl mb-2"></i>
+                                <p class="text-sm font-medium text-gray-900">添加商品</p>
+                            </button>
+                            <button onclick="switchTab('orders')" class="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl hover:shadow-md transition">
+                                <i class="fas fa-truck text-blue-600 text-xl mb-2"></i>
+                                <p class="text-sm font-medium text-gray-900">订单管理</p>
+                            </button>
+                            <button onclick="window.open('/shop')" class="p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-xl hover:shadow-md transition">
+                                <i class="fas fa-store text-green-600 text-xl mb-2"></i>
+                                <p class="text-sm font-medium text-gray-900">访问商城</p>
+                            </button>
+                            <button onclick="location.reload()" class="p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl hover:shadow-md transition">
+                                <i class="fas fa-sync text-gray-600 text-xl mb-2"></i>
+                                <p class="text-sm font-medium text-gray-900">刷新数据</p>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl p-6 shadow-lg">
+                        <h3 class="text-lg font-bold text-gray-900 mb-4">管理提示</h3>
+                        <ul class="space-y-3 text-gray-600 text-sm">
+                            <li class="flex items-start gap-2">
+                                <i class="fas fa-check-circle text-green-500 mt-1"></i>
+                                <span>及时处理待发货订单</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i class="fas fa-check-circle text-green-500 mt-1"></i>
+                                <span>定期更新商品库存</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i class="fas fa-check-circle text-green-500 mt-1"></i>
+                                <span>快速响应售后申请</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i class="fas fa-info-circle text-blue-500 mt-1"></i>
+                                <span>默认账号: admin / admin123</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div id="page-products" class="page-content hidden">
+                <div class="flex items-center justify-between mb-8">
+                    <h2 class="text-2xl font-bold text-gray-900">商品管理</h2>
+                    <button onclick="showAddProductModal()" class="gradient-bg text-white px-6 py-3 rounded-xl font-semibold hover:opacity-90 transition">
+                        <i class="fas fa-plus mr-2"></i>
+                        添加商品
+                    </button>
+                </div>
+                <div id="productsList" class="bg-white rounded-2xl shadow-lg overflow-hidden">
+                </div>
+            </div>
+
+            <div id="page-orders" class="page-content hidden">
+                <div class="flex items-center justify-between mb-8">
+                    <h2 class="text-2xl font-bold text-gray-900">订单管理</h2>
+                    <div class="flex items-center gap-2">
+                        <select id="orderFilter" onchange="filterOrders()" class="px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500">
+                            <option value="all">全部订单</option>
+                            <option value="pending">待付款</option>
+                            <option value="paid">已付款</option>
+                            <option value="shipped">已发货</option>
+                            <option value="delivered">已收货</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="ordersList" class="bg-white rounded-2xl shadow-lg overflow-hidden">
+                </div>
+            </div>
+
+            <div id="page-refunds" class="page-content hidden">
+                <h2 class="text-2xl font-bold text-gray-900 mb-8">售后管理</h2>
+                <div id="refundsList" class="bg-white rounded-2xl shadow-lg overflow-hidden">
+                </div>
+            </div>
+
+            <div id="page-ai" class="page-content hidden">
+                <div class="flex items-center justify-between mb-8">
+                    <h2 class="text-2xl font-bold text-gray-900">AI 智能助手</h2>
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
+                        <span class="text-sm text-gray-600">在线</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2">
+                        <div class="bg-white rounded-2xl shadow-lg p-6">
+                            <div class="flex items-center gap-3 mb-6 pb-4 border-b">
+                                <div class="w-12 h-12 gradient-bg rounded-xl flex items-center justify-center">
+                                    <i class="fas fa-robot text-white text-xl"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-gray-900">KDX-AI 智能助手</h3>
+                                    <p class="text-xs text-gray-500">您的专属管理助手</p>
+                                </div>
+                            </div>
+
+                            <div id="chatContainer" class="space-y-4 h-96 overflow-y-auto mb-6">
+                                <div class="flex gap-3">
+                                    <div class="w-8 h-8 gradient-bg rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <i class="fas fa-robot text-white text-sm"></i>
+                                    </div>
+                                    <div class="bg-gray-100 rounded-xl p-4 max-w-md">
+                                        <p class="text-gray-800 text-sm">您好！我是 KDX-AI，您的智能管理助手 🤖</p>
+                                        <p class="text-gray-600 text-xs mt-2">我可以帮您：</p>
+                                        <ul class="text-gray-600 text-xs mt-1 space-y-1">
+                                            <li>• 快速上架商品</li>
+                                            <li>• 查询订单状态</li>
+                                            <li>• 分析销售数据</li>
+                                            <li>• 处理用户问题</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex gap-3">
+                                <input type="text" id="aiInput" placeholder="发送指令给AI..." class="flex-1 px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500" />
+                                <button onclick="sendAiMessage()" class="px-6 py-3 gradient-bg text-white rounded-xl font-semibold hover:opacity-90 transition">
+                                    <i class="fas fa-paper-plane mr-2"></i>
+                                    发送
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-6">
+                        <div class="bg-white rounded-2xl shadow-lg p-6">
+                            <h4 class="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                <i class="fas fa-bolt text-yellow-500"></i>
+                                快捷指令
+                            </h4>
+                            <div class="space-y-2">
+                                <button onclick="sendQuickCommand('上架商品')" class="w-full text-left px-4 py-3 bg-purple-50 text-purple-700 rounded-xl hover:bg-purple-100 transition text-sm">
+                                    <i class="fas fa-plus mr-2"></i>
+                                    快速上架商品
+                                </button>
+                                <button onclick="sendQuickCommand('查询订单')" class="w-full text-left px-4 py-3 bg-blue-50 text-blue-700 rounded-xl hover:bg-blue-100 transition text-sm">
+                                    <i class="fas fa-search mr-2"></i>
+                                    查询最新订单
+                                </button>
+                                <button onclick="sendQuickCommand('分析数据')" class="w-full text-left px-4 py-3 bg-green-50 text-green-700 rounded-xl hover:bg-green-100 transition text-sm">
+                                    <i class="fas fa-chart-line mr-2"></i>
+                                    销售数据分析
+                                </button>
+                                <button onclick="sendQuickCommand('清理库存')" class="w-full text-left px-4 py-3 bg-orange-50 text-orange-700 rounded-xl hover:bg-orange-100 transition text-sm">
+                                    <i class="fas fa-trash mr-2"></i>
+                                    清理零库存商品
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-2xl shadow-lg p-6">
+                            <h4 class="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                <i class="fas fa-shield-alt text-purple-500"></i>
+                                AI 权限设置
+                            </h4>
+                            <div class="space-y-3">
+                                <label class="flex items-center justify-between">
+                                    <span class="text-sm text-gray-700">商品管理</span>
+                                    <input type="checkbox" id="aiProduct" checked class="w-5 h-5 text-purple-600 rounded" />
+                                </label>
+                                <label class="flex items-center justify-between">
+                                    <span class="text-sm text-gray-700">订单管理</span>
+                                    <input type="checkbox" id="aiOrder" checked class="w-5 h-5 text-purple-600 rounded" />
+                                </label>
+                                <label class="flex items-center justify-between">
+                                    <span class="text-sm text-gray-700">数据分析</span>
+                                    <input type="checkbox" id="aiAnalysis" checked class="w-5 h-5 text-purple-600 rounded" />
+                                </label>
+                                <label class="flex items-center justify-between">
+                                    <span class="text-sm text-gray-700">智能客服</span>
+                                    <input type="checkbox" id="aiService" checked class="w-5 h-5 text-purple-600 rounded" />
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="page-shortcuts" class="page-content hidden">
+                <div class="flex items-center justify-between mb-8">
+                    <h2 class="text-2xl font-bold text-gray-900">
+                        <i class="fab fa-apple mr-2"></i>
+                        Apple Shortcuts
+                    </h2>
+                    <div class="flex items-center gap-2">
+                        <span class="text-green-500">
+                            <i class="fas fa-circle"></i>
+                            API在线
+                        </span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 space-y-6">
+                        <div class="bg-white rounded-2xl p-6 shadow-lg">
+                            <h3 class="text-lg font-bold text-gray-900 mb-4">API密钥</h3>
+                            <div class="space-y-4">
+                                <div class="bg-gray-50 rounded-xl p-4">
+                                    <div class="flex items-center justify-between">
+                                        <code id="shortcutsApiKey" class="text-sm text-gray-600 truncate">加载中...</code>
+                                        <div class="flex gap-2">
+                                            <button onclick="copyShortcutsApiKey()" class="p-2 text-gray-600 hover:text-blue-600 transition">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+                                            <button onclick="loadShortcutsApiKey()" class="p-2 text-gray-600 hover:text-purple-600 transition">
+                                                <i class="fas fa-sync"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <p class="text-xs text-gray-500 mt-2">请妥善保管此密钥！</p>
+                                </div>
+                                <div class="flex gap-3">
+                                    <button onclick="regenerateShortcutsKey()" class="flex-1 px-4 py-3 border border-orange-200 text-orange-600 rounded-xl font-semibold hover:bg-orange-50 transition">
+                                        <i class="fas fa-redo mr-2"></i>
+                                        重新生成密钥
+                                    </button>
+                                    <button onclick="downloadShortcutsGuide()" class="flex-1 px-4 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl font-semibold hover:opacity-90 transition">
+                                        <i class="fas fa-download mr-2"></i>
+                                        下载使用指南
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-2xl p-6 shadow-lg">
+                            <h3 class="text-lg font-bold text-gray-900 mb-4">API接口列表</h3>
+                            <div class="space-y-3">
+                                <div class="p-4 bg-green-50 rounded-xl">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="text-sm font-mono text-green-800">GET /api/shortcuts/status</span>
+                                        <span class="text-xs px-2 py-1 bg-green-200 text-green-800 rounded">公开</span>
+                                    </div>
+                                    <p class="text-xs text-green-700">获取API状态信息</p>
+                                </div>
+                                <div class="p-4 bg-blue-50 rounded-xl">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="text-sm font-mono text-blue-800">GET /api/shortcuts/products</span>
+                                        <span class="text-xs px-2 py-1 bg-blue-200 text-blue-800 rounded">需要密钥</span>
+                                    </div>
+                                    <p class="text-xs text-blue-700">获取商品列表</p>
+                                </div>
+                                <div class="p-4 bg-blue-50 rounded-xl">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="text-sm font-mono text-blue-800">GET /api/shortcuts/products/search</span>
+                                        <span class="text-xs px-2 py-1 bg-blue-200 text-blue-800 rounded">需要密钥</span>
+                                    </div>
+                                    <p class="text-xs text-blue-700">搜索商品</p>
+                                </div>
+                                <div class="p-4 bg-purple-50 rounded-xl">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="text-sm font-mono text-purple-800">POST /api/shortcuts/user</span>
+                                        <span class="text-xs px-2 py-1 bg-purple-200 text-purple-800 rounded">需要密钥</span>
+                                    </div>
+                                    <p class="text-xs text-purple-700">查询用户信息</p>
+                                </div>
+                                <div class="p-4 bg-yellow-50 rounded-xl">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="text-sm font-mono text-yellow-800">GET /api/shortcuts/orders</span>
+                                        <span class="text-xs px-2 py-1 bg-yellow-200 text-yellow-800 rounded">需要密钥</span>
+                                    </div>
+                                    <p class="text-xs text-yellow-700">查询订单</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-2xl p-6 shadow-lg">
+                            <h3 class="text-lg font-bold text-gray-900 mb-4">使用示例</h3>
+                            <div class="space-y-4">
+                                <div class="p-4 bg-gray-50 rounded-xl">
+                                    <p class="text-sm text-gray-700 mb-2">
+                                        <i class="fas fa-lightbulb text-yellow-500 mr-2"></i>
+                                        如何在Shortcuts中使用
+                                    </p>
+                                    <ol class="text-xs text-gray-600 space-y-2 list-decimal list-inside">
+                                        <li>打开"快捷指令"App，创建新快捷指令</li>
+                                        <li>添加"获取URL内容"动作</li>
+                                        <li>输入URL: http://localhost:9999/api/shortcuts/products</li>
+                                        <li>在请求头中添加: Authorization → Bearer [你的API密钥]</li>
+                                        <li>执行即可获取数据</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-6">
+                        <div class="bg-white rounded-2xl p-6 shadow-lg">
+                            <h3 class="text-lg font-bold text-gray-900 mb-4">
+                                <i class="fas fa-shield-alt mr-2 text-green-500"></i>
+                                安全设置
+                            </h3>
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                                    <span class="text-sm text-gray-700">每小时请求限制</span>
+                                    <span class="font-semibold text-gray-900">100</span>
+                                </div>
+                                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                                    <span class="text-sm text-gray-700">API密钥状态</span>
+                                    <span id="keyStatus" class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-semibold">
+                                        已启用
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl p-6 text-white">
+                            <h3 class="text-lg font-bold mb-3">
+                                <i class="fab fa-apple mr-2"></i>
+                                快捷指令功能
+                            </h3>
+                            <ul class="text-sm space-y-2 text-white/90">
+                                <li><i class="fas fa-check mr-2"></i>一键查询订单</li>
+                                <li><i class="fas fa-check mr-2"></i>快速搜索商品</li>
+                                <li><i class="fas fa-check mr-2"></i>用户信息查询</li>
+                                <li><i class="fas fa-check mr-2"></i>安全API密钥保护</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="productModal" class="fixed inset-0 bg-black/50 backdrop-blur hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold text-gray-900" id="productModalTitle">添加商品</h3>
+                <button onclick="closeProductModal()" class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-red-100 hover:text-red-600 transition">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="productForm" class="space-y-4">
+                <input type="hidden" id="productId" />
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">商品名称</label>
+                    <input type="text" id="productName" required class="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">商品描述</label>
+                    <textarea id="productDesc" rows="3" class="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"></textarea>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">价格</label>
+                        <input type="number" id="productPrice" step="0.01" required class="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">原价</label>
+                        <input type="number" id="productOriginalPrice" step="0.01" class="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500" />
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">分类</label>
+                        <select id="productCategory" class="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500">
+                            <option value="数据线">数据线</option>
+                            <option value="软件服务">软件服务</option>
+                            <option value="教程服务">教程服务</option>
+                            <option value="其他">其他</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">库存</label>
+                        <input type="number" id="productStock" required class="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500" />
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">商品图片</label>
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-3">
+                            <input type="file" id="productImageFile" accept="image/*" class="flex-1" />
+                            <button type="button" onclick="generateImage()" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 transition">
+                                <i class="fas fa-magic mr-1"></i>
+                                AI生成
+                            </button>
+                        </div>
+                        <div id="imagePreviewContainer" class="hidden">
+                            <img id="imagePreview" class="w-full aspect-[4/3] object-cover rounded-xl" />
+                            <button type="button" onclick="clearImagePreview()" class="mt-2 w-full px-4 py-2 bg-red-100 text-red-600 rounded-lg text-sm hover:bg-red-200 transition">
+                                <i class="fas fa-trash mr-1"></i>
+                                清除图片
+                            </button>
+                        </div>
+                        <input type="text" id="productImage" class="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="或者输入图片URL" />
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">标签（逗号分隔）</label>
+                    <input type="text" id="productTags" class="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="热销,新品" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">规格（逗号分隔）</label>
+                    <input type="text" id="productSpecs" class="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="适配机型:XXX,颜色:黑色" />
+                </div>
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="closeProductModal()" class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-200 transition">
+                        取消
+                    </button>
+                    <button type="submit" class="flex-1 gradient-bg text-white py-3 rounded-xl font-semibold hover:opacity-90 transition">
+                        保存
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="shipModal" class="fixed inset-0 bg-black/50 backdrop-blur hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold text-gray-900">订单发货</h3>
+                <button onclick="closeShipModal()" class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-red-100 hover:text-red-600 transition">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">快递公司</label>
+                    <input type="text" id="courier" class="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="顺丰速运" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">运单号</label>
+                    <input type="text" id="trackingNumber" required class="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500" />
+                </div>
+                <div class="flex gap-3 pt-4">
+                    <button onclick="closeShipModal()" class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-200 transition">
+                        取消
+                    </button>
+                    <button onclick="submitShip()" class="flex-1 gradient-bg text-white py-3 rounded-xl font-semibold hover:opacity-90 transition">
+                        确认发货
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let products = [];
+        let orders = [];
+        let refunds = [];
+        let currentTab = 'dashboard';
+        let editingProductId = null;
+        let shippingOrderId = null;
+
+        async function checkAuth() {
+            // 检查是否登录
+            const userStr = localStorage.getItem('user');
+            if (!userStr) {
+                window.location.href = '/auth';
+                return;
+            }
+            
+            try {
+                const user = JSON.parse(userStr);
+                // 检查是否是管理员账号
+                const adminPhones = ['13800138000'];
+                const adminEmails = ['admin@example.com'];
+                
+                if (!adminPhones.includes(user.phone) && !adminEmails.includes(user.email) && user.role !== 'admin') {
+                    // 不是管理员，重定向到商城
+                    alert('您没有权限访问管理后台');
+                    window.location.href = '/shop';
+                    return;
+                }
+                
+                // 设置管理员登录状态
+                localStorage.setItem('adminLoggedIn', 'true');
+                localStorage.setItem('adminUser', userStr);
+            } catch (error) {
+                console.error('Auth check error:', error);
+                window.location.href = '/auth';
+            }
+        }
+
+        async function init() {
+            await checkAuth();
+            await loadDashboard();
+            await loadShortcutsApiKey();
+        }
+
+        async function loadDashboard() {
+            try {
+                const response = await fetch('/api/stats');
+                const stats = await response.json();
+                
+                const statsHtml = `
+                    <div class="bg-white rounded-2xl p-6 shadow-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-500 text-sm mb-1">商品总数</p>
+                                <p class="text-3xl font-bold text-gray-900">${stats.totalProducts || 0}</p>
+                            </div>
+                            <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-box text-purple-600 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl p-6 shadow-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-500 text-sm mb-1">订单总数</p>
+                                <p class="text-3xl font-bold text-gray-900">${stats.totalOrders || 0}</p>
+                            </div>
+                            <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-receipt text-blue-600 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl p-6 shadow-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-500 text-sm mb-1">总收入</p>
+                                <p class="text-3xl font-bold text-green-600">¥${(stats.totalRevenue || 0).toFixed(2)}</p>
+                            </div>
+                            <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-dollar-sign text-green-600 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl p-6 shadow-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-500 text-sm mb-1">待处理售后</p>
+                                <p class="text-3xl font-bold text-orange-600">${stats.pendingRefunds || 0}</p>
+                            </div>
+                            <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-undo text-orange-600 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('stats').innerHTML = statsHtml;
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+            }
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.page-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.sidebar-item').forEach(el => {
+                el.classList.remove('active');
+                el.classList.add('text-gray-700');
+            });
+            document.getElementById(`page-${tab}`).classList.remove('hidden');
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            document.getElementById(`tab-${tab}`).classList.remove('text-gray-700');
+
+            if (tab === 'products') loadProducts();
+            if (tab === 'orders') loadOrders();
+            if (tab === 'refunds') loadRefunds();
+        }
+
+        async function loadProducts() {
+            try {
+                const response = await fetch('/api/products');
+                products = await response.json();
+                renderProducts();
+            } catch (error) {
+                console.error('Error loading products:', error);
+            }
+        }
+
+        function renderProducts() {
+            if (products.length === 0) {
+                document.getElementById('productsList').innerHTML = `
+                    <div class="text-center py-16">
+                        <i class="fas fa-box text-6xl text-gray-300 mb-4"></i>
+                        <p class="text-gray-500 text-xl">暂无商品</p>
+                    </div>
+                `;
+                return;
+            }
+
+            document.getElementById('productsList').innerHTML = `
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-sm font-medium text-gray-600">商品</th>
+                            <th class="px-6 py-4 text-left text-sm font-medium text-gray-600">价格</th>
+                            <th class="px-6 py-4 text-left text-sm font-medium text-gray-600">库存</th>
+                            <th class="px-6 py-4 text-left text-sm font-medium text-gray-600">销量</th>
+                            <th class="px-6 py-4 text-left text-sm font-medium text-gray-600">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        ${products.map(product => `
+                            <tr class="hover:bg-gray-50 transition">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-3">
+                                        <img src="${product.image}" alt="${product.name}" class="w-14 h-14 object-cover rounded-xl" />
+                                        <div>
+                                            <p class="font-medium text-gray-900">${product.name}</p>
+                                            <p class="text-gray-500 text-xs">${product.category}</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <p class="font-bold text-purple-600">¥${product.price}</p>
+                                    ${product.originalPrice > product.price ? `
+                                        <p class="text-gray-400 text-xs line-through">¥${product.originalPrice}</p>
+                                    ` : ''}
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="${product.stock <= 10 ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'} px-3 py-1 rounded-full text-sm">${product.stock}</span>
+                                </td>
+                                <td class="px-6 py-4 text-gray-900">${product.sold}</td>
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-2">
+                                        <button onclick="editProduct('${product.id}')" class="w-9 h-9 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center hover:bg-blue-200 transition">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button onclick="deleteProduct('${product.id}')" class="w-9 h-9 rounded-lg bg-red-100 text-red-600 flex items-center justify-center hover:bg-red-200 transition">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        let uploadedImageUrl = '';
+
+        function showAddProductModal() {
+            editingProductId = null;
+            document.getElementById('productModalTitle').textContent = '添加商品';
+            document.getElementById('productId').value = '';
+            document.getElementById('productName').value = '';
+            document.getElementById('productDesc').value = '';
+            document.getElementById('productPrice').value = '';
+            document.getElementById('productOriginalPrice').value = '';
+            document.getElementById('productCategory').value = '数据线';
+            document.getElementById('productStock').value = '100';
+            document.getElementById('productImage').value = '';
+            document.getElementById('productTags').value = '';
+            document.getElementById('productSpecs').value = '';
+            clearImagePreview();
+            document.getElementById('productModal').classList.remove('hidden');
+            document.getElementById('productModal').classList.add('flex');
+        }
+
+        async function editProduct(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+            
+            editingProductId = productId;
+            document.getElementById('productModalTitle').textContent = '编辑商品';
+            document.getElementById('productId').value = productId;
+            document.getElementById('productName').value = product.name;
+            document.getElementById('productDesc').value = product.description || '';
+            document.getElementById('productPrice').value = product.price;
+            document.getElementById('productOriginalPrice').value = product.originalPrice || '';
+            document.getElementById('productCategory').value = product.category || '其他';
+            document.getElementById('productStock').value = product.stock;
+            document.getElementById('productImage').value = product.image || '';
+            document.getElementById('productTags').value = product.tags ? product.tags.join(',') : '';
+            document.getElementById('productSpecs').value = product.specs ? product.specs.join(',') : '';
+            
+            if (product.image) {
+                uploadedImageUrl = product.image;
+                document.getElementById('imagePreview').src = product.image;
+                document.getElementById('imagePreviewContainer').classList.remove('hidden');
+            } else {
+                clearImagePreview();
+            }
+            
+            document.getElementById('productModal').classList.remove('hidden');
+            document.getElementById('productModal').classList.add('flex');
+        }
+
+        function closeProductModal() {
+            document.getElementById('productModal').classList.add('hidden');
+            document.getElementById('productModal').classList.remove('flex');
+        }
+
+        function clearImagePreview() {
+            uploadedImageUrl = '';
+            document.getElementById('imagePreviewContainer').classList.add('hidden');
+            document.getElementById('productImageFile').value = '';
+        }
+
+        function generateImage() {
+            const productName = document.getElementById('productName').value;
+            if (!productName) {
+                alert('请先输入商品名称');
+                return;
+            }
+            
+            const prompt = encodeURIComponent(productName);
+            uploadedImageUrl = `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=${prompt}&image_size=square_hd`;
+            document.getElementById('imagePreview').src = uploadedImageUrl;
+            document.getElementById('imagePreviewContainer').classList.remove('hidden');
+            document.getElementById('productImage').value = '';
+        }
+
+        document.getElementById('productForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const tagsValue = document.getElementById('productTags').value;
+            const specsValue = document.getElementById('productSpecs').value;
+            
+            const productData = {
+                name: document.getElementById('productName').value,
+                description: document.getElementById('productDesc').value,
+                price: parseFloat(document.getElementById('productPrice').value),
+                originalPrice: document.getElementById('productOriginalPrice').value ? parseFloat(document.getElementById('productOriginalPrice').value) : null,
+                category: document.getElementById('productCategory').value,
+                stock: parseInt(document.getElementById('productStock').value),
+                image: uploadedImageUrl || document.getElementById('productImage').value || 'https://via.placeholder.com/400x400/667eea/ffffff?text=商品',
+                tags: tagsValue ? tagsValue.split(',').map(t => t.trim()).filter(t => t) : [],
+                specs: specsValue ? specsValue.split(',').map(s => s.trim()).filter(s => s) : []
+            };
+
+            try {
+                const url = editingProductId ? `/api/products/${editingProductId}` : '/api/products';
+                const method = editingProductId ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(productData)
+                });
+
+                if (response.ok) {
+                    closeProductModal();
+                    loadProducts();
+                    loadDashboard();
+                }
+            } catch (error) {
+                console.error('Error saving product:', error);
+            }
+        });
+
+        async function deleteProduct(productId) {
+            if (!confirm('确定要删除此商品吗？')) return;
+            
+            try {
+                const response = await fetch(`/api/products/${productId}`, { method: 'DELETE' });
+                if (response.ok) {
+                    loadProducts();
+                    loadDashboard();
+                }
+            } catch (error) {
+                console.error('Error deleting product:', error);
+            }
+        }
+
+        async function loadOrders() {
+            try {
+                const response = await fetch('/api/orders');
+                orders = await response.json();
+                renderOrders();
+            } catch (error) {
+                console.error('Error loading orders:', error);
+            }
+        }
+
+        function filterOrders() {
+            renderOrders();
+        }
+
+        function getStatusBadge(status) {
+            const statusMap = {
+                'pending': { color: 'bg-yellow-100 text-yellow-700', text: '待付款' },
+                'paid': { color: 'bg-blue-100 text-blue-700', text: '已付款' },
+                'shipped': { color: 'bg-purple-100 text-purple-700', text: '已发货' },
+                'delivered': { color: 'bg-green-100 text-green-700', text: '已收货' },
+                'cancelled': { color: 'bg-gray-100 text-gray-700', text: '已取消' },
+                'refund_pending': { color: 'bg-orange-100 text-orange-700', text: '退款中' },
+                'refunded': { color: 'bg-red-100 text-red-700', text: '已退款' }
+            };
+            return statusMap[status] || { color: 'bg-gray-100 text-gray-700', text: status };
+        }
+
+        function renderOrders() {
+            let filteredOrders = orders;
+            const filter = document.getElementById('orderFilter').value;
+            if (filter !== 'all') {
+                filteredOrders = orders.filter(order => order.status === filter);
+            }
+
+            if (filteredOrders.length === 0) {
+                document.getElementById('ordersList').innerHTML = `
+                    <div class="text-center py-16">
+                        <i class="fas fa-receipt text-6xl text-gray-300 mb-4"></i>
+                        <p class="text-gray-500 text-xl">暂无订单</p>
+                    </div>
+                `;
+                return;
+            }
+
+            document.getElementById('ordersList').innerHTML = `
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-sm font-medium text-gray-600">订单号</th>
+                            <th class="px-6 py-4 text-left text-sm font-medium text-gray-600">商品</th>
+                            <th class="px-6 py-4 text-left text-sm font-medium text-gray-600">金额</th>
+                            <th class="px-6 py-4 text-left text-sm font-medium text-gray-600">状态</th>
+                            <th class="px-6 py-4 text-left text-sm font-medium text-gray-600">下单时间</th>
+                            <th class="px-6 py-4 text-left text-sm font-medium text-gray-600">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        ${filteredOrders.map(order => {
+                            const badge = getStatusBadge(order.status);
+                            return `
+                            <tr class="hover:bg-gray-50 transition">
+                                <td class="px-6 py-4 font-mono text-sm text-gray-900">${order.orderNo || order.id}</td>
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-2">
+                                        ${(order.items || []).slice(0, 2).map(item => `
+                                            <img src="${item.image}" alt="${item.name}" class="w-10 h-10 object-cover rounded-lg" />
+                                        `).join('')}
+                                        ${(order.items || []).length > 2 ? `<span class="text-gray-400 text-sm">+${order.items.length - 2}</span>` : ''}
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 font-bold text-purple-600">¥${(order.total || 0).toFixed(2)}</td>
+                                <td class="px-6 py-4">
+                                    <span class="${badge.color} px-3 py-1 rounded-full text-xs font-medium">${badge.text}</span>
+                                </td>
+                                <td class="px-6 py-4 text-gray-500 text-xs">${new Date(order.createdAt || Date.now()).toLocaleString()}</td>
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-2">
+                                        ${order.status === 'paid' ? `
+                                            <button onclick="showShipModal('${order.id}')" class="px-3 py-1.5 bg-green-100 text-green-600 rounded-lg text-sm font-medium hover:bg-green-200 transition">
+                                                发货
+                                            </button>
+                                        ` : ''}
+                                        <button onclick="viewOrderDetails('${order.id}')" class="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-200 transition">
+                                            详情
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `}).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function showShipModal(orderId) {
+            shippingOrderId = orderId;
+            document.getElementById('courier').value = '其他快递';
+            document.getElementById('trackingNumber').value = '';
+            document.getElementById('shipModal').classList.remove('hidden');
+            document.getElementById('shipModal').classList.add('flex');
+        }
+
+        function closeShipModal() {
+            document.getElementById('shipModal').classList.add('hidden');
+            document.getElementById('shipModal').classList.remove('flex');
+        }
+
+        async function submitShip() {
+            const courier = document.getElementById('courier').value;
+            const trackingNumber = document.getElementById('trackingNumber').value;
+            
+            if (!trackingNumber) {
+                alert('请输入运单号');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/orders/${shippingOrderId}/ship`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ trackingNumber, courier })
+                });
+
+                if (response.ok) {
+                    closeShipModal();
+                    loadOrders();
+                    loadDashboard();
+                    alert('发货成功！');
+                }
+            } catch (error) {
+                console.error('Error shipping order:', error);
+            }
+        }
+
+        function viewOrderDetails(orderId) {
+            window.location.href = `/order/${orderId}`;
+        }
+
+        async function loadRefunds() {
+            try {
+                const response = await fetch('/api/refunds');
+                refunds = await response.json();
+                renderRefunds();
+            } catch (error) {
+                console.error('Error loading refunds:', error);
+            }
+        }
+
+        function renderRefunds() {
+            if (refunds.length === 0) {
+                document.getElementById('refundsList').innerHTML = `
+                    <div class="text-center py-16">
+                        <i class="fas fa-undo text-6xl text-gray-300 mb-4"></i>
+                        <p class="text-gray-500 text-xl">暂无售后申请</p>
+                    </div>
+                `;
+                return;
+            }
+
+            document.getElementById('refundsList').innerHTML = `
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-sm font-medium text-gray-600">售后单</th>
+                            <th class="px-6 py-4 text-left text-sm font-medium text-gray-600">原因</th>
+                            <th class="px-6 py-4 text-left text-sm font-medium text-gray-600">说明</th>
+                            <th class="px-6 py-4 text-left text-sm font-medium text-gray-600">状态</th>
+                            <th class="px-6 py-4 text-left text-sm font-medium text-gray-600">申请时间</th>
+                            <th class="px-6 py-4 text-left text-sm font-medium text-gray-600">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        ${refunds.map(refund => {
+                            const badge = refund.status === 'pending' ? 
+                                { color: 'bg-yellow-100 text-yellow-700', text: '待处理' } :
+                                refund.status === 'approved' ?
+                                { color: 'bg-green-100 text-green-700', text: '已同意' } :
+                                { color: 'bg-red-100 text-red-700', text: '已拒绝' };
+                            
+                            return `
+                            <tr class="hover:bg-gray-50 transition">
+                                <td class="px-6 py-4 font-mono text-sm text-gray-900">${refund.id}</td>
+                                <td class="px-6 py-4 text-gray-700">${refund.reason}</td>
+                                <td class="px-6 py-4 text-gray-600 text-sm max-w-xs truncate">${refund.description}</td>
+                                <td class="px-6 py-4">
+                                    <span class="${badge.color} px-3 py-1 rounded-full text-xs font-medium">${badge.text}</span>
+                                </td>
+                                <td class="px-6 py-4 text-gray-500 text-xs">${new Date(refund.createdAt || Date.now()).toLocaleString()}</td>
+                                <td class="px-6 py-4">
+                                    ${refund.status === 'pending' ? `
+                                        <div class="flex items-center gap-2">
+                                            <button onclick="handleRefund('${refund.id}', 'approved')" class="px-3 py-1.5 bg-green-100 text-green-600 rounded-lg text-sm font-medium hover:bg-green-200 transition">
+                                                同意
+                                            </button>
+                                            <button onclick="handleRefund('${refund.id}', 'rejected')" class="px-3 py-1.5 bg-red-100 text-red-600 rounded-lg text-sm font-medium hover:bg-red-200 transition">
+                                                拒绝
+                                            </button>
+                                        </div>
+                                    ` : `
+                                        <span class="text-gray-400 text-sm">已处理</span>
+                                    `}
+                                </td>
+                            </tr>
+                        `}).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        async function handleRefund(refundId, status) {
+            const message = status === 'approved' ? '确定同意此售后申请吗？' : '确定拒绝此售后申请吗？';
+            if (!confirm(message)) return;
+            
+            try {
+                const response = await fetch(`/api/refunds/${refundId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status })
+                });
+
+                if (response.ok) {
+                    loadRefunds();
+                    loadDashboard();
+                }
+            } catch (error) {
+                console.error('Error handling refund:', error);
+            }
+        }
+
+        function logout() {
+            if (!confirm('确定要退出登录吗？')) return;
+            localStorage.removeItem('adminLoggedIn');
+            localStorage.removeItem('adminUser');
+            window.location.href = '/login';
+        }
+
+        function addChatMessage(content, isUser = false) {
+            const chatContainer = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `flex gap-3 ${isUser ? 'flex-row-reverse' : ''}`;
+            
+            const avatar = isUser 
+                ? `<div class="w-8 h-8 bg-gray-300 rounded-lg flex items-center justify-center flex-shrink-0"><i class="fas fa-user text-gray-600 text-sm"></i></div>`
+                : `<div class="w-8 h-8 gradient-bg rounded-lg flex items-center justify-center flex-shrink-0"><i class="fas fa-robot text-white text-sm"></i></div>`;
+            
+            const bubbleClass = isUser ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-800';
+            
+            messageDiv.innerHTML = `
+                ${avatar}
+                <div class="${bubbleClass} rounded-xl p-4 max-w-md">
+                    <p class="text-sm">${content}</p>
+                </div>
+            `;
+            
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function showTyping() {
+            const chatContainer = document.getElementById('chatContainer');
+            const typingDiv = document.createElement('div');
+            typingDiv.id = 'typingIndicator';
+            typingDiv.className = 'flex gap-3';
+            typingDiv.innerHTML = `
+                <div class="w-8 h-8 gradient-bg rounded-lg flex items-center justify-center flex-shrink-0">
+                    <i class="fas fa-robot text-white text-sm"></i>
+                </div>
+                <div class="bg-gray-100 rounded-xl p-4">
+                    <div class="flex gap-2">
+                        <span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
+                        <span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></span>
+                        <span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.4s"></span>
+                    </div>
+                </div>
+            `;
+            chatContainer.appendChild(typingDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function removeTyping() {
+            const typing = document.getElementById('typingIndicator');
+            if (typing) typing.remove();
+        }
+
+        async function sendAiMessage() {
+            const input = document.getElementById('aiInput');
+            const message = input.value.trim();
+            if (!message) return;
+            
+            addChatMessage(message, true);
+            input.value = '';
+            
+            showTyping();
+            
+            try {
+                const response = await fetch('/api/ai/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        message,
+                        permissions: {
+                            product: document.getElementById('aiProduct').checked,
+                            order: document.getElementById('aiOrder').checked,
+                            analysis: document.getElementById('aiAnalysis').checked,
+                            service: document.getElementById('aiService').checked
+                        }
+                    })
+                });
+                
+                const data = await response.json();
+                removeTyping();
+                addChatMessage(data.response);
+                
+                if (data.action) {
+                    setTimeout(() => executeAiAction(data.action), 500);
+                }
+            } catch (error) {
+                removeTyping();
+                addChatMessage('抱歉，我暂时无法处理您的请求，请稍后再试。');
+                console.error('AI error:', error);
+            }
+        }
+
+        async function sendQuickCommand(command) {
+            document.getElementById('aiInput').value = command;
+            await sendAiMessage();
+        }
+
+        async function executeAiAction(action) {
+            switch(action.type) {
+                case 'addProduct':
+                    switchTab('products');
+                    setTimeout(() => showAddProductModal(), 500);
+                    if (action.data) {
+                        setTimeout(() => {
+                            if (action.data.name) document.getElementById('productName').value = action.data.name;
+                            if (action.data.price) document.getElementById('productPrice').value = action.data.price;
+                            if (action.data.stock) document.getElementById('productStock').value = action.data.stock;
+                        }, 600);
+                    }
+                    break;
+                case 'viewOrders':
+                    switchTab('orders');
+                    break;
+                case 'analyzeData':
+                    switchTab('dashboard');
+                    break;
+                case 'clearZeroStock':
+                    if (confirm('AI 建议清理零库存商品，确认执行吗？')) {
+                        await loadProducts();
+                        const zeroStock = products.filter(p => p.stock <= 0);
+                        if (zeroStock.length > 0) {
+                            for (const p of zeroStock) {
+                                try {
+                                    await fetch(`/api/products/${p.id}`, { method: 'DELETE' });
+                                } catch (e) {}
+                            }
+                            loadProducts();
+                            loadDashboard();
+                        }
+                    }
+                    break;
+            }
+        }
+
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && e.target.id === 'aiInput') {
+                sendAiMessage();
+            }
+        });
+
+        // ==================== Apple Shortcuts 函数 ====================
+        async function loadShortcutsApiKey() {
+            try {
+                const response = await fetch('/api/shortcuts/api-key');
+                const data = await response.json();
+                if (data.ok) {
+                    document.getElementById('shortcutsApiKey').textContent = data.api_key;
+                }
+            } catch (error) {
+                console.error('加载API密钥失败:', error);
+            }
+        }
+
+        function copyShortcutsApiKey() {
+            const key = document.getElementById('shortcutsApiKey').textContent;
+            navigator.clipboard.writeText(key).then(() => {
+                alert('API密钥已复制到剪贴板！');
+            });
+        }
+
+        async function regenerateShortcutsKey() {
+            if (!confirm('确定要重新生成API密钥吗？之前的密钥将会失效！')) return;
+            
+            try {
+                const response = await fetch('/api/shortcuts/regenerate-key', { method: 'POST' });
+                const data = await response.json();
+                if (data.ok) {
+                    document.getElementById('shortcutsApiKey').textContent = data.api_key;
+                    alert('API密钥已重新生成！');
+                }
+            } catch (error) {
+                console.error('重新生成密钥失败:', error);
+                alert('操作失败，请重试！');
+            }
+        }
+
+        function downloadShortcutsGuide() {
+            const guide = `
+# KDX丨ZHX - Apple Shortcuts 使用指南
+
+## 1. API密钥
+你的API密钥: ${document.getElementById('shortcutsApiKey').textContent || '[请先到管理后台查看]'}
+
+## 2. 如何创建快捷指令
+1. 打开"快捷指令"App
+2. 点击"+"创建新快捷指令
+3. 搜索"获取URL内容"
+4. 添加动作并配置
+
+## 3. 配置请求
+- URL: http://localhost:9999/api/shortcuts/products
+- 方法: GET
+- 请求头:
+  Authorization: Bearer [你的API密钥]
+
+## 4. 可用接口
+- /api/shortcuts/status - 获取API状态
+- /api/shortcuts/products - 获取商品列表
+- /api/shortcuts/products/search?q=xxx - 搜索商品
+- /api/shortcuts/user (POST) - 查询用户
+- /api/shortcuts/orders - 查询订单
+
+## 5. 安全注意事项
+- 不要泄露API密钥
+- 每小时限制100次请求
+- 本地访问才可以查看和管理密钥
+            `.trim();
+            
+            const blob = new Blob([guide], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'Apple-Shortcuts-使用指南.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileInput = document.getElementById('productImageFile');
+            if (fileInput) {
+                fileInput.addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = function(event) {
+                            uploadedImageUrl = event.target.result;
+                            document.getElementById('imagePreview').src = uploadedImageUrl;
+                            document.getElementById('imagePreviewContainer').classList.remove('hidden');
+                            document.getElementById('productImage').value = '';
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+            }
+
+            const imageUrlInput = document.getElementById('productImage');
+            if (imageUrlInput) {
+                imageUrlInput.addEventListener('input', function(e) {
+                    if (e.target.value) {
+                        uploadedImageUrl = e.target.value;
+                        document.getElementById('imagePreview').src = uploadedImageUrl;
+                        document.getElementById('imagePreviewContainer').classList.remove('hidden');
+                    }
+                });
+            }
+            
+            init();
+        });
+    </script>
+    <script src="/ai-assistant.js"></script>
+</body>
+</html>
