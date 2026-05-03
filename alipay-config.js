@@ -87,10 +87,10 @@ module.exports = {
   gateway: process.env.ALIPAY_GATEWAY || 'https://openapi.alipaydev.com/gateway.do',
   
   // 支付结果异步通知地址 (需要公网可访问的URL)
-  notifyUrl: `http://localhost:${PORT}/api/alipay/notify`,
+  notifyUrl: process.env.ALIPAY_NOTIFY_URL || `http://localhost:${PORT}/api/alipay/notify`,
   
   // 支付结果同步返回地址
-  returnUrl: `http://localhost:${PORT}/payment-success`,
+  returnUrl: process.env.ALIPAY_RETURN_URL || `http://localhost:${PORT}/payment-success`,
   
   // 签名算法 (RSA2)
   signType: 'RSA2',
