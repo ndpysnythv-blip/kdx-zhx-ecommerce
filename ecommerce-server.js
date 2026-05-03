@@ -1064,33 +1064,64 @@ app.post('/api/alipay/notify', async (req, res) => {
     const notifyData = req.body;
     console.log('[支付] 收到支付宝异步通知:', notifyData);
     
-    // 验证签名（简化版，实际项目需要严格验证）
-    const { trade_status, out_trade_no, trade_no } = notifyData;
-    
-    if (trade_status === 'TRADE_SUCCESS' || trade_status === 'TRADE_FINISHED') {
-      // 更新订单状态
-      const orders = db.getOrders();
-      const orderIndex = orders.findIndex(o => o.outTradeNo === out_trade_no);
-      
-      if (orderIndex !== -1) {
-        orders[orderIndex] = {
-          ...orders[orderIndex],
-          status: 'paid',
-          paymentStatus: 'success',
-          paidAt: new Date().toISOString(),
-          alipayTradeNo: trade_no
-        };
-        db.saveOrders(orders);
-        
-        console.log(`[支付] 异步通知: 订单 ${orders[orderIndex].id} 支付成功`);
+    // 1. 验证签名（必须！）
+    if (alipaySdk && !useMockPayment) {
+      const signVerified = alipaySdk.checkNotifySign(notifyData);
+      if (!signVerified) {
+        console.error('[支付] ❌ 签名验证失败，可能是伪造的通知！');
+        return res.send('fail');
       }
+      console.log('[支付] ✅ 签名验证成功');
     }
+    
+    const { trade_status, out_trade_no, trade_no, total_amount } = notifyData;
+    
+    // 2. 验证交易状态
+    if (trade_status !== 'TRADE_SUCCESS' && trade_status !== 'TRADE_FINISHED') {
+      console.log('[支付] ⚠️ 非成功状态的通知，忽略:', trade_status);
+      return res.send('success');
+    }
+    
+    // 3. 查询订单
+    const orders = db.getOrders();
+    const orderIndex = orders.findIndex(o => o.outTradeNo === out_trade_no);
+    
+    if (orderIndex === -1) {
+      console.error('[支付] ❌ 订单不存在:', out_trade_no);
+      return res.send('success'); // 返回success避免支付宝重复通知
+    }
+    
+    const order = orders[orderIndex];
+    
+    // 4. 验证金额（必须！）
+    if (order.total && parseFloat(total_amount) !== parseFloat(order.total)) {
+      console.error('[支付] ❌ 金额不匹配！订单金额:', order.total, '通知金额:', total_amount);
+      return res.send('success');
+    }
+    
+    // 5. 防止重复处理（幂等性）
+    if (order.paymentStatus === 'success') {
+      console.log('[支付] ⚠️ 订单已处理，忽略重复通知:', out_trade_no);
+      return res.send('success');
+    }
+    
+    // 6. 更新订单状态
+    orders[orderIndex] = {
+      ...order,
+      status: 'paid',
+      paymentStatus: 'success',
+      paidAt: new Date().toISOString(),
+      alipayTradeNo: trade_no
+    };
+    db.saveOrders(orders);
+    
+    console.log(`[支付] ✅ 异步通知处理成功: 订单 ${order.id} 支付成功，支付宝交易号: ${trade_no}`);
     
     // 返回success给支付宝
     res.send('success');
     
   } catch (error) {
-    console.error('[支付] 处理异步通知失败:', error);
+    console.error('[支付] ❌ 处理异步通知失败:', error);
     res.send('fail');
   }
 });
