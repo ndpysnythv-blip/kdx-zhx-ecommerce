@@ -615,6 +615,43 @@ app.get('/qrcode-payment', (req, res) => {
   res.sendFile(path.join(__dirname, 'qrcode-payment.html'));
 });
 
+app.get('/user-center', (req, res) => {
+  res.sendFile(path.join(__dirname, 'user-center.html'));
+});
+
+app.get('/contact-us', (req, res) => {
+  res.sendFile(path.join(__dirname, 'contact-us.html'));
+});
+
+app.get('/admin-shop', (req, res) => {
+  res.sendFile(path.join(__dirname, 'admin-shop.html'));
+});
+
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'admin-shop.html'));
+});
+
+// 通配符路由 - 如果以上路由都不匹配，尝试查找对应的 HTML 文件
+app.use((req, res, next) => {
+  // 跳过 API 请求
+  if (req.path.startsWith('/api/')) {
+    return next();
+  }
+  
+  // 尝试匹配 HTML 文件
+  const fileName = req.path.slice(1) + '.html';
+  const filePath = path.join(__dirname, fileName);
+  
+  // 检查文件是否存在
+  const fs = require('fs');
+  if (fs.existsSync(filePath)) {
+    return res.sendFile(filePath);
+  }
+  
+  // 如果找不到，返回首页或 404
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
 // 商品API
 app.get('/api/products', (req, res) => {
   res.json(db.getProducts());
