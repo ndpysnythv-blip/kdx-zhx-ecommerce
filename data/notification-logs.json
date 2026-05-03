@@ -1,0 +1,34 @@
+[
+    {
+        "id": "log-not-001",
+        "type": "订单提醒",
+        "recipient": "用户138****000",
+        "status": "read",
+        "content": "您的订单ORD-001已发货，快递单号：SF1234567890",
+        "createdAt": "2026-05-03T11:20:00Z"
+    },
+    {
+        "id": "log-not-002",
+        "type": "库存提醒",
+        "recipient": "管理员",
+        "status": "unread",
+        "content": "商品：数据线的库存低于100件，请及时补货",
+        "createdAt": "2026-05-03T13:00:00Z"
+    },
+    {
+        "id": "log-not-003",
+        "type": "售后提醒",
+        "recipient": "管理员",
+        "status": "unread",
+        "content": "有新的售后申请需要处理：REF-002",
+        "createdAt": "2026-05-03T15:30:00Z"
+    },
+    {
+        "id": "log-not-004",
+        "type": "支付成功",
+        "recipient": "用户139****111",
+        "status": "read",
+        "content": "您的订单ORD-002支付成功，金额：¥299.00",
+        "createdAt": "2026-05-03T16:00:00Z"
+    }
+]

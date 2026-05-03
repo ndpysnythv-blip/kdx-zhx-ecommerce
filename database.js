@@ -71,6 +71,48 @@ class Database {
     return this.writeJSON('refunds.json', refunds);
   }
 
+  getOperationLogs() {
+    return this.readJSON('operation-logs.json');
+  }
+
+  saveOperationLogs(logs) {
+    return this.writeJSON('operation-logs.json', logs);
+  }
+
+  addOperationLog(log) {
+    const logs = this.readJSON('operation-logs.json');
+    logs.unshift(log);
+    return this.writeJSON('operation-logs.json', logs);
+  }
+
+  getSecurityLogs() {
+    return this.readJSON('security-logs.json');
+  }
+
+  saveSecurityLogs(logs) {
+    return this.writeJSON('security-logs.json', logs);
+  }
+
+  addSecurityLog(log) {
+    const logs = this.readJSON('security-logs.json');
+    logs.unshift(log);
+    return this.writeJSON('security-logs.json', logs);
+  }
+
+  getNotificationLogs() {
+    return this.readJSON('notification-logs.json');
+  }
+
+  saveNotificationLogs(logs) {
+    return this.writeJSON('notification-logs.json', logs);
+  }
+
+  addNotificationLog(log) {
+    const logs = this.readJSON('notification-logs.json');
+    logs.unshift(log);
+    return this.writeJSON('notification-logs.json', logs);
+  }
+
   findById(data, id) {
     return data.find(item => item.id === id);
   }

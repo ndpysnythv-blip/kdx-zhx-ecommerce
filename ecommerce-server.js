@@ -2366,6 +2366,143 @@ async function encryptExistingPasswords() {
   }
 }
 
+// ========== 日志管理API ==========
+
+// 获取操作日志
+app.get('/api/admin/operation-logs', requireAdmin, (req, res) => {
+  try {
+    const logs = db.getOperationLogs();
+    res.json({ success: true, logs });
+  } catch (error) {
+    console.error('获取操作日志失败:', error);
+    res.status(500).json({ success: false, error: '获取操作日志失败' });
+  }
+});
+
+// 添加操作日志
+app.post('/api/admin/operation-logs', requireAdmin, (req, res) => {
+  try {
+    const { action, user, details } = req.body;
+    
+    if (!action) {
+      return res.status(400).json({ success: false, error: '缺少操作信息' });
+    }
+    
+    const log = {
+      id: 'log-op-' + Date.now(),
+      action: action,
+      user: user || '管理员',
+      details: details || '',
+      createdAt: new Date().toISOString()
+    };
+    
+    db.addOperationLog(log);
+    res.json({ success: true, log });
+  } catch (error) {
+    console.error('添加操作日志失败:', error);
+    res.status(500).json({ success: false, error: '添加操作日志失败' });
+  }
+});
+
+// 获取安全日志
+app.get('/api/admin/security-logs', requireAdmin, (req, res) => {
+  try {
+    const logs = db.getSecurityLogs();
+    res.json({ success: true, logs });
+  } catch (error) {
+    console.error('获取安全日志失败:', error);
+    res.status(500).json({ success: false, error: '获取安全日志失败' });
+  }
+});
+
+// 添加安全日志
+app.post('/api/admin/security-logs', requireAdmin, (req, res) => {
+  try {
+    const { type, level, ip, description } = req.body;
+    
+    if (!type) {
+      return res.status(400).json({ success: false, error: '缺少日志类型' });
+    }
+    
+    const location = getLoginLocation(req);
+    
+    const log = {
+      id: 'log-sec-' + Date.now(),
+      type: type,
+      level: level || 'info',
+      ip: ip || location.ip,
+      description: description || '',
+      createdAt: new Date().toISOString()
+    };
+    
+    db.addSecurityLog(log);
+    res.json({ success: true, log });
+  } catch (error) {
+    console.error('添加安全日志失败:', error);
+    res.status(500).json({ success: false, error: '添加安全日志失败' });
+  }
+});
+
+// 获取提醒日志
+app.get('/api/admin/notification-logs', requireAdmin, (req, res) => {
+  try {
+    const logs = db.getNotificationLogs();
+    res.json({ success: true, logs });
+  } catch (error) {
+    console.error('获取提醒日志失败:', error);
+    res.status(500).json({ success: false, error: '获取提醒日志失败' });
+  }
+});
+
+// 添加提醒日志
+app.post('/api/admin/notification-logs', requireAdmin, (req, res) => {
+  try {
+    const { type, recipient, status, content } = req.body;
+    
+    if (!type) {
+      return res.status(400).json({ success: false, error: '缺少提醒类型' });
+    }
+    
+    const log = {
+      id: 'log-not-' + Date.now(),
+      type: type,
+      recipient: recipient || '',
+      status: status || 'unread',
+      content: content || '',
+      createdAt: new Date().toISOString()
+    };
+    
+    db.addNotificationLog(log);
+    res.json({ success: true, log });
+  } catch (error) {
+    console.error('添加提醒日志失败:', error);
+    res.status(500).json({ success: false, error: '添加提醒日志失败' });
+  }
+});
+
+// 更新提醒日志状态
+app.put('/api/admin/notification-logs/:id', requireAdmin, (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    
+    const logs = db.getNotificationLogs();
+    const logIndex = logs.findIndex(l => l.id === id);
+    
+    if (logIndex === -1) {
+      return res.status(404).json({ success: false, error: '日志不存在' });
+    }
+    
+    logs[logIndex].status = status || 'read';
+    db.saveNotificationLogs(logs);
+    
+    res.json({ success: true, log: logs[logIndex] });
+  } catch (error) {
+    console.error('更新提醒日志失败:', error);
+    res.status(500).json({ success: false, error: '更新提醒日志失败' });
+  }
+});
+
 encryptExistingPasswords().then(() => {
   app.listen(PORT, () => {
     console.log('✅ 支付宝SDK初始化成功');
@@ -2393,6 +2530,7 @@ encryptExistingPasswords().then(() => {
     console.log('║      • 邮件验证码 (EmailJS/SendGrid)                    ║');
     console.log('║      • 异常登录检测                                      ║');
     console.log('║      • 🔒 防火墙 + 密码加密 + 防爬虫                      ║');
+    console.log('║      • 📋 操作日志、安全日志、提醒日志                    ║');
     console.log('║                                                           ║');
     console.log('╚═══════════════════════════════════════════════════════════╝');
     console.log('');

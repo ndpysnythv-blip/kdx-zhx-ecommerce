@@ -1,0 +1,34 @@
+[
+    {
+        "id": "log-sec-001",
+        "type": "登录成功",
+        "level": "info",
+        "ip": "192.168.1.100",
+        "description": "管理员账户登录成功",
+        "createdAt": "2026-05-03T09:00:00Z"
+    },
+    {
+        "id": "log-sec-002",
+        "type": "登录失败",
+        "level": "warning",
+        "ip": "203.0.113.50",
+        "description": "尝试使用错误密码登录管理员账户，已失败3次",
+        "createdAt": "2026-05-03T10:15:00Z"
+    },
+    {
+        "id": "log-sec-003",
+        "type": "API密钥访问",
+        "level": "info",
+        "ip": "198.51.100.20",
+        "description": "使用API密钥访问了商品列表接口",
+        "createdAt": "2026-05-03T12:30:00Z"
+    },
+    {
+        "id": "log-sec-004",
+        "type": "敏感操作",
+        "level": "warning",
+        "ip": "192.168.1.100",
+        "description": "管理员执行了删除商品操作",
+        "createdAt": "2026-05-03T15:45:00Z"
+    }
+]
