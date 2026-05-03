@@ -82,15 +82,43 @@ app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(express.static(__dirname));
 
-// ==================== 防火墙中间件 ====================
+// ==================== 高级防火墙中间件 ====================
 app.use((req, res, next) => {
+  // 1. 检查可疑请求
   const suspicious = security.isSuspiciousRequest(req);
   if (suspicious.suspicious) {
-    console.warn(`[防火墙] 拦截可疑请求: ${suspicious.reason}`);
-    return res.status(403).json({ error: '请求被拒绝' });
+    console.warn(`[防火墙] 拦截可疑请求: ${suspicious.reason} 来自: ${security.getClientKey(req)}`);
+    db.addSecurityLog({
+      id: `sec-${Date.now()}`,
+      type: '防火墙拦截',
+      level: 'warning',
+      ip: security.getClientKey(req),
+      description: suspicious.reason,
+      createdAt: new Date().toISOString()
+    });
+    return res.status(403).json({ error: '访问被拒绝' });
   }
   
+  // 2. 检测防抓包
+  const sniffingChecks = security.detectPacketSniffing(req);
+  if (sniffingChecks.length > 0) {
+    console.warn(`[安全] 检测到潜在抓包行为: ${sniffingChecks.join(', ')}`);
+  }
+  
+  // 3. 设置安全头
   security.setSecurityHeaders(res);
+  
+  // 4. 记录操作日志（敏感操作）
+  if (['POST', 'PUT', 'DELETE'].includes(req.method) && !req.path.startsWith('/api/alipay')) {
+    db.addOperationLog({
+      id: `op-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      action: `API请求: ${req.method} ${req.path}`,
+      user: currentUser ? currentUser.username : 'guest',
+      details: `来自IP: ${security.getClientKey(req)}`,
+      createdAt: new Date().toISOString()
+    });
+  }
+  
   next();
 });
 
@@ -1023,52 +1051,69 @@ app.get('/mock-payment', (req, res) => {
   `);
 });
 
-// 支付宝同步回调（支付成功后跳转）
+// 支付宝同步回调（仅用于用户跳转，不更新状态！）
 app.get('/payment-success', async (req, res) => {
   try {
-    const { outTradeNo, orderId } = req.query;
+    // 重要：同步回调仅用于用户界面跳转，不处理支付逻辑！
+    // 所有支付状态更新必须通过异步通知处理！
     
-    if (outTradeNo || orderId) {
-      // 更新订单状态
-      const orders = db.getOrders();
-      const orderIndex = orders.findIndex(o => 
-        o.outTradeNo === outTradeNo || o.id === orderId
-      );
-      
-      if (orderIndex !== -1) {
-        orders[orderIndex] = {
-          ...orders[orderIndex],
-          status: 'paid',
-          paymentStatus: 'success',
-          paidAt: new Date().toISOString(),
-          alipayTradeNo: req.query.trade_no || `MOCK${Date.now()}`
-        };
-        db.saveOrders(orders);
-        
-        console.log(`[支付] 订单支付成功: ${orders[orderIndex].id}`);
-      }
-    }
+    // 记录访问
+    console.log('[支付] 用户访问支付成功页面');
+    
+    // 记录安全日志
+    db.addSecurityLog({
+      id: `sec-${Date.now()}`,
+      type: '支付回调访问',
+      level: 'info',
+      ip: security.getClientKey(req),
+      description: '用户访问支付成功页面',
+      createdAt: new Date().toISOString()
+    });
     
     // 返回成功页面
     res.sendFile(path.join(__dirname, 'payment-success.html'));
     
   } catch (error) {
-    console.error('[支付] 处理支付回调失败:', error);
+    console.error('[支付] 处理支付回调页面失败:', error);
     res.sendFile(path.join(__dirname, 'payment-success.html'));
   }
 });
 
-// 支付宝异步通知
+// 支付宝异步通知（这是唯一处理支付状态更新的地方！）
 app.post('/api/alipay/notify', async (req, res) => {
+  const notifyStartTime = Date.now();
+  
   try {
     const notifyData = req.body;
-    console.log('[支付] 收到支付宝异步通知:', notifyData);
+    console.log('[支付] 收到支付宝异步通知:', {
+      trade_status: notifyData.trade_status,
+      out_trade_no: notifyData.out_trade_no,
+      total_amount: notifyData.total_amount
+    });
     
-    // 1. 验证签名（必须！）
+    // 记录安全日志
+    db.addSecurityLog({
+      id: `sec-${Date.now()}`,
+      type: '支付通知接收',
+      level: 'info',
+      ip: security.getClientKey(req),
+      description: `收到支付宝通知: ${notifyData.trade_status || 'unknown'}`,
+      createdAt: new Date().toISOString()
+    });
+    
+    // 1. 验证签名（绝对必须！）
     if (alipaySdk && !useMockPayment) {
       const signVerified = alipaySdk.checkNotifySign(notifyData);
       if (!signVerified) {
-        console.error('[支付] ❌ 签名验证失败，可能是伪造的通知！');
+        console.error('[支付] ❌ 签名验证失败！可能是伪造的通知！');
+        db.addSecurityLog({
+          id: `sec-${Date.now()}`,
+          type: '支付安全警告',
+          level: 'error',
+          ip: security.getClientKey(req),
+          description: '支付通知签名验证失败，疑似伪造通知',
+          createdAt: new Date().toISOString()
+        });
         return res.send('fail');
       }
       console.log('[支付] ✅ 签名验证成功');
@@ -1088,32 +1133,68 @@ app.post('/api/alipay/notify', async (req, res) => {
     
     if (orderIndex === -1) {
       console.error('[支付] ❌ 订单不存在:', out_trade_no);
+      db.addSecurityLog({
+        id: `sec-${Date.now()}`,
+        type: '支付警告',
+        level: 'warning',
+        ip: security.getClientKey(req),
+        description: `收到不存在订单的支付通知: ${out_trade_no}`,
+        createdAt: new Date().toISOString()
+      });
       return res.send('success'); // 返回success避免支付宝重复通知
     }
     
     const order = orders[orderIndex];
     
-    // 4. 验证金额（必须！）
+    // 4. 验证金额（绝对必须！防止金额篡改攻击）
     if (order.total && parseFloat(total_amount) !== parseFloat(order.total)) {
       console.error('[支付] ❌ 金额不匹配！订单金额:', order.total, '通知金额:', total_amount);
+      db.addSecurityLog({
+        id: `sec-${Date.now()}`,
+        type: '支付安全警告',
+        level: 'error',
+        ip: security.getClientKey(req),
+        description: `支付金额不匹配！订单:${order.total} 通知:${total_amount}`,
+        createdAt: new Date().toISOString()
+      });
       return res.send('success');
     }
     
-    // 5. 防止重复处理（幂等性）
+    // 5. 防止重复处理（幂等性保证）
     if (order.paymentStatus === 'success') {
       console.log('[支付] ⚠️ 订单已处理，忽略重复通知:', out_trade_no);
       return res.send('success');
     }
     
-    // 6. 更新订单状态
+    // 6. 最终更新订单状态（这是唯一的支付状态更新入口！）
     orders[orderIndex] = {
       ...order,
       status: 'paid',
       paymentStatus: 'success',
       paidAt: new Date().toISOString(),
-      alipayTradeNo: trade_no
+      alipayTradeNo: trade_no,
+      paymentProcessedAt: new Date().toISOString(),
+      paymentNotifyDuration: Date.now() - notifyStartTime
     };
     db.saveOrders(orders);
+    
+    // 记录成功日志
+    db.addOperationLog({
+      id: `op-${Date.now()}`,
+      action: '订单支付成功',
+      user: order.userPhone || 'system',
+      details: `订单${order.id}支付成功，金额${order.total}，交易号${trade_no}`,
+      createdAt: new Date().toISOString()
+    });
+    
+    db.addNotificationLog({
+      id: `not-${Date.now()}`,
+      type: '订单支付成功',
+      recipient: order.userPhone || 'user',
+      status: 'unread',
+      content: `您的订单已支付成功，金额: ¥${order.total}`,
+      createdAt: new Date().toISOString()
+    });
     
     console.log(`[支付] ✅ 异步通知处理成功: 订单 ${order.id} 支付成功，支付宝交易号: ${trade_no}`);
     
@@ -1122,6 +1203,14 @@ app.post('/api/alipay/notify', async (req, res) => {
     
   } catch (error) {
     console.error('[支付] ❌ 处理异步通知失败:', error);
+    db.addSecurityLog({
+      id: `sec-${Date.now()}`,
+      type: '支付错误',
+      level: 'error',
+      ip: security.getClientKey(req),
+      description: `支付通知处理错误: ${error.message}`,
+      createdAt: new Date().toISOString()
+    });
     res.send('fail');
   }
 });
