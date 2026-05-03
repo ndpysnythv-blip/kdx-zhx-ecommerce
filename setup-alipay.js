@@ -165,4 +165,4 @@ function main() {
   console.log('   3. 可以运行 node key-manager.js decrypt 验证解密\n');
 }
 
-main().catch(console.error);
+main();
