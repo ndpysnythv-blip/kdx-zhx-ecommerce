@@ -98,6 +98,39 @@
                             </h2>
                             <textarea id="note" rows="3" class="input-premium w-full" placeholder="如有特殊要求，请在此备注"></textarea>
                         </div>
+
+                        <div class="glass-card rounded-xl p-6">
+                            <h2 class="text-lg font-bold text-black mb-4">
+                                <i class="fas fa-credit-card mr-2"></i>
+                                支付方式
+                            </h2>
+                            <div class="space-y-3">
+                                <label class="flex items-center p-4 border-2 border-blue-500 bg-blue-50 rounded-xl cursor-pointer transition-all hover:border-blue-600">
+                                    <input type="radio" name="paymentMethod" value="qrcode" checked class="w-5 h-5 text-blue-600" />
+                                    <div class="ml-3 flex items-center gap-3">
+                                        <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                                            <i class="fas fa-qrcode text-white text-lg"></i>
+                                        </div>
+                                        <div>
+                                            <p class="font-semibold text-black">支付宝扫码支付</p>
+                                            <p class="text-sm text-gray-500">使用支付宝扫描二维码支付</p>
+                                        </div>
+                                    </div>
+                                </label>
+                                <label class="flex items-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer transition-all hover:border-gray-300">
+                                    <input type="radio" name="paymentMethod" value="web" class="w-5 h-5 text-blue-600" />
+                                    <div class="ml-3 flex items-center gap-3">
+                                        <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                                            <i class="fab fa-alipay text-white text-lg"></i>
+                                        </div>
+                                        <div>
+                                            <p class="font-semibold text-black">支付宝网页支付</p>
+                                            <p class="text-sm text-gray-500">跳转到支付宝网页完成支付</p>
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="lg:col-span-1">
@@ -219,6 +252,31 @@
 
         let currentOrder = null;
 
+        // 处理支付方式选择
+        function setupPaymentMethodSelect() {
+            const radioButtons = document.querySelectorAll('input[name="paymentMethod"]');
+            radioButtons.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    // 移除所有选中样式
+                    document.querySelectorAll('input[name="paymentMethod"]').forEach(r => {
+                        r.closest('label').classList.remove('border-blue-500', 'bg-blue-50');
+                        r.closest('label').classList.add('border-gray-200');
+                    });
+                    // 添加选中样式
+                    if (this.checked) {
+                        this.closest('label').classList.add('border-blue-500', 'bg-blue-50');
+                        this.closest('label').classList.remove('border-gray-200');
+                    }
+                });
+            });
+        }
+
+        // 获取选中的支付方式
+        function getSelectedPaymentMethod() {
+            const selected = document.querySelector('input[name="paymentMethod"]:checked');
+            return selected ? selected.value : 'qrcode';
+        }
+
         async function placeOrder() {
             const name = document.getElementById('name').value;
             const phone = document.getElementById('phone').value;
@@ -238,6 +296,7 @@
             const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
             const userStr = localStorage.getItem('user');
             const user = userStr ? JSON.parse(userStr) : null;
+            const paymentMethod = getSelectedPaymentMethod();
             
             try {
                 // 1. 创建订单
@@ -257,51 +316,57 @@
                 currentOrder = order;
                 orderId = order.id;
 
-                // 2. 创建支付订单
-                showToast('正在创建支付订单...');
-                
                 const subject = cart.length > 1 
                     ? `${cart[0].name}等${cart.length}件商品` 
                     : cart[0].name;
                 
-                const payResponse = await fetch('/api/alipay/create', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        orderId: order.id,
-                        totalAmount: subtotal,
-                        subject: subject,
-                        body: `订单 ${order.id} 支付`
-                    })
-                });
+                // 清空购物车
+                cart = [];
+                localStorage.setItem('cart', JSON.stringify(cart));
 
-                const payData = await payResponse.json();
-
-                if (payData.success && payData.payUrl) {
-                    if (payData.isMock) {
-                        // 模拟支付：直接跳转URL
-                        showToast('正在跳转到模拟支付页面...');
-                        cart = [];
-                        localStorage.setItem('cart', JSON.stringify(cart));
-                        setTimeout(() => {
-                            window.location.href = payData.payUrl;
-                        }, 800);
-                    } else {
-                        // 真实支付宝支付：payUrl 是HTML表单，直接写入页面并自动提交
-                        showToast('正在跳转到支付宝...');
-                        cart = [];
-                        localStorage.setItem('cart', JSON.stringify(cart));
-                        
-                        // 将支付宝表单写入页面并自动提交
-                        setTimeout(() => {
-                            document.write(payData.payUrl);
-                            document.forms[0].submit();
-                        }, 500);
-                    }
+                if (paymentMethod === 'qrcode') {
+                    // 扫码支付：跳转到扫码页面
+                    showToast('正在跳转到扫码支付...');
+                    setTimeout(() => {
+                        window.location.href = `/qrcode-payment?orderId=${order.id}&totalAmount=${subtotal}&subject=${encodeURIComponent(subject)}`;
+                    }, 500);
                 } else {
-                    const errorMsg = payData.details || '创建支付订单失败';
-                    showToast(errorMsg, true);
-                    console.error('[支付] 创建支付订单失败:', payData);
+                    // 网页支付
+                    showToast('正在创建支付订单...');
+                    
+                    const payResponse = await fetch('/api/alipay/create', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            orderId: order.id,
+                            totalAmount: subtotal,
+                            subject: subject,
+                            body: `订单 ${order.id} 支付`
+                        })
+                    });
+
+                    const payData = await payResponse.json();
+
+                    if (payData.success && payData.payUrl) {
+                        if (payData.isMock) {
+                            // 模拟支付：直接跳转URL
+                            showToast('正在跳转到模拟支付页面...');
+                            setTimeout(() => {
+                                window.location.href = payData.payUrl;
+                            }, 800);
+                        } else {
+                            // 真实支付宝支付：payUrl 是HTML表单，直接写入页面并自动提交
+                            showToast('正在跳转到支付宝...');
+                            setTimeout(() => {
+                                document.write(payData.payUrl);
+                                document.forms[0].submit();
+                            }, 500);
+                        }
+                    } else {
+                        const errorMsg = payData.details || '创建支付订单失败';
+                        showToast(errorMsg, true);
+                        console.error('[支付] 创建支付订单失败:', payData);
+                    }
                 }
                 
             } catch (error) {
@@ -342,6 +407,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             loadCart(); // 先加载购物车
             checkLoginStatus();
+            setupPaymentMethodSelect(); // 初始化支付方式选择
             
             // 如果是管理员，自动填充收货地址
             const userStr = localStorage.getItem('user');

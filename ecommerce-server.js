@@ -576,6 +576,10 @@ app.get('/payment-success', (req, res) => {
   res.sendFile(path.join(__dirname, 'payment-success.html'));
 });
 
+app.get('/qrcode-payment', (req, res) => {
+  res.sendFile(path.join(__dirname, 'qrcode-payment.html'));
+});
+
 // 商品API
 app.get('/api/products', (req, res) => {
   res.json(db.getProducts());
@@ -829,6 +833,90 @@ app.post('/api/alipay/create', async (req, res) => {
     }
     res.status(500).json({ 
       error: '创建支付订单失败', 
+      details: error.message 
+    });
+  }
+});
+
+// ========== 支付宝扫码支付API ==========
+// 创建扫码支付订单
+app.post('/api/alipay/qrcode', async (req, res) => {
+  try {
+    const { orderId, totalAmount, subject, body } = req.body;
+    
+    if (!orderId || !totalAmount || !subject) {
+      return res.status(400).json({ error: '缺少必要参数' });
+    }
+    
+    // 生成订单号（使用时间戳+随机数，以KZ开头）
+    const outTradeNo = `KZ${Date.now()}${Math.floor(Math.random() * 1000)}`;
+    
+    // 更新订单信息
+    const orders = db.getOrders();
+    const orderIndex = orders.findIndex(o => o.id === orderId);
+    if (orderIndex !== -1) {
+      orders[orderIndex] = {
+        ...orders[orderIndex],
+        outTradeNo: outTradeNo,
+        paymentStatus: 'pending',
+        paymentMethod: 'alipay_qrcode'
+      };
+      db.saveOrders(orders);
+    }
+    
+    // 如果使用模拟支付模式
+    if (useMockPayment || !alipaySdk) {
+      console.log(`[支付] 创建模拟扫码支付订单: ${outTradeNo}`);
+      return res.json({
+        success: true,
+        outTradeNo: outTradeNo,
+        qrCode: 'data:image/svg+xml;base64,' + Buffer.from(`
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+            <rect width="200" height="200" fill="white"/>
+            <text x="100" y="60" text-anchor="middle" font-size="14" fill="#666">模拟支付二维码</text>
+            <text x="100" y="100" text-anchor="middle" font-size="12" fill="#999">订单: ${outTradeNo.substring(0, 10)}</text>
+            <text x="100" y="140" text-anchor="middle" font-size="20" fill="#1677ff">¥${totalAmount}</text>
+          </svg>
+        `).toString('base64'),
+        isMock: true
+      });
+    }
+    
+    // 真实支付宝扫码支付
+    console.log(`[支付] 正在创建支付宝扫码支付订单: ${outTradeNo}`);
+    
+    const bizContent = {
+      outTradeNo: outTradeNo,
+      totalAmount: parseFloat(totalAmount).toFixed(2),
+      subject: subject,
+      body: body || subject
+    };
+    
+    // 调用支付宝预创建接口
+    const result = await alipaySdk.exec('alipay.trade.precreate', {
+      bizContent: bizContent,
+      notifyUrl: alipayConfig.notifyUrl
+    });
+    
+    console.log(`[支付] 支付宝扫码支付订单创建成功: ${outTradeNo}`);
+    console.log(`[支付] 二维码内容: ${result ? JSON.stringify(result).substring(0, 200) : 'null'}`);
+    
+    if (result && result.qrCode) {
+      res.json({
+        success: true,
+        outTradeNo: outTradeNo,
+        qrCode: result.qrCode,
+        isMock: false
+      });
+    } else {
+      throw new Error('支付宝返回数据异常');
+    }
+    
+  } catch (error) {
+    console.error('[支付] 创建扫码支付订单失败:', error);
+    console.error('[支付] 错误详情:', error.message);
+    res.status(500).json({ 
+      error: '创建扫码支付订单失败', 
       details: error.message 
     });
   }

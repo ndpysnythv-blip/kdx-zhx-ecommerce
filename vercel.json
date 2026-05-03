@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "ecommerce-server.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "ecommerce-server.js"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
+}
