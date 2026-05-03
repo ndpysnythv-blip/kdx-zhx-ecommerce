@@ -1,0 +1,131 @@
+/* 移动端专用优化样式 */
+* {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+}
+
+body {
+    font-size: 16px;
+    line-height: 1.6;
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* 安全区域适配 */
+.safe-area-top {
+    padding-top: env(safe-area-inset-top);
+}
+
+.safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* 移动端优化布局 */
+.container-wide {
+    padding: 12px !important;
+}
+
+/* 按钮优化 */
+.btn-liquid {
+    min-height: 48px;
+    padding: 12px 24px !important;
+    font-size: 16px !important;
+}
+
+/* 输入框优化 */
+.input-premium {
+    padding: 14px 16px !important;
+    font-size: 16px !important;
+    min-height: 48px;
+}
+
+/* 商品卡片优化 */
+.product-card {
+    margin-bottom: 16px;
+}
+
+.product-card img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* 模态框优化 */
+#checkout-modal,
+#productModal,
+#shipModal {
+    padding: 8px !important;
+}
+
+/* 底部固定栏优化 */
+.fixed.bottom-0 {
+    padding-bottom: calc(12px + env(safe-area-inset-bottom)) !important;
+}
+
+/* 图片轮播优化 */
+#imageSlider {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+/* 表单优化 */
+form {
+    max-width: 100% !important;
+}
+
+/* 表格优化 */
+table {
+    font-size: 14px;
+}
+
+th, td {
+    padding: 8px !important;
+}
+
+/* 滚动条完全隐藏 */
+::-webkit-scrollbar {
+    display: none !important;
+}
+
+* {
+    -ms-overflow-style: none !important;
+    scrollbar-width: none !important;
+}
+
+/* 安装提示样式 */
+.pwa-install-prompt {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #000;
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 30px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.pwa-install-prompt button {
+    background: #fff;
+    color: #000;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+/* 更新提示样式 */
+.update-toast {
+    position: fixed;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #000;
+    color: #fff;
+    padding: 14px 28px;
+    border-radius: 10px;
+    z-index: 9999;
+}

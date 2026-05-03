@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>个性化定制 - KDX丨ZHX</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/styles-premium.css">
+    <link rel="stylesheet" href="/mobile.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+        * { font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+        body { background: #000; min-height: 100vh; }
+        .header-gradient { background: linear-gradient(135deg, rgba(249,115,22,0.15) 0%, transparent 70%); border-bottom: 1px solid rgba(249,115,22,0.1); backdrop-filter: blur(20px); }
+        .preview-card { background: #000; border: none; box-shadow: none; border-radius: 32px; position: relative; overflow: hidden; }
+        .product-container { position: relative; padding: 30px; display: flex; justify-content: center; align-items: center; min-height: 420px; }
+        .product-image-wrapper { position: relative; width: 100%; max-width: 380px; aspect-ratio: 1; border-radius: 28px; overflow: hidden; background: #000; box-shadow: 0 0 80px rgba(249,115,22,0.06); }
+        .glow-effect { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 70%; height: 70%; background: radial-gradient(circle, currentColor 0%, transparent 70%); opacity: 0.12; filter: blur(40px); z-index: 0; transition: all 0.4s ease; }
+        .cable-svg { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 75%; height: 75%; z-index: 2; }
+        .cable-svg rect, .cable-svg circle { transition: fill 0.4s cubic-bezier(0.4,0,0.2,1), stroke 0.4s ease; }
+        .config-card { background: #000; border: none; box-shadow: none; border-radius: 32px; backdrop-filter: blur(20px); }
+        .section-title { font-size: 14px; text-transform: uppercase; letter-spacing: 3px; color: rgba(249,115,22,0.8); margin-bottom: 20px; font-weight: 600; }
+        .colors-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 30px; }
+        .color-option { aspect-ratio: 1; border-radius: 16px; cursor: pointer; position: relative; transition: all 0.4s cubic-bezier(0.4,0,0.2,1); border: 2px solid transparent; overflow: hidden; }
+        .color-option::before { content:''; position:absolute; top:0; left:0; right:0; bottom:0; background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 50%, rgba(0,0,0,0.2) 100%); z-index: 1; }
+        .color-option::after { content:''; position:absolute; inset: 3px; background: inherit; border-radius: 12px; z-index: 0; }
+        .color-option:hover { transform: translateY(-4px) scale(1.05); box-shadow: 0 15px 40px rgba(0,0,0,0.4); }
+        .color-option.selected { border-color: #f97316; box-shadow: 0 0 30px rgba(249,115,22,0.4), 0 20px 50px rgba(0,0,0,0.4); transform: scale(1.05); }
+        .color-check { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%) scale(0); color: white; font-size: 20px; z-index: 2; text-shadow: 0 2px 8px rgba(0,0,0,0.5); transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); }
+        .color-option.selected .color-check { transform: translate(-50%,-50%) scale(1); }
+        .input-luxury { width: 100%; padding: 18px 24px; background: #111; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; color: white; font-size: 16px; outline: none; transition: all 0.4s cubic-bezier(0.4,0,0.2,1); }
+        .input-luxury:focus { border-color: rgba(249,115,22,0.6); box-shadow: 0 0 30px rgba(249,115,22,0.15), inset 0 0 20px rgba(249,115,22,0.05); }
+        .input-luxury::placeholder { color: rgba(255,255,255,0.3); }
+        .suggestions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; }
+        .suggestion-tag { padding: 8px 16px; background: rgba(249,115,22,0.08); border: 1px solid rgba(249,115,22,0.2); color: rgba(249,115,22,0.9); border-radius: 10px; font-size: 13px; cursor: pointer; transition: all 0.3s cubic-bezier(0.4,0,0.2,1); }
+        .suggestion-tag:hover { background: rgba(249,115,22,0.15); border-color: rgba(249,115,22,0.4); transform: translateY(-2px); }
+        .price-card { background: rgba(249,115,22,0.06); border: 1px solid rgba(249,115,22,0.2); border-radius: 20px; padding: 24px; margin-bottom: 20px; }
+        .price-main { font-size: 42px; font-weight: 700; background: linear-gradient(135deg, #f97316 0%, #fb923c 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .price-currency { font-size: 24px; margin-right: 4px; }
+        .btn-luxury { width: 100%; padding: 20px 40px; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); border: none; border-radius: 18px; color: white; font-size: 18px; font-weight: 600; cursor: pointer; position: relative; overflow: hidden; transition: all 0.4s cubic-bezier(0.4,0,0.2,1); box-shadow: 0 15px 40px rgba(249,115,22,0.3), 0 4px 20px rgba(249,115,22,0.2); }
+        .btn-luxury::before { content:''; position:absolute; top:0; left:-100%; width:100%; height:100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent); transition: left 0.6s ease; }
+        .btn-luxury:hover::before { left: 100%; }
+        .btn-luxury:hover { transform: translateY(-3px); box-shadow: 0 25px 60px rgba(249,115,22,0.4), 0 8px 30px rgba(249,115,22,0.3); }
+        .steps { display: flex; align-items: center; gap: 20px; margin-bottom: 40px; }
+        .step { display: flex; align-items: center; gap: 10px; }
+        .step-number { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 16px; background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.1); transition: all 0.4s cubic-bezier(0.4,0,0.2,1); }
+        .step.active .step-number { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; border-color: transparent; box-shadow: 0 10px 30px rgba(249,115,22,0.3); }
+        .step-label { font-size: 14px; color: rgba(255,255,255,0.5); transition: all 0.3s ease; }
+        .step.active .step-label { color: #f97316; }
+        .step-line { flex: 1; height: 2px; background: rgba(255,255,255,0.08); }
+        .fade-in-up { opacity: 0; transform: translateY(40px); animation: fadeInUp 0.8s cubic-bezier(0.4,0,0.2,1) forwards; }
+        @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
+        .toast-luxury { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(100px); background: linear-gradient(135deg, rgba(34,197,94,0.95) 0%, rgba(22,163,74,0.95) 100%); color: white; padding: 16px 32px; border-radius: 16px; font-weight: 500; box-shadow: 0 20px 60px rgba(34,197,94,0.3); z-index: 9999; opacity: 0; transition: all 0.4s cubic-bezier(0.4,0,0.2,1); }
+        .toast-luxury.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    </style>
+</head>
+<body>
+    <div class="main-container relative z-10">
+        <header class="header-gradient sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <a href="/shop" class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg"><i class="fas fa-shopping-bag text-white"></i></div>
+                        <h1 class="text-xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">KDX丨ZHX</h1>
+                    </a>
+                    <a href="/shop" class="px-5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/80 hover:text-white transition-all flex items-center gap-2"><i class="fas fa-arrow-left"></i>返回商城</a>
+                </div>
+            </div>
+        </header>
+        <main class="max-w-7xl mx-auto px-6 py-12">
+            <div class="text-center mb-12 fade-in-up" style="animation-delay:0.1s">
+                <h1 class="text-4xl md:text-5xl font-bold mb-4"><span class="bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 bg-clip-text text-transparent">个性化定制</span></h1>
+                <p class="text-gray-400 text-lg">选择颜色 · 添加刻字 · 打造专属于你的独特产品</p>
+            </div>
+            <div class="max-w-4xl mx-auto mb-12 fade-in-up" style="animation-delay:0.2s">
+                <div class="steps">
+                    <div class="step active" id="step1"><div class="step-number">1</div><span class="step-label">选择颜色</span></div>
+                    <div class="step-line"></div>
+                    <div class="step" id="step2"><div class="step-number">2</div><span class="step-label">添加刻字</span></div>
+                    <div class="step-line"></div>
+                    <div class="step" id="step3"><div class="step-number">3</div><span class="step-label">完成</span></div>
+                </div>
+            </div>
+            <div class="grid lg:grid-cols-2 gap-10">
+                <div class="fade-in-up" style="animation-delay:0.3s">
+                    <div class="preview-card">
+                        <div class="product-container">
+                            <div class="product-image-wrapper" id="productWrapper">
+                                <div class="glow-effect" id="glowEffect" style="color:#f97316"></div>
+                                <svg class="cable-svg" id="cableSvg" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+                                    <defs>
+                                        <filter id="svgShadow" x="-10%" y="-10%" width="130%" height="130%">
+                                            <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="rgba(0,0,0,0.4)"/>
+                                        </filter>
+                                    </defs>
+                                    <g filter="url(#svgShadow)" transform="translate(60,120)">
+                                        <rect id="cableBody" x="0" y="0" width="140" height="90" rx="10" fill="#555" stroke="#666" stroke-width="2"/>
+                                        <rect x="15" y="12" width="110" height="66" rx="6" fill="#444" stroke="#555" stroke-width="1"/>
+                                        <circle cx="35" cy="30" r="4" fill="#ccc"/>
+                                        <circle cx="55" cy="30" r="4" fill="#ccc"/>
+                                        <circle cx="75" cy="30" r="4" fill="#ccc"/>
+                                        <circle cx="95" cy="30" r="4" fill="#ccc"/>
+                                        <circle cx="35" cy="58" r="4" fill="#ccc"/>
+                                        <circle cx="95" cy="58" r="4" fill="#ccc"/>
+                                        <text x="70" y="48" text-anchor="middle" font-size="11" fill="#888" font-family="sans-serif" font-weight="500">NANO SIM</text>
+                                        <rect x="140" y="35" width="25" height="20" rx="4" fill="#666"/>
+                                        <rect id="cableWire" x="165" y="40" width="150" height="10" rx="5" fill="#777"/>
+                                        <rect x="310" y="33" width="18" height="24" rx="4" fill="#666"/>
+                                        <rect x="324" y="38" width="10" height="14" rx="3" fill="#555"/>
+                                    </g>
+                                    <rect x="65" y="125" width="125" height="2" rx="1" fill="rgba(255,255,255,0.15)"/>
+                                    <rect x="168" y="164" width="80" height="2" rx="1" fill="rgba(255,255,255,0.1)"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="fade-in-up" style="animation-delay:0.4s">
+                    <div class="config-card p-8">
+                        <div class="mb-8">
+                            <h3 class="section-title mb-4">选择颜色</h3>
+                            <div class="colors-grid" id="colorGrid">
+                                <div class="color-option selected" data-color="#555555" data-color-name="经典黑" onclick="selectColor(this)"><div class="color-check"><i class="fas fa-check"></i></div></div>
+                                <div class="color-option" data-color="#0ea5e9" data-color-name="天空蓝" onclick="selectColor(this)"><div class="color-check"><i class="fas fa-check"></i></div></div>
+                                <div class="color-option" data-color="#f97316" data-color-name="活力橙" onclick="selectColor(this)"><div class="color-check"><i class="fas fa-check"></i></div></div>
+                                <div class="color-option" data-color="#ec4899" data-color-name="樱花粉" onclick="selectColor(this)"><div class="color-check"><i class="fas fa-check"></i></div></div>
+                                <div class="color-option" data-color="#7c3aed" data-color-name="梦幻紫" onclick="selectColor(this)"><div class="color-check"><i class="fas fa-check"></i></div></div>
+                                <div class="color-option" data-color="#059669" data-color-name="翡翠绿" onclick="selectColor(this)"><div class="color-check"><i class="fas fa-check"></i></div></div>
+                                <div class="color-option" data-color="#eab308" data-color-name="柠檬黄" onclick="selectColor(this)"><div class="color-check"><i class="fas fa-check"></i></div></div>
+                                <div class="color-option" data-color="#1e293b" data-color-name="深空灰" onclick="selectColor(this)"><div class="color-check"><i class="fas fa-check"></i></div></div>
+                            </div>
+                        </div>
+                        <div class="mb-8">
+                            <h3 class="section-title mb-4">添加刻字</h3>
+                            <input type="text" id="engravingInput" class="input-luxury" placeholder="输入你想要刻的文字（最多20字）" maxlength="20" oninput="updateEngraving()">
+                            <div class="suggestions">
+                                <div class="suggestion-tag" onclick="setEngraving('专属定制')">专属定制</div>
+                                <div class="suggestion-tag" onclick="setEngraving('唯你所有')">唯你所有</div>
+                                <div class="suggestion-tag" onclick="setEngraving('美好时光')">美好时光</div>
+                                <div class="suggestion-tag" onclick="setEngraving('永不分离')">永不分离</div>
+                            </div>
+                        </div>
+                        <div class="price-card">
+                            <div class="flex items-center justify-between">
+                                <div><p class="text-gray-400 text-sm mb-1">定制价格</p><p class="price-main"><span class="price-currency">¥</span>80</p></div>
+                                <div class="text-right"><p class="text-gray-400 text-sm">刻字服务</p><p class="text-orange-400 font-semibold">免费</p></div>
+                            </div>
+                        </div>
+                        <button class="btn-luxury" onclick="addToCart()"><i class="fas fa-shopping-cart mr-2"></i>加入购物车</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <div class="toast-luxury" id="toast"><i class="fas fa-check-circle mr-2"></i><span id="toastMessage">已加入购物车</span></div>
+    <script>
+        let selectedColor = '#555555';
+        let selectedColorName = '经典黑';
+        let cart = [];
+        function hexToRgb(hex) { const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16); return {r,g,b}; }
+        function lightenColor(hex, amt) { const {r,g,b} = hexToRgb(hex); return `rgb(${Math.min(255,r+amt)},${Math.min(255,g+amt)},${Math.min(255,b+amt)})`; }
+        function darkenColor(hex, amt) { const {r,g,b} = hexToRgb(hex); return `rgb(${Math.max(0,r-amt)},${Math.max(0,g-amt)},${Math.max(0,b-amt)})`; }
+        function initColors() { document.querySelectorAll('.color-option').forEach(o=>{o.style.background=o.getAttribute('data-color');}); }
+        function selectColor(el) {
+            document.querySelectorAll('.color-option').forEach(e=>e.classList.remove('selected'));
+            el.classList.add('selected');
+            selectedColor = el.getAttribute('data-color');
+            selectedColorName = el.getAttribute('data-color-name');
+            const c = selectedColor;
+            document.getElementById('cableBody').setAttribute('fill', c);
+            document.getElementById('cableBody').setAttribute('stroke', darkenColor(c,30));
+            document.getElementById('cableWire').setAttribute('fill', lightenColor(c,20));
+            const glow = document.getElementById('glowEffect');
+            glow.style.color = c;
+            updateStepIndicator(2);
+        }
+        function updateEngraving() { const i=document.getElementById('engravingInput'); if(i.value.length>0) updateStepIndicator(3); }
+        function setEngraving(t) { document.getElementById('engravingInput').value=t; updateStepIndicator(3); }
+        function updateStepIndicator(s) { for(let i=1;i<=3;i++){const e=document.getElementById('step'+i); if(i<=s) e.classList.add('active'); else e.classList.remove('active');} }
+        function addToCart() {
+            const engraving = document.getElementById('engravingInput').value||'你的专属刻字';
+            let cart = JSON.parse(localStorage.getItem('cart')||'[]');
+            const pid = 'custom-' + Date.now();
+            const svgImg = '<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 200 200\'><rect width=\'200\' height=\'200\' fill=\''+selectedColor+'\' rx=\'10\'/><rect x=\'30\' y=\'50\' width=\'70\' height=\'50\' rx=\'6\' fill=\'#333\'/><circle cx=\'45\' cy=\'65\' r=\'3\' fill=\'#ccc\'/><circle cx=\'60\' cy=\'65\' r=\'3\' fill=\'#ccc\'/><circle cx=\'75\' cy=\'65\' r=\'3\' fill=\'#ccc\'/><circle cx=\'90\' cy=\'65\' r=\'3\' fill=\'#ccc\'/><text x=\'100\' y=\'140\' text-anchor=\'middle\' fill=\'white\' font-size=\'12\' font-weight=\'bold\'>定制</text></svg>';
+            cart.push({id:pid,productId:pid,name:'定制数据线',color:selectedColorName,colorCode:selectedColor,engraving:engraving,price:80,quantity:1,image:'data:image/svg+xml,'+encodeURIComponent(svgImg)});
+            localStorage.setItem('cart',JSON.stringify(cart));
+            const toast = document.getElementById('toast'); document.getElementById('toastMessage').textContent='已加入购物车'; toast.classList.add('show');
+            setTimeout(()=>toast.classList.remove('show'),2000);
+            setTimeout(()=>{window.location.href='/cart.html';},1500);
+        }
+        document.addEventListener('DOMContentLoaded',function(){ initColors(); });
+    </script>
+</body>
+</html>

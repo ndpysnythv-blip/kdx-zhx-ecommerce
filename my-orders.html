@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的订单 - KDX丨ZHX</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/styles-premium.css">
+    <link rel="stylesheet" href="/mobile.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航栏 - 永远固定 -->
+    <header class="bg-white shadow-sm fixed top-0 left-0 right-0 z-50">
+        <div class="container-wide py-4">
+            <div class="flex items-center justify-between">
+                <!-- Logo - 左侧 -->
+                <a href="/shop" class="flex items-center gap-3">
+                    <h1 class="text-xl font-bold text-black">KDX丨ZHX</h1>
+                </a>
+
+                <!-- 标签栏 - 中间 -->
+                <nav class="flex items-center gap-8">
+                    <button class="tab-button px-4 py-4 font-medium text-black hover:text-gray-600 transition" data-tab="home" onclick="window.location.href='/shop'">首页</button>
+                    <button class="tab-button px-4 py-4 font-medium text-gray-600 hover:text-black transition" data-tab="products" onclick="window.location.href='/shop'">商品</button>
+                    <button class="tab-button px-4 py-4 font-medium text-black hover:text-gray-600 transition" data-tab="orders" onclick="window.location.href='/orders'">订单</button>
+                    <button class="tab-button px-4 py-4 font-medium text-gray-600 hover:text-black transition" data-tab="chat" onclick="window.location.href='/chat'">智能客服</button>
+                </nav>
+
+                <!-- 功能按钮 - 右侧 -->
+                <div class="flex items-center gap-4">
+                    <button onclick="window.location.href='chat'" class="text-gray-600 hover:text-black transition">
+                        <i class="fas fa-headset text-xl"></i>
+                    </button>
+                    
+                    <!-- 登录按钮 -->
+                    <div id="userSection">
+                        <button id="loginBtn" onclick="window.location.href='/auth?returnUrl=' + encodeURIComponent(window.location.pathname + window.location.search)" class="bg-black text-white px-6 py-2 rounded-lg font-medium hover:bg-gray-800 transition">
+                            登录
+                        </button>
+                        <div id="userInfo" class="hidden items-center gap-3 bg-gray-100 rounded-lg px-4 py-2">
+                            <span id="userName" class="font-medium text-gray-800"></span>
+                            <button onclick="handleLogout()" class="text-gray-500 hover:text-red-600 transition">
+                                <i class="fas fa-sign-out-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主内容区域 -->
+    <main class="pt-20 pb-24">
+        <section class="py-12">
+            <div class="container-wide max-w-4xl">
+                <div class="flex items-center gap-2 mb-8 overflow-x-auto pb-2">
+                    <button onclick="filterOrders('all')" class="order-filter px-6 py-2 rounded-full font-medium bg-black text-white transition whitespace-nowrap">
+                        全部订单
+                    </button>
+                    <button onclick="filterOrders('pending')" class="order-filter px-6 py-2 rounded-full font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition whitespace-nowrap">
+                        待付款
+                    </button>
+                    <button onclick="filterOrders('shipped')" class="order-filter px-6 py-2 rounded-full font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition whitespace-nowrap">
+                        待收货
+                    </button>
+                    <button onclick="filterOrders('refund')" class="order-filter px-6 py-2 rounded-full font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition whitespace-nowrap">
+                        退款/售后
+                    </button>
+                </div>
+
+                <div id="ordersList" class="space-y-6">
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        let allOrders = [];
+        let currentFilter = 'all';
+
+        function getStatusBadge(status) {
+            const statusMap = {
+                'pending': { color: 'bg-yellow-100 text-yellow-700', text: '待付款' },
+                'paid': { color: 'bg-blue-100 text-blue-700', text: '已付款' },
+                'shipped': { color: 'bg-purple-100 text-purple-700', text: '已发货' },
+                'delivered': { color: 'bg-green-100 text-green-700', text: '已收货' },
+                'cancelled': { color: 'bg-gray-100 text-gray-700', text: '已取消' },
+                'refund_pending': { color: 'bg-orange-100 text-orange-700', text: '退款中' },
+                'refunded': { color: 'bg-red-100 text-red-700', text: '已退款' }
+            };
+            return statusMap[status] || { color: 'bg-gray-100 text-gray-700', text: status };
+        }
+
+        async function loadOrders() {
+            try {
+                let orders = JSON.parse(localStorage.getItem('orders') || '[]');
+                
+                if (orders.length === 0) {
+                    const response = await fetch('/api/orders');
+                    allOrders = await response.json();
+                } else {
+                    allOrders = orders;
+                }
+                
+                renderOrders();
+            } catch (error) {
+                console.error('Error loading orders:', error);
+                renderEmptyState();
+            }
+        }
+
+        function renderOrders() {
+            let filteredOrders = allOrders;
+            
+            if (currentFilter !== 'all') {
+                filteredOrders = allOrders.filter(order => order.status === currentFilter);
+            }
+
+            if (filteredOrders.length === 0) {
+                renderEmptyState();
+                return;
+            }
+
+            const container = document.getElementById('ordersList');
+            container.innerHTML = filteredOrders.map(order => {
+                const badge = getStatusBadge(order.status);
+                return `
+                    <div class="glass-card rounded-xl p-6">
+                        <div class="flex items-center justify-between mb-4 pb-4 border-b border-gray-200">
+                            <div class="flex items-center gap-4">
+                                <span class="text-gray-500 text-sm">订单号: ${order.orderNo || order.id}</span>
+                                <span class="text-gray-400 text-sm">${new Date(order.createdAt || Date.now()).toLocaleString()}</span>
+                            </div>
+                            <span class="${badge.color} px-3 py-1 rounded-full text-sm font-medium">${badge.text}</span>
+                        </div>
+
+                        <div class="flex gap-4 mb-4">
+                            ${(order.items || []).slice(0, 2).map(item => `
+                                <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                                    <img src="${item.image}" alt="${item.name}" class="w-16 h-16 object-cover rounded-xl" />
+                                    <div>
+                                        <h4 class="font-medium text-black text-sm line-clamp-1">${item.name}</h4>
+                                        <p class="text-gray-500 text-xs">x ${item.quantity}</p>
+                                    </div>
+                                </div>
+                            `).join('')}
+                            ${(order.items || []).length > 2 ? `<div class="flex items-center justify-center w-16 h-16 bg-gray-100 rounded-xl text-gray-500 text-sm">+${order.items.length - 2}</div>` : ''}
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <div class="text-black">
+                                <span class="text-gray-500">实付款:</span>
+                                <span class="text-xl font-bold text-black ml-2">¥${(order.total || 0).toFixed(2)}</span>
+                            </div>
+                            <div class="flex gap-3">
+                                <button onclick="viewOrder('${order.id}')" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+                                    查看详情
+                                </button>
+                                ${order.status === 'shipped' ? `
+                                    <button onclick="confirmReceive('${order.id}')" class="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition">
+                                        确认收货
+                                    </button>
+                                ` : ''}
+                                ${order.status === 'paid' || order.status === 'pending' ? `
+                                    <button onclick="cancelOrder('${order.id}')" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
+                                        取消订单
+                                    </button>
+                                ` : ''}
+                                ${order.status === 'delivered' ? `
+                                    <button onclick="requestRefund('${order.id}')" class="px-4 py-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition">
+                                        申请售后
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderEmptyState() {
+            const container = document.getElementById('ordersList');
+            container.innerHTML = `
+                <div class="text-center py-16 glass-card rounded-xl">
+                    <i class="fas fa-receipt text-6xl text-gray-300 mb-4"></i>
+                    <p class="text-gray-500 text-xl mb-4">暂无订单</p>
+                    <a href="/shop" class="inline-block btn-premium btn-lg">
+                        <i class="fas fa-shopping-bag mr-2"></i>
+                        去购物
+                    </a>
+                </div>
+            `;
+        }
+
+        function filterOrders(status) {
+            currentFilter = status;
+            const buttons = document.querySelectorAll('.order-filter');
+            buttons.forEach(btn => {
+                const isActive = (status === 'all' && btn.textContent.trim() === '全部订单') || 
+                                 (status === 'pending' && btn.textContent.trim() === '待付款') ||
+                                 (status === 'shipped' && btn.textContent.trim() === '待收货') ||
+                                 (status === 'refund' && btn.textContent.trim() === '退款/售后');
+                
+                if (isActive) {
+                    btn.className = 'order-filter px-6 py-2 rounded-full font-medium bg-black text-white transition whitespace-nowrap';
+                } else {
+                    btn.className = 'order-filter px-6 py-2 rounded-full font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition whitespace-nowrap';
+                }
+            });
+            renderOrders();
+        }
+
+        function viewOrder(orderId) {
+            window.location.href = `/order/${orderId}`;
+        }
+
+        async function confirmReceive(orderId) {
+            if (!confirm('确定要确认收货吗？')) return;
+            
+            try {
+                const response = await fetch(`/api/orders/${orderId}/deliver`, { method: 'POST' });
+                if (response.ok) {
+                    showToast('确认收货成功！');
+                    loadOrders();
+                }
+            } catch (error) {
+                console.error('Error confirming receive:', error);
+                showToast('操作失败，请重试', true);
+            }
+        }
+
+        async function cancelOrder(orderId) {
+            if (!confirm('确定要取消订单吗？')) return;
+            
+            try {
+                const response = await fetch(`/api/orders/${orderId}/cancel`, { method: 'POST' });
+                if (response.ok) {
+                    showToast('订单已取消');
+                    loadOrders();
+                }
+            } catch (error) {
+                console.error('Error cancelling order:', error);
+                showToast('操作失败，请重试', true);
+            }
+        }
+
+        function requestRefund(orderId) {
+            window.location.href = `/order/${orderId}?refund=true`;
+        }
+
+        function checkLoginStatus() {
+            const user = localStorage.getItem('user');
+            if (user) {
+                const currentUser = JSON.parse(user);
+                document.getElementById('loginBtn').classList.add('hidden');
+                document.getElementById('userInfo').classList.remove('hidden');
+                document.getElementById('userInfo').classList.add('flex');
+                document.getElementById('userName').textContent = currentUser.username;
+            } else {
+                document.getElementById('loginBtn').classList.remove('hidden');
+                document.getElementById('userInfo').classList.add('hidden');
+                document.getElementById('userInfo').classList.remove('flex');
+            }
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+            checkLoginStatus();
+        }
+
+        function showToast(message, isError = false) {
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-24 left-1/2 -translate-x-1/2 px-6 py-3 rounded-lg z-50 animate-fade-in-up ${isError ? 'bg-red-500 text-white' : 'bg-black text-white'}`;
+            toast.innerHTML = `<i class="fas ${isError ? 'fa-exclamation-circle' : 'fa-check-circle'} mr-2"></i>${message}`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            checkLoginStatus();
+            loadOrders();
+        });
+    </script>
+    <script src="/ai-assistant.js"></script>
+</body>
+</html>

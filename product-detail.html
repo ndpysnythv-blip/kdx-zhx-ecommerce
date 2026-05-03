@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#000000">
+    <title>商品详情 - KDX丨ZHX</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f7; min-height: 100vh; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+        .card { background: #ffffff; border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 24px; margin-bottom: 16px; }
+        .btn { display: inline-flex; align-items: center; justify-content: center; padding: 14px 28px; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s; }
+        .btn:hover { transform: translateY(-2px); }
+        .btn:active { transform: translateY(0); }
+        .btn-primary { background: #000000; color: #ffffff; }
+        .btn-danger { background: #000000; color: #ffffff; }
+        .btn-outline { background: #ffffff; color: #000000; border: 2px solid #000000; }
+        .hidden { display: none !important; }
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .gap-2 { gap: 8px; }
+        .gap-3 { gap: 12px; }
+        .gap-4 { gap: 16px; }
+        .gap-6 { gap: 24px; }
+        .gap-8 { gap: 32px; }
+        .grid { display: grid; }
+        .grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
+        .text-center { text-align: center; }
+        .w-full { width: 100%; }
+        .relative { position: relative; }
+        .fixed { position: fixed; }
+        .top-0 { top: 0; }
+        .left-0 { left: 0; }
+        .right-0 { right: 0; }
+        .bottom-0 { bottom: 0; }
+        .z-50 { z-index: 50; }
+        .z-100 { z-index: 100; }
+        .shadow { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .bg-white { background: #ffffff; }
+        .text-black { color: #000000; }
+        .text-gray { color: #6b7280; }
+        .text-red { color: #ef4444; }
+        .text-green { color: #22c55e; }
+        .text-blue { color: #3b82f6; }
+        .text-orange { color: #f97316; }
+        .font-bold { font-weight: 700; }
+        .text-sm { font-size: 14px; }
+        .text-lg { font-size: 18px; }
+        .text-xl { font-size: 20px; }
+        .text-2xl { font-size: 24px; }
+        .text-4xl { font-size: 36px; }
+        .mb-4 { margin-bottom: 16px; }
+        .mb-6 { margin-bottom: 24px; }
+        .py-4 { padding-top: 16px; padding-bottom: 16px; }
+        .py-8 { padding-top: 32px; padding-bottom: 32px; }
+        .px-4 { padding-left: 16px; padding-right: 16px; }
+        .px-6 { padding-left: 24px; padding-right: 24px; }
+        .mt-8 { margin-top: 32px; }
+        .rounded { border-radius: 8px; }
+        .rounded-lg { border-radius: 12px; }
+        .rounded-xl { border-radius: 16px; }
+        .border { border: 1px solid #e5e7eb; }
+        .border-2 { border-width: 2px; }
+        .border-black { border-color: #000000; }
+        .border-red { border-color: #ef4444; }
+        .border-gray { border-color: #e5e7eb; }
+        .overflow-hidden { overflow: hidden; }
+        .w-12 { width: 48px; }
+        .h-12 { height: 48px; }
+        .w-16 { width: 64px; }
+        .h-16 { height: 64px; }
+        .w-20 { width: 80px; }
+        .h-20 { height: 80px; }
+        .flex-1 { flex: 1; }
+        .ml-4 { margin-left: 16px; }
+        .hover-gray:hover { background: #f3f4f6; }
+        .hover-red:hover { background: #dc2626; }
+        .transition { transition: all 0.2s ease; }
+        .object-cover { object-fit: cover; }
+        .cursor-pointer { cursor: pointer; }
+        .line-through { text-decoration: line-through; }
+        .bg-red-50 { background: #fef2f2; }
+        .px-3 { padding-left: 12px; padding-right: 12px; }
+        .py-1 { padding-top: 4px; padding-bottom: 4px; }
+        .rounded-full { border-radius: 9999px; }
+        .leading-tight { line-height: 1.25; }
+        .leading-relaxed { line-height: 1.75; }
+        .text-left { text-align: left; }
+        .flex-shrink-0 { flex-shrink: 0; }
+        .overflow-x-auto { overflow-x: auto; }
+        .border-l { border-left: 1px solid #e5e7eb; }
+        .border-r { border-right: 1px solid #e5e7eb; }
+        .w-8 { width: 32px; }
+        .h-8 { height: 32px; }
+        .absolute { position: absolute; }
+        .bottom-4 { bottom: 16px; }
+        .left-4 { left: 16px; }
+        .right-4 { right: 16px; }
+        .border-white { border-color: #ffffff; }
+        .border-red-500 { border-color: #ef4444; }
+        .shadow-md { box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        
+        .image-slider { position: relative; width: 100%; height: 400px; background: #f3f4f6; overflow: hidden; border-radius: 16px; }
+        .image-slider img { width: 100%; height: 100%; object-fit: cover; transition: opacity 0.8s ease; position: relative; z-index: 1; }
+        .slider-btn { position: absolute; top: 50%; transform: translateY(-50%); background: transparent; cursor: pointer; font-size: 28px; color: #fff; opacity: 0; transition: opacity 0.3s ease; z-index: 50; line-height: 1; padding: 16px 12px; border: none; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+        .image-slider:hover .slider-btn { opacity: 0.7; }
+        .slider-btn:hover { opacity: 1 !important; }
+        .slider-btn.prev { left: 8px; }
+        .slider-btn.next { right: 8px; }
+        .slider-dots { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 15; }
+        .slider-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.5); cursor: pointer; transition: all 0.3s; }
+        .slider-dot.active { background: #fff; width: 24px; border-radius: 4px; }
+        
+        .image-preview { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 200; align-items: center; justify-content: center; }
+        .image-preview.show { display: flex; }
+        .image-preview img { max-width: 90%; max-height: 90%; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade { animation: fadeIn 0.3s ease; }
+        
+        @media (max-width: 768px) {
+            .container { padding: 0 16px; }
+            .text-4xl { font-size: 28px; }
+            .text-2xl { font-size: 20px; }
+            .grid-2 { grid-template-columns: 1fr; }
+            .image-slider { height: 300px; }
+        }
+        @media (min-width: 769px) {
+            .grid-2 { grid-template-columns: 1fr 1fr; }
+        }
+        
+        .toast { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); background: #000; color: #fff; padding: 12px 24px; border-radius: 12px; z-index: 1000; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+        .dashed-divider { border: none; border-top: 2px dashed #e5e7eb; margin: 24px 0; }
+    </style>
+</head>
+<body>
+    <header class="fixed top-0 left-0 right-0 z-50 bg-white shadow">
+        <div class="container py-4 flex justify-between items-center">
+            <a href="/shop" class="text-xl font-bold text-black" style="text-decoration:none;">KDX丨ZHX</a>
+            <nav class="flex items-center gap-6">
+                <a href="/shop" class="text-black font-bold" style="text-decoration:none;">首页</a>
+                <a href="/shop" class="text-gray" style="text-decoration:none;">商品</a>
+                <a href="/orders" class="text-gray" style="text-decoration:none;">订单</a>
+                <a href="/chat" class="text-gray" style="text-decoration:none;">智能客服</a>
+            </nav>
+            <div id="userSection">
+                <button id="loginBtn" onclick="window.location.href='/auth?returnUrl=' + encodeURIComponent(window.location.pathname + window.location.search)" class="btn btn-primary">登录</button>
+                <div id="userInfo" class="hidden flex items-center gap-3 rounded-lg" style="background:#f3f4f6;padding:8px 16px;">
+                        <span id="userName" class="font-bold" style="color:#1f2937;"></span>
+                        <button onclick="handleLogout()" class="text-gray" style="border:none;background:none;cursor:pointer;">退出</button>
+                    </div>
+            </div>
+        </div>
+    </header>
+
+    <main style="padding-top:80px;padding-bottom:100px;">
+        <div class="container py-8">
+            <div class="grid-2 gap-0" style="overflow:hidden;border-radius:16px;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
+                <div>
+                    <div class="image-slider" id="imageSlider" style="border-radius:0;">
+                        <img id="mainImg" src="" alt="商品图片" />
+                        <button class="slider-btn prev" id="prevBtn">&#10094;</button>
+                        <button class="slider-btn next" id="nextBtn">&#10095;</button>
+                        <div class="slider-dots" id="sliderDots"></div>
+                    </div>
+                </div>
+
+                <div style="padding:24px;">
+                    <div>
+                        <div class="flex items-end justify-between mb-4" style="align-items:flex-end;">
+                            <h1 id="productName" class="text-2xl font-bold text-black leading-tight"></h1>
+                            <div class="flex items-end gap-3 flex-shrink-0" style="margin-left:16px;">
+                                <span id="originalPrice" class="text-gray text-base line-through hidden" style="transform:translateY(16px);display:inline-block;"></span>
+                                <span class="text-red text-4xl font-bold">¥<span id="productPrice"></span></span>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-4">
+                                <span id="hotTag" class="hidden" style="background:#ef4444;color:#fff;padding:6px 14px;border-radius:8px;font-size:13px;font-weight:600;">热销</span>
+                                <span id="newTag" class="hidden" style="background:#ef4444;color:#fff;padding:6px 14px;border-radius:8px;font-size:13px;font-weight:600;">新品</span>
+                            </div>
+                            <span id="productSales" class="text-sm text-gray"></span>
+                        </div>
+                    </div>
+
+                    <hr class="dashed-divider" />
+
+                    <div style="display:grid;grid-template-columns:1fr 1px 1fr 1px 1fr;">
+                        <div class="flex-col items-center gap-2 text-center py-6">
+                            <span class="text-sm text-gray">48小时发货</span>
+                        </div>
+                        <div style="background:#e5e7eb;width:1px;"></div>
+                        <div class="flex-col items-center gap-2 text-center py-6">
+                            <span class="text-sm text-gray">7天无理由</span>
+                        </div>
+                        <div style="background:#e5e7eb;width:1px;"></div>
+                        <div class="flex-col items-center gap-2 text-center py-6">
+                            <span class="text-sm text-gray">正品保障</span>
+                        </div>
+                    </div>
+
+                    <div class="card" style="margin-top:16px;">
+                        <div id="specsSection">
+                            <h3 class="text-lg font-bold text-black mb-4">规格参数</h3>
+                            <div id="productSpecs" class="space-y-3"></div>
+                        </div>
+                    </div>
+
+                    <div class="card" style="margin-top:16px;">
+                        <h3 class="text-lg font-bold text-black mb-4">商品详情</h3>
+                        <p id="productDesc" class="text-gray leading-relaxed"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div class="fixed bottom-0 left-0 right-0 z-50 bg-white shadow" style="border-top:2px solid #e5e7eb;padding:16px;">
+      <div class="container">
+        <div class="flex items-center gap-4">
+          <button id="customizeBtn" class="btn btn-outline" style="border:2px solid #e5e7eb;background:#fff;color:#000;padding:14px 40px;margin-right:0;text-align:center;">个性定制</button>
+          <button id="buyNowBtn" class="btn btn-danger flex-1">立即购买</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="imagePreview" class="image-preview" onclick="this.classList.remove('show')">
+        <img id="previewImg" src="" />
+    </div>
+
+    <script>
+        let currentProduct = null;
+        let productImages = [];
+        let currentImageIndex = 0;
+        let autoSlideTimer = null;
+        let isTransitioning = false;
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const productId = urlParams.get('id');
+
+        async function loadProduct() {
+            try {
+                const res = await fetch('/api/products');
+                const products = await res.json();
+                currentProduct = products.find(p => p.id === productId);
+                if (!currentProduct) { alert('商品不存在'); history.back(); return; }
+                renderProduct();
+                bindSliderButtons();
+                startAutoSlide();
+            } catch (err) { console.error('加载失败:', err); alert('加载失败'); }
+        }
+
+        function renderProduct() {
+            productImages = [
+                currentProduct.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800',
+                'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800',
+                'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800',
+                'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=800'
+            ];
+            
+            updateImage();
+            renderDots();
+            
+            document.getElementById('productName').textContent = currentProduct.name;
+            document.getElementById('productPrice').textContent = currentProduct.price;
+            
+            const originalPrice = document.getElementById('originalPrice');
+            const newTag = document.getElementById('newTag');
+            const hotTag = document.getElementById('hotTag');
+            
+            if (currentProduct.originalPrice && currentProduct.originalPrice > currentProduct.price) {
+                originalPrice.textContent = '¥' + currentProduct.originalPrice;
+                originalPrice.classList.remove('hidden');
+            }
+            
+            if (currentProduct.tags && currentProduct.tags.includes('新品')) {
+                newTag.classList.remove('hidden');
+            }
+            
+            if (currentProduct.tags && currentProduct.tags.includes('热销')) {
+                hotTag.classList.remove('hidden');
+            }
+
+            document.getElementById('productSales').textContent = '已售 ' + (currentProduct.sold || 0) + ' 件';
+
+            document.getElementById('productDesc').textContent = currentProduct.description || '暂无商品描述';
+
+            const specsContainer = document.getElementById('productSpecs');
+            if (currentProduct.specs && currentProduct.specs.length) {
+                specsContainer.innerHTML = currentProduct.specs.map(spec => {
+                    const parts = spec.split(':');
+                    return '<div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f3f4f6;"><span style="color:#6b7280;">' + parts[0] + '</span><span style="color:#1f2937;">' + (parts[1] || spec) + '</span></div>';
+                }).join('');
+            } else {
+                specsContainer.innerHTML = '<p class="text-gray text-sm">暂无规格参数</p>';
+            }
+        }
+
+        function updateImage() {
+            if (isTransitioning) return;
+            isTransitioning = true;
+            const mainImg = document.getElementById('mainImg');
+            mainImg.style.opacity = '0';
+            setTimeout(() => {
+                mainImg.src = productImages[currentImageIndex];
+                document.getElementById('previewImg').src = productImages[currentImageIndex];
+                mainImg.style.opacity = '1';
+                updateDots();
+                setTimeout(() => { isTransitioning = false; }, 800);
+            }, 400);
+        }
+
+        function renderDots() {
+            const dotsContainer = document.getElementById('sliderDots');
+            dotsContainer.innerHTML = productImages.map((_, idx) => 
+                '<div class="slider-dot' + (idx === 0 ? ' active' : '') + '" onclick="goToImage(' + idx + ')"></div>'
+            ).join('');
+        }
+
+        function updateDots() {
+            const dots = document.querySelectorAll('.slider-dot');
+            dots.forEach((dot, idx) => {
+                dot.className = 'slider-dot' + (idx === currentImageIndex ? ' active' : '');
+            });
+        }
+
+        function nextImage() {
+            currentImageIndex = (currentImageIndex + 1) % productImages.length;
+            updateImage();
+            resetAutoSlide();
+        }
+
+        function prevImage() {
+            currentImageIndex = (currentImageIndex - 1 + productImages.length) % productImages.length;
+            updateImage();
+            resetAutoSlide();
+        }
+
+        function goToImage(index) {
+            currentImageIndex = index;
+            updateImage();
+            resetAutoSlide();
+        }
+
+        function startAutoSlide() {
+            autoSlideTimer = setInterval(nextImage, 8000);
+        }
+
+        function resetAutoSlide() {
+            clearInterval(autoSlideTimer);
+            startAutoSlide();
+        }
+
+        function showImagePreview() {
+            document.getElementById('imagePreview').classList.add('show');
+        }
+
+        function bindSliderButtons() {
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            if (prevBtn) {
+                prevBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    prevImage();
+                });
+            }
+            if (nextBtn) {
+                nextBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    nextImage();
+                });
+            }
+            const mainImg = document.getElementById('mainImg');
+            if (mainImg) {
+                mainImg.addEventListener('click', showImagePreview);
+            }
+        }
+
+        const slider = document.getElementById('imageSlider');
+        if (slider) {
+            slider.addEventListener('mouseenter', () => clearInterval(autoSlideTimer));
+            slider.addEventListener('mouseleave', () => startAutoSlide());
+        }
+
+        document.getElementById('customizeBtn').onclick = () => {
+            showToast('正在跳转到个性定制页面...');
+            setTimeout(() => { window.location.href = '/customize?id=' + currentProduct.id; }, 1000);
+        };
+
+        document.getElementById('buyNowBtn').onclick = () => {
+            const userStr = localStorage.getItem('user');
+            if (!userStr) {
+                showToast('请先登录后购买');
+                setTimeout(() => { window.location.href = '/auth'; }, 1500);
+                return;
+            }
+            
+            // 直接添加到购物车并跳转
+            let cart = [];
+            const productId = currentProduct.id;
+            cart.push({
+                productId: productId,
+                name: currentProduct.name,
+                price: parseFloat(currentProduct.price),
+                image: currentProduct.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=200',
+                quantity: 1
+            });
+            localStorage.setItem('cart', JSON.stringify(cart));
+            
+            showToast('正在跳转到结算页面...');
+            setTimeout(() => { window.location.href = '/checkout'; }, 500);
+        };
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast animate-fade';
+            toast.textContent = '✓ ' + message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2500);
+        }
+
+        function checkUserStatus() {
+            const userStr = localStorage.getItem('user');
+            if (userStr) {
+                const user = JSON.parse(userStr);
+                document.getElementById('loginBtn').classList.add('hidden');
+                document.getElementById('userInfo').classList.remove('hidden');
+                document.getElementById('userName').textContent = user.username;
+            }
+        }
+
+        function handleLogout() { localStorage.removeItem('user'); localStorage.removeItem('token'); window.location.href = '/auth'; }
+
+        if (productId) loadProduct();
+        checkUserStatus();
+        updateCartBadge();
+    </script>
+    <script src="/ai-assistant.js"></script>
+</body>
+</html>

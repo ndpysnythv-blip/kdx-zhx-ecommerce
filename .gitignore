@@ -1,0 +1,46 @@
+# 环境变量和密钥文件（绝对不要提交！）
+.env
+.env.local
+.env.production
+*.key
+*.pem
+*.p12
+key-manager.js
+
+# 数据库文件
+data/*.json
+data/*.db
+*.sqlite
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# 日志
+logs/
+*.log
+
+# 备份文件
+backup_*
+
+# 构建输出
+dist/
+build/
+
+# 操作系统
+Thumbs.db
+
+# 上传文件（太大）
+uploads/

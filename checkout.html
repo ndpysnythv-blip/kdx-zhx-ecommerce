@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>结算 - KDX丨ZHX</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/styles-premium.css">
+    <link rel="stylesheet" href="/mobile.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航栏 - 永远固定 -->
+    <header class="bg-white shadow-sm fixed top-0 left-0 right-0 z-50">
+        <div class="container-wide py-4">
+            <div class="flex items-center justify-between">
+                <!-- Logo - 左侧 -->
+                <a href="/shop" class="flex items-center gap-3">
+                    <h1 class="text-xl font-bold text-black">KDX丨ZHX</h1>
+                </a>
+
+                <!-- 标签栏 - 中间 -->
+                <nav class="flex items-center gap-8">
+                    <button class="tab-button px-4 py-4 font-medium text-black hover:text-gray-600 transition" data-tab="home" onclick="window.location.href='/shop'">首页</button>
+                    <button class="tab-button px-4 py-4 font-medium text-gray-600 hover:text-black transition" data-tab="products" onclick="window.location.href='/shop'">商品</button>
+                    <button class="tab-button px-4 py-4 font-medium text-gray-600 hover:text-black transition" data-tab="orders" onclick="window.location.href='/orders'">订单</button>
+                    <button class="tab-button px-4 py-4 font-medium text-gray-600 hover:text-black transition" data-tab="chat" onclick="window.location.href='/chat'">智能客服</button>
+                </nav>
+
+                <!-- 功能按钮 - 右侧 -->
+                <div class="flex items-center gap-4">
+                    <button onclick="window.location.href='chat'" class="text-gray-600 hover:text-black transition">
+                        <i class="fas fa-headset text-xl"></i>
+                    </button>
+                    
+                    <!-- 登录按钮 -->
+                    <div id="userSection">
+                        <button id="loginBtn" onclick="window.location.href='/auth?returnUrl=' + encodeURIComponent(window.location.pathname + window.location.search)" class="bg-black text-white px-6 py-2 rounded-lg font-medium hover:bg-gray-800 transition">
+                            登录
+                        </button>
+                        <div id="userInfo" class="hidden items-center gap-3 bg-gray-100 rounded-lg px-4 py-2">
+                            <span id="userName" class="font-medium text-gray-800"></span>
+                            <button onclick="handleLogout()" class="text-gray-500 hover:text-red-600 transition">
+                                <i class="fas fa-sign-out-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主内容区域 -->
+    <main class="pt-20 pb-24">
+        <section class="py-12">
+            <div class="container-wide">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="lg:col-span-2 space-y-6">
+                        <div class="glass-card rounded-xl p-6">
+                            <h2 class="text-lg font-bold text-black mb-4">
+                                <i class="fas fa-map-marker-alt mr-2"></i>
+                                收货地址
+                            </h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">收货人</label>
+                                    <input type="text" id="name" class="input-premium w-full" placeholder="请输入收货人姓名" />
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">联系电话</label>
+                                    <input type="tel" id="phone" class="input-premium w-full" placeholder="请输入联系电话" />
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">详细地址</label>
+                                    <textarea id="address" rows="3" class="input-premium w-full" placeholder="请输入详细收货地址"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="glass-card rounded-xl p-6">
+                            <h2 class="text-lg font-bold text-black mb-4">
+                                <i class="fas fa-shopping-bag mr-2"></i>
+                                商品清单
+                            </h2>
+                            <div id="orderItems" class="space-y-4">
+                            </div>
+                        </div>
+
+                        <div class="glass-card rounded-xl p-6">
+                            <h2 class="text-lg font-bold text-black mb-4">
+                                <i class="fas fa-comments mr-2"></i>
+                                订单备注
+                            </h2>
+                            <textarea id="note" rows="3" class="input-premium w-full" placeholder="如有特殊要求，请在此备注"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-1">
+                        <div class="glass-card rounded-xl p-6 sticky top-24">
+                            <h3 class="text-lg font-bold text-black mb-4">订单摘要</h3>
+                            
+                            <div id="orderSummary" class="space-y-3 mb-6">
+                            </div>
+
+                            <div class="divider-premium my-4"></div>
+                            
+                            <div class="flex justify-between text-lg font-bold mb-6">
+                                <span class="text-black">实付款</span>
+                                <span id="finalTotal" class="text-black text-xl">¥0.00</span>
+                            </div>
+
+                            <button onclick="placeOrder()" class="w-full btn-premium btn-lg">
+                                <i class="fas fa-credit-card mr-2"></i>
+                                提交订单
+                            </button>
+
+                            <div class="mt-6 pt-6 border-t border-gray-200">
+                                <p class="text-gray-500 text-sm">
+                                    <i class="fas fa-shield-alt mr-2"></i>
+                                    安全支付，支持多种支付方式
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        let cart = [];
+        let orderId = null;
+
+        function loadCart() {
+            const savedCart = localStorage.getItem('cart');
+            if (savedCart) {
+                try {
+                    cart = JSON.parse(savedCart);
+                } catch (e) {
+                    cart = [];
+                }
+            }
+            
+            // 检查URL是否从商品详情页直接跳转的情况
+            const urlParams = new URLSearchParams(window.location.search);
+            const productId = urlParams.get('id');
+            if (productId && cart.length === 0) {
+                // 如果购物车为空但有productId，从API获取商品
+                fetch('/api/products')
+                    .then(res => res.json())
+                    .then(products => {
+                        const product = products.find(p => p.id === productId);
+                        if (product) {
+                            cart = [{
+                                productId: product.id,
+                                name: product.name,
+                                price: parseFloat(product.price),
+                                image: product.image,
+                                quantity: 1
+                            }];
+                            localStorage.setItem('cart', JSON.stringify(cart));
+                            renderOrder();
+                        }
+                    })
+                    .catch(e => console.error('加载商品失败', e));
+            }
+        }
+
+        function renderOrder() {
+            const itemsContainer = document.getElementById('orderItems');
+            const summaryContainer = document.getElementById('orderSummary');
+            
+            if (!cart || cart.length === 0) {
+                itemsContainer.innerHTML = `
+                    <div class="text-center py-12">
+                        <p class="text-gray-500 text-lg">购物车是空的</p>
+                        <a href="/shop" class="inline-block btn-premium btn-lg mt-4">去购物</a>
+                    </div>
+                `;
+                document.getElementById('finalTotal').textContent = '¥0.00';
+                summaryContainer.innerHTML = '';
+                return;
+            }
+            
+            itemsContainer.innerHTML = cart.map(item => `
+                <div class="flex gap-4 p-4 bg-gray-50 rounded-xl">
+                    <img src="${item.image}" alt="${item.name}" class="w-20 h-20 object-cover rounded-xl" />
+                    <div class="flex-1">
+                        <h4 class="font-semibold text-black">${item.name}</h4>
+                        <p class="text-gray-500 text-sm">x ${item.quantity}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-bold text-black">¥${(item.price * item.quantity).toFixed(2)}</p>
+                    </div>
+                </div>
+            `).join('');
+
+            const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+            summaryContainer.innerHTML = `
+                <div class="flex justify-between text-gray-600">
+                    <span>商品（${totalItems}件）</span>
+                    <span>¥${subtotal.toFixed(2)}</span>
+                </div>
+                <div class="flex justify-between text-gray-600">
+                    <span>运费</span>
+                    <span class="text-green-600">包邮</span>
+                </div>
+            `;
+
+            document.getElementById('finalTotal').textContent = `¥${subtotal.toFixed(2)}`;
+        }
+
+        let currentOrder = null;
+
+        async function placeOrder() {
+            const name = document.getElementById('name').value;
+            const phone = document.getElementById('phone').value;
+            const address = document.getElementById('address').value;
+            const note = document.getElementById('note').value;
+
+            if (!name || !phone || !address) {
+                showToast('请填写完整的收货信息！', true);
+                return;
+            }
+
+            if (cart.length === 0) {
+                showToast('购物车是空的！', true);
+                return;
+            }
+
+            const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+            const userStr = localStorage.getItem('user');
+            const user = userStr ? JSON.parse(userStr) : null;
+            
+            try {
+                // 1. 创建订单
+                const orderResponse = await fetch('/api/orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        items: cart,
+                        shippingInfo: { name, phone, address, note },
+                        total: subtotal,
+                        userId: user?.id,
+                        userPhone: user?.phone
+                    })
+                });
+
+                const order = await orderResponse.json();
+                currentOrder = order;
+                orderId = order.id;
+
+                // 2. 创建支付订单
+                showToast('正在创建支付订单...');
+                
+                const subject = cart.length > 1 
+                    ? `${cart[0].name}等${cart.length}件商品` 
+                    : cart[0].name;
+                
+                const payResponse = await fetch('/api/alipay/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        orderId: order.id,
+                        totalAmount: subtotal,
+                        subject: subject,
+                        body: `订单 ${order.id} 支付`
+                    })
+                });
+
+                const payData = await payResponse.json();
+
+                if (payData.success && payData.payUrl) {
+                    if (payData.isMock) {
+                        // 模拟支付：直接跳转URL
+                        showToast('正在跳转到模拟支付页面...');
+                        cart = [];
+                        localStorage.setItem('cart', JSON.stringify(cart));
+                        setTimeout(() => {
+                            window.location.href = payData.payUrl;
+                        }, 800);
+                    } else {
+                        // 真实支付宝支付：payUrl 是HTML表单，直接写入页面并自动提交
+                        showToast('正在跳转到支付宝...');
+                        cart = [];
+                        localStorage.setItem('cart', JSON.stringify(cart));
+                        
+                        // 将支付宝表单写入页面并自动提交
+                        setTimeout(() => {
+                            document.write(payData.payUrl);
+                            document.forms[0].submit();
+                        }, 500);
+                    }
+                } else {
+                    const errorMsg = payData.details || '创建支付订单失败';
+                    showToast(errorMsg, true);
+                    console.error('[支付] 创建支付订单失败:', payData);
+                }
+                
+            } catch (error) {
+                console.error('Error placing order:', error);
+                showToast('订单提交失败，请重试', true);
+            }
+        }
+
+        function checkLoginStatus() {
+            const user = localStorage.getItem('user');
+            if (user) {
+                const currentUser = JSON.parse(user);
+                document.getElementById('loginBtn').classList.add('hidden');
+                document.getElementById('userInfo').classList.remove('hidden');
+                document.getElementById('userInfo').classList.add('flex');
+                document.getElementById('userName').textContent = currentUser.username;
+            } else {
+                document.getElementById('loginBtn').classList.remove('hidden');
+                document.getElementById('userInfo').classList.add('hidden');
+                document.getElementById('userInfo').classList.remove('flex');
+            }
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+            checkLoginStatus();
+        }
+
+        function showToast(message, isError = false) {
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-24 left-1/2 -translate-x-1/2 px-6 py-3 rounded-lg z-50 animate-fade-in-up ${isError ? 'bg-red-500 text-white' : 'bg-black text-white'}`;
+            toast.innerHTML = `<i class="fas ${isError ? 'fa-exclamation-circle' : 'fa-check-circle'} mr-2"></i>${message}`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCart(); // 先加载购物车
+            checkLoginStatus();
+            
+            // 如果是管理员，自动填充收货地址
+            const userStr = localStorage.getItem('user');
+            if (userStr) {
+                try {
+                    const user = JSON.parse(userStr);
+                    if (user.isAdmin) {
+                        document.getElementById('name').value = '管理员';
+                        document.getElementById('phone').value = '13800138000';
+                        document.getElementById('address').value = '北京市朝阳区测试地址123号';
+                    }
+                } catch (e) {
+                    console.error('解析用户信息失败:', e);
+                }
+            }
+            
+            // 给点时间让加载完成，然后检查购物车
+            setTimeout(() => {
+                if (!cart || cart.length === 0) {
+                    showToast('购物车是空的！', true);
+                    setTimeout(() => {
+                        window.location.href = '/shop';
+                    }, 1500);
+                    return;
+                }
+                renderOrder();
+            }, 200);
+        });
+    </script>
+    <script src="/ai-assistant.js"></script>
+</body>
+</html>
