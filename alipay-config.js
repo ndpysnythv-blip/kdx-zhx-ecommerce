@@ -40,36 +40,47 @@ function decrypt(encryptedText, key) {
   } catch (error) {
     console.error('❌ 密钥解密失败:', error.message);
     console.error('请检查 .env 文件中的加密密钥和加密数据是否正确');
-    process.exit(1);
+    throw error;
   }
 }
 
 // 从环境变量读取加密密钥
 const encryptKey = process.env.ALIPAY_ENCRYPT_KEY;
 
-if (!encryptKey) {
-  console.error('❌ 未找到加密密钥 ALIPAY_ENCRYPT_KEY');
-  console.error('请确保 .env 文件已正确配置，并包含 ALIPAY_ENCRYPT_KEY 变量');
-  console.error('运行 node key-manager.js encrypt 可以重新加密密钥');
-  process.exit(1);
-}
+let enabled = false;
+let appId = '2021000000000000';
+let privateKey = '-----BEGIN RSA PRIVATE KEY-----\nMIIEpQIBAAKCAQEAq...\n-----END RSA PRIVATE KEY-----';
+let alipayPublicKey = '-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAq...\n-----END PUBLIC KEY-----';
 
-// 解密支付宝密钥
-const appId = decrypt(process.env.ALIPAY_APP_ID_ENCRYPTED, encryptKey);
-const privateKey = decrypt(process.env.ALIPAY_PRIVATE_KEY_ENCRYPTED, encryptKey);
-const alipayPublicKey = decrypt(process.env.ALIPAY_PUBLIC_KEY_ENCRYPTED, encryptKey);
+if (encryptKey && process.env.ALIPAY_APP_ID_ENCRYPTED) {
+  try {
+    // 解密支付宝密钥
+    appId = decrypt(process.env.ALIPAY_APP_ID_ENCRYPTED, encryptKey);
+    privateKey = decrypt(process.env.ALIPAY_PRIVATE_KEY_ENCRYPTED, encryptKey);
+    alipayPublicKey = decrypt(process.env.ALIPAY_PUBLIC_KEY_ENCRYPTED, encryptKey);
+    enabled = true;
+    console.log('✅ 支付宝配置已加载（真实支付模式）');
+  } catch (error) {
+    console.log('⚠️ 支付宝密钥加载失败，使用模拟支付模式');
+    enabled = false;
+  }
+} else {
+  console.log('ℹ️ 未找到支付宝配置，使用模拟支付模式');
+  console.log('📝 如需启用真实支付，请配置 .env 文件并运行 node key-manager.js encrypt');
+  enabled = false;
+}
 
 module.exports = {
   // 是否启用真实支付宝支付 (false则使用模拟支付)
-  enabled: true,
+  enabled: enabled,
   
-  // 支付宝应用APPID (已加密)
+  // 支付宝应用APPID
   appId: appId,
   
-  // 应用私钥 (已加密)
+  // 应用私钥
   privateKey: privateKey,
   
-  // 支付宝公钥 (已加密)
+  // 支付宝公钥
   alipayPublicKey: alipayPublicKey,
   
   // 支付宝网关地址

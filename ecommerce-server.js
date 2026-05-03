@@ -23,19 +23,27 @@ const PORT = config.server.port;
 
 // 初始化支付宝SDK
 let alipaySdk = null;
+let useMockPayment = true;
 try {
-  alipaySdk = new AlipaySdk({
-    appId: alipayConfig.appId,
-    privateKey: alipayConfig.privateKey,
-    alipayPublicKey: alipayConfig.alipayPublicKey,
-    gateway: alipayConfig.gateway,
-    signType: alipayConfig.signType,
-    charset: alipayConfig.charset
-  });
-  console.log('✅ 支付宝SDK初始化成功');
+  if (alipayConfig.enabled) {
+    alipaySdk = new AlipaySdk({
+      appId: alipayConfig.appId,
+      privateKey: alipayConfig.privateKey,
+      alipayPublicKey: alipayConfig.alipayPublicKey,
+      gateway: alipayConfig.gateway,
+      signType: alipayConfig.signType,
+      charset: alipayConfig.charset
+    });
+    console.log('✅ 支付宝SDK初始化成功（真实支付模式）');
+    useMockPayment = false;
+  } else {
+    console.log('✅ 使用模拟支付模式');
+    useMockPayment = true;
+  }
 } catch (error) {
   console.error('❌ 支付宝SDK初始化失败:', error);
   console.log('⚠️ 将使用模拟支付模式');
+  useMockPayment = true;
 }
 
 // ==================== 安全中间件 ====================
@@ -747,7 +755,34 @@ app.post('/api/alipay/create', async (req, res) => {
     // 生成订单号（使用时间戳+随机数，以KZ开头）
     const outTradeNo = `KZ${Date.now()}${Math.floor(Math.random() * 1000)}`;
     
-    // 强制使用真实支付宝支付
+    // 更新订单信息
+    const orders = db.getOrders();
+    const orderIndex = orders.findIndex(o => o.id === orderId);
+    if (orderIndex !== -1) {
+      orders[orderIndex] = {
+        ...orders[orderIndex],
+        outTradeNo: outTradeNo,
+        paymentStatus: 'pending',
+        paymentMethod: 'alipay'
+      };
+      db.saveOrders(orders);
+    }
+    
+    // 如果使用模拟支付模式
+    if (useMockPayment || !alipaySdk) {
+      console.log(`[支付] 创建模拟支付订单: ${outTradeNo}`);
+      // 返回模拟支付页面URL
+      const mockPayUrl = `/mock-payment?orderId=${orderId}&outTradeNo=${outTradeNo}&totalAmount=${totalAmount}&subject=${encodeURIComponent(subject)}`;
+      
+      return res.json({
+        success: true,
+        payUrl: mockPayUrl,
+        outTradeNo: outTradeNo,
+        isMock: true
+      });
+    }
+    
+    // 真实支付宝支付
     console.log(`[支付] 正在创建支付宝订单: ${outTradeNo}`);
     console.log(`[支付] 支付宝配置: appId=${alipayConfig.appId}, gateway=${alipayConfig.gateway}`);
     
@@ -773,22 +808,6 @@ app.post('/api/alipay/create', async (req, res) => {
     
     console.log('[支付] 支付宝SDK返回结果长度:', result ? result.length : 0);
     console.log('[支付] 支付宝SDK返回结果预览:', result ? result.substring(0, 200) : 'null');
-    
-    // pageExec返回的是一个HTML form字符串，包含自动提交到支付宝的表单
-    // 前端需要直接使用这个HTML，或者我们返回form字符串让前端写入iframe
-    
-    // 更新订单信息
-    const orders = db.getOrders();
-    const orderIndex = orders.findIndex(o => o.id === orderId);
-    if (orderIndex !== -1) {
-      orders[orderIndex] = {
-        ...orders[orderIndex],
-        outTradeNo: outTradeNo,
-        paymentStatus: 'pending',
-        paymentMethod: 'alipay'
-      };
-      db.saveOrders(orders);
-    }
     
     console.log(`[支付] 支付宝订单创建成功: ${outTradeNo}`);
     res.json({

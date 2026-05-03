@@ -1,0 +1,24 @@
+[
+  {
+    "id": "user-1",
+    "username": "kdx",
+    "password": "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy",
+    "email": "admin@kdx.com",
+    "phone": "13800138000",
+    "role": "admin",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "loginHistory": [],
+    "autoLoginEnabled": true
+  },
+  {
+    "id": "user-2",
+    "username": "测试用户",
+    "password": "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy",
+    "email": "test@kdx.com",
+    "phone": "13900139000",
+    "role": "user",
+    "createdAt": "2024-01-15T00:00:00.000Z",
+    "loginHistory": [],
+    "autoLoginEnabled": false
+  }
+]

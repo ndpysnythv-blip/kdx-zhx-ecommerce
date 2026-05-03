@@ -1,0 +1,18 @@
+{
+  "api_key": "kd_826259ab0fd07b999e16c00f906a3b397243b598e80ece6aecb1b03da921ade7",
+  "config": {
+    "enabled": true,
+    "rate_limit_per_hour": 100,
+    "last_reset_hour": 10,
+    "permissions": {
+      "read_products": true,
+      "read_orders": true,
+      "create_order": true,
+      "get_user_info": true,
+      "update_profile": false
+    },
+    "created_at": "2026-05-03T10:57:42.765Z"
+  },
+  "created_at": "2026-05-03T10:57:42.765Z",
+  "updated_at": "2026-05-03T10:57:42.765Z"
+}
