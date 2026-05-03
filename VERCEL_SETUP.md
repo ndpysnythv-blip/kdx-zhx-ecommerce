@@ -26,12 +26,9 @@
 | `ALIPAY_PRIVATE_KEY_ENCRYPTED` | `a673eaec02bd67f6025b8bb31568922e:9847e9b36a50bf476c09db9ee7b57d1f884cb067ceeac703d5c18b8ce6d33444` | 加密后的应用私钥 |
 | `ALIPAY_PUBLIC_KEY_ENCRYPTED` | `a307ffa5df7c1ec2db9fede3f5850603:42ba477d2dd716fbcdf310963b2e538c5fc31ff637a858a5e7e37bd15c6a171f4a9ce1ac3f3c2c8f6337b191d78c97af50b7a311d329d2b53f7420f3e470fb22` | 加密后的支付宝公钥 |
 | `ALIPAY_GATEWAY` | `https://openapi.alipay.com/gateway.do` | 正式环境网关 |
-| `ALIPAY_NOTIFY_URL` | `https://kdx-zhx-电子商务.vercel.app/api/alipay/notify` | 异步回调地址 |
-| `ALIPAY_RETURN_URL` | `https://kdx-zhx-电子商务.vercel.app/payment-success` | 同步回调地址 |
+| `ALIPAY_NOTIFY_URL` | `https://kdx-zhx.vercel.app/api/alipay/notify` | 异步回调地址 |
+| `ALIPAY_RETURN_URL` | `https://kdx-zhx.vercel.app/payment-success` | 同步回调地址 |
 | `NODE_ENV` | `production` | 生产环境 |
-
-**⚠️ 重要：**
-- 如果域名是英文的（如 `kdx-zhx-dianzishangwu.vercel.app`），请修改为实际域名
 
 ## 📋 步骤 3：重新部署
 
@@ -63,16 +60,13 @@ git push
 
 **异步通知地址 (notify_url)**:
 ```
-https://kdx-zhx-电子商务.vercel.app/api/alipay/notify
+https://kdx-zhx.vercel.app/api/alipay/notify
 ```
 
 **同步返回地址 (return_url)**:
 ```
-https://kdx-zhx-电子商务.vercel.app/payment-success
+https://kdx-zhx.vercel.app/payment-success
 ```
-
-**⚠️ 重要：**
-- 如果域名是英文的（如 `kdx-zhx-dianzishangwu.vercel.app`），请修改为实际域名
 
 ## 📋 步骤 5：测试
 
