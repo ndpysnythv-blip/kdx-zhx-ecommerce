@@ -67,7 +67,14 @@ app.use(helmet.noSniff());
 app.use(helmet.frameguard({ action: 'deny' }));
 
 // CORS配置
-app.use(cors({ origin: [`http://localhost:${PORT}`], credentials: true }));
+app.use(cors({ 
+  origin: [
+    `http://localhost:${PORT}`,
+    'https://ndpysnythv-blip.github.io',
+    'https://kdx-zhx.vercel.app'
+  ], 
+  credentials: true 
+}));
 
 // Body解析器限制
 app.use(bodyParser.json({ limit: '10kb' }));
