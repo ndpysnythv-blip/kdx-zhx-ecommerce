@@ -526,10 +526,14 @@ async function sendByEmail(phone, code, email) {
 
 // 首页重定向
 app.get('/', (req, res) => {
-  res.redirect('/shop');
+  res.redirect('/index');
 });
 
 // 页面路由
+app.get('/index', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
 app.get('/shop', (req, res) => {
   res.sendFile(path.join(__dirname, 'shop.html'));
 });
