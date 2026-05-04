@@ -1,7 +1,7 @@
 // API 配置 - 前后端分离部署
 const API_CONFIG = {
-  // 后端 API 地址（Vercel 部署）
-  baseUrl: 'https://kdx-zhx.vercel.app',
+    // 后端 API 地址（Vercel 部署）
+    baseUrl: window.location.origin,
   
   // 获取完整的 API 地址
   getApiUrl: function(endpoint) {

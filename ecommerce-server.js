@@ -21,6 +21,9 @@ require('dotenv').config();
 const app = express();
 const PORT = config.server.port;
 
+// 静态文件服务（最先配置，确保静态资源不会被任何中间件拦截）
+app.use(express.static(__dirname));
+
 // 初始化支付宝SDK
 let alipaySdk = null;
 let useMockPayment = true;
@@ -49,17 +52,17 @@ try {
 // ==================== 安全中间件 ====================
 // Helmet安全头
 app.use(helmet.contentSecurityPolicy({
-  directives: {
-    defaultSrc: ["'self'"],
-    scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdn.jsdelivr.net"],
-    styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
-    imgSrc: ["'self'", "data:", "https://*"],
-    connectSrc: ["'self'"],
-    fontSrc: ["'self'"],
-    objectSrc: ["'none'"],
-    mediaSrc: ["'self'"],
-    frameSrc: ["'none'"]
-  }
+    directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"],
+        imgSrc: ["'self'", "data:", "https://*"],
+        connectSrc: ["'self'", "https://kdxzhx.top", "https://*.kdxzhx.top"],
+        fontSrc: ["'self'", "https://cdnjs.cloudflare.com"],
+        objectSrc: ["'none'"],
+        mediaSrc: ["'self'"],
+        frameSrc: ["'none'"]
+    }
 }));
 app.use(helmet.hsts({ maxAge: 31536000, includeSubDomains: true }));
 app.use(helmet.xssFilter());
@@ -68,19 +71,20 @@ app.use(helmet.frameguard({ action: 'deny' }));
 
 // CORS配置
 app.use(cors({ 
-  origin: [
-    `http://localhost:${PORT}`,
-    'https://ndpysnythv-blip.github.io',
-    'https://kdx-zhx.vercel.app'
-  ], 
-  credentials: true 
+    origin: [
+        `http://localhost:${PORT}`,
+        'https://ndpysnythv-blip.github.io',
+        'https://kdx-zhx.vercel.app',
+        'https://kdxzhx.top',
+        'http://kdxzhx.top'
+    ], 
+    credentials: true 
 }));
 
 // Body解析器限制
 app.use(bodyParser.json({ limit: '10kb' }));
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
-app.use(express.static(__dirname));
 
 // ==================== 高级防火墙中间件 ====================
 app.use((req, res, next) => {
