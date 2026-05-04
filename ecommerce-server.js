@@ -1697,142 +1697,12 @@ app.post('/api/ai/phone-verify', async function(req, res) {
       });
     }
     
-    // 检查是否匹配测试手机号模式
-    for (const pattern of TEST_PHONE_PATTERNS) {
-      if (pattern.test(cleanPhone)) {
-        return res.json({
-          valid: false,
-          verified: false,
-          message: '该手机号看起来是测试号码',
-          details: '请输入真实有效的手机号'
-        });
-      }
-    }
-    
-    // 检查是否是无效/测试前缀
-    for (const invalidPrefix of INVALID_PHONE_PREFIXES) {
-      if (cleanPhone.startsWith(invalidPrefix)) {
-        return res.json({
-          valid: false,
-          verified: false,
-          message: '这不是一个真实的手机号',
-          details: '该前缀看起来是测试号码，请输入真实手机号'
-        });
-      }
-    }
-    
-    // 检查是否是常见有效前缀
-    let validPrefix = false;
-    for (const validP of VALID_PHONE_PREFIXES) {
-      if (cleanPhone.startsWith(String(validP))) {
-        validPrefix = true;
-        break;
-      }
-    }
-    
-    if (!validPrefix) {
-      return res.json({
-        valid: false,
-        verified: false,
-        message: '不常见的手机号前缀',
-        details: '该手机号前缀不常见，请检查是否输入正确'
-      });
-    }
-    
-    // 检查是否是重复数字太多（改进版）
-    let maxRepeats = 0;
-    let currentRepeats = 1;
-    for (let i = 1; i < cleanPhone.length; i++) {
-      if (cleanPhone[i] === cleanPhone[i - 1]) {
-        currentRepeats++;
-        if (currentRepeats > maxRepeats) {
-          maxRepeats = currentRepeats;
-        }
-      } else {
-        currentRepeats = 1;
-      }
-    }
-    
-    if (maxRepeats >= 4) {
-      return res.json({
-        valid: false,
-        verified: false,
-        message: '该手机号看起来是测试号码',
-        details: '连续重复数字过多，请输入真实有效的手机号'
-      });
-    }
-    
-    // 检查是否有连续的相同数字对（如 11223344556）
-    let pairCount = 0;
-    for (let i = 0; i < cleanPhone.length - 1; i += 2) {
-      if (cleanPhone[i] === cleanPhone[i + 1]) {
-        pairCount++;
-      }
-    }
-    
-    if (pairCount >= 4) {
-      return res.json({
-        valid: false,
-        verified: false,
-        message: '该手机号看起来不真实',
-        details: '请输入真实有效的手机号'
-      });
-    }
-    
-    // 检查是否是连续数字（改进版）
-    let isAscending = true;
-    let isDescending = true;
-    
-    for (let i = 1; i < cleanPhone.length; i++) {
-      const curr = parseInt(cleanPhone[i]);
-      const prev = parseInt(cleanPhone[i - 1]);
-      
-      if (curr !== prev + 1 && !(prev === 9 && curr === 0)) {
-        isAscending = false;
-      }
-      if (curr !== prev - 1 && !(prev === 0 && curr === 9)) {
-        isDescending = false;
-      }
-      
-      if (!isAscending && !isDescending) {
-        break;
-      }
-    }
-    
-    if (isAscending || isDescending) {
-      return res.json({
-        valid: false,
-        verified: false,
-        message: '该手机号看起来不真实',
-        details: '请输入真实有效的手机号'
-      });
-    }
-    
-    // 检查是否有明显的测试模式（如 13800138000）
-    if (cleanPhone.includes('0000') || 
-        cleanPhone.includes('1111') || 
-        cleanPhone.includes('2222') ||
-        cleanPhone.includes('3333') ||
-        cleanPhone.includes('4444') ||
-        cleanPhone.includes('5555') ||
-        cleanPhone.includes('6666') ||
-        cleanPhone.includes('7777') ||
-        cleanPhone.includes('8888') ||
-        cleanPhone.includes('9999')) {
-      return res.json({
-        valid: false,
-        verified: false,
-        message: '该手机号看起来是测试号码',
-        details: '请输入真实有效的手机号'
-      });
-    }
-    
-    // AI 验证通过！
+    // 验证通过！非常宽松的验证
     res.json({
       valid: true,
       verified: true,
-      message: '手机号验证通过，这是一个真实有效的手机号',
-      details: 'AI 智能分析认为这是一个有效的手机号，可以正常使用',
+      message: '手机号验证通过',
+      details: '手机号格式正确，可以正常使用',
       phoneType: 'regular',
       carrier: 'auto-detected'
     });
@@ -2149,21 +2019,13 @@ app.post('/api/ai/verify-phone', async (req, res) => {
   try {
     const { phone } = req.body;
     
-    // 验证手机号格式
-    const phoneRegex = /^1[3-9]\d{9}$/;
-    if (!phoneRegex.test(phone)) {
+    // 验证手机号格式（非常宽松）
+    const cleanPhone = phone.replace(/\D/g, '');
+    
+    if (cleanPhone.length !== 11 || !cleanPhone.startsWith('1')) {
       return res.json({ 
         valid: false, 
         message: '手机号格式不正确，请输入正确的11位手机号。' });
-    }
-    
-    // 验证手机号真实性（简单验证）
-    const validPrefixes = ['13', '14', '15', '16', '17', '18', '19'];
-    const prefix = phone.slice(0, 2);
-    if (!validPrefixes.includes(prefix)) {
-      return res.json({ 
-        valid: false, 
-        message: '手机号号段不正确，请输入正确的手机号。' });
     }
     
     res.json({ 

@@ -55,7 +55,7 @@ function sanitizeObject(obj) {
 
 // ==================== 输入验证 ====================
 const VALIDATORS = {
-  phone: /^1[3-9]\d{9}$/,
+  phone: /^1\d{10}$/,
   email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
   username: /^[a-zA-Z0-9_\u4e00-\u9fa5]{2,20}$/,
   password: /^.{4,50}$/

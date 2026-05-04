@@ -1314,14 +1314,11 @@
             }
         }
 
-        // 验证手机号格式（加强版）
+        // 验证手机号格式（简化版）
         function validatePhone(phone) {
             if (!phone) return false;
             if (phone.length !== 11) return false;
             if (phone.charAt(0) !== '1') return false;
-            
-            const secondDigit = parseInt(phone.charAt(1));
-            if (secondDigit < 3 || secondDigit > 9) return false;
             
             // 检查是否全是数字
             for (let i = 0; i < phone.length; i++) {
@@ -1331,8 +1328,8 @@
                 }
             }
             
-            const phoneRegex = /^1[3-9]\d{9}$/;
-            return phoneRegex.test(phone);
+            // 非常宽松的验证 - 只要是11位数字且以1开头就通过
+            return true;
         }
 
         // Update Captcha Button (Login)
