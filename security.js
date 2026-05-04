@@ -280,8 +280,8 @@ const SUSPICIOUS_USER_AGENTS = [
 ];
 
 const SUSPICIOUS_PATHS = [
-  '/admin', '/wp-', '/.env', '/.git', '/config', '/phpmyadmin', '/mysql',
-  '/backup', '/db', '/database', '/api/admin', '/.htaccess', '/.htpasswd'
+  '/wp-', '/.env', '/.git', '/config', '/phpmyadmin', '/mysql',
+  '/backup', '/db', '/database', '/.htaccess', '/.htpasswd'
 ];
 
 const SUSPICIOUS_HEADERS = [

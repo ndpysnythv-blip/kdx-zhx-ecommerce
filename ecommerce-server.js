@@ -88,7 +88,14 @@ app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
 // ==================== 高级防火墙中间件 ====================
 app.use((req, res, next) => {
-  // 1. 检查可疑请求
+  // 跳过 GET 请求的防火墙检查（允许正常页面访问）
+  if (req.method === 'GET' || req.method === 'HEAD') {
+    // 只设置安全头，不拦截
+    security.setSecurityHeaders(res);
+    return next();
+  }
+  
+  // 1. 检查可疑请求（仅对非 GET 请求）
   const suspicious = security.isSuspiciousRequest(req);
   if (suspicious.suspicious) {
     console.warn(`[防火墙] 拦截可疑请求: ${suspicious.reason} 来自: ${security.getClientKey(req)}`);
