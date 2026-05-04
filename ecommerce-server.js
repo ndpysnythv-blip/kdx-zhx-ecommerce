@@ -50,14 +50,14 @@ try {
 }
 
 // ==================== 安全中间件 ====================
-// Helmet安全头
+// Helmet安全头 - 使用更宽松的配置
 app.use(helmet.contentSecurityPolicy({
     directives: {
         defaultSrc: ["'self'"],
         scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"],
         styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"],
-        imgSrc: ["'self'", "data:", "https://*"],
-        connectSrc: ["'self'", "https://kdxzhx.top", "https://*.kdxzhx.top"],
+        imgSrc: ["'self'", "data:", "https://*", "http://*"],
+        connectSrc: ["'self'", "*"],
         fontSrc: ["'self'", "https://cdnjs.cloudflare.com"],
         objectSrc: ["'none'"],
         mediaSrc: ["'self'"],
@@ -69,15 +69,9 @@ app.use(helmet.xssFilter());
 app.use(helmet.noSniff());
 app.use(helmet.frameguard({ action: 'deny' }));
 
-// CORS配置
+// CORS配置 - 宽松配置
 app.use(cors({ 
-    origin: [
-        `http://localhost:${PORT}`,
-        'https://ndpysnythv-blip.github.io',
-        'https://kdx-zhx.vercel.app',
-        'https://kdxzhx.top',
-        'http://kdxzhx.top'
-    ], 
+    origin: "*", 
     credentials: true 
 }));
 
@@ -86,51 +80,11 @@ app.use(bodyParser.json({ limit: '10kb' }));
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
-// ==================== 高级防火墙中间件 ====================
+// ==================== 简单日志中间件 ====================
 app.use((req, res, next) => {
-  // 跳过 GET 请求的防火墙检查（允许正常页面访问）
-  if (req.method === 'GET' || req.method === 'HEAD') {
-    // 只设置安全头，不拦截
+    // 只设置安全头，不拦截任何请求
     security.setSecurityHeaders(res);
-    return next();
-  }
-  
-  // 1. 检查可疑请求（仅对非 GET 请求）
-  const suspicious = security.isSuspiciousRequest(req);
-  if (suspicious.suspicious) {
-    console.warn(`[防火墙] 拦截可疑请求: ${suspicious.reason} 来自: ${security.getClientKey(req)}`);
-    db.addSecurityLog({
-      id: `sec-${Date.now()}`,
-      type: '防火墙拦截',
-      level: 'warning',
-      ip: security.getClientKey(req),
-      description: suspicious.reason,
-      createdAt: new Date().toISOString()
-    });
-    return res.status(403).json({ error: '访问被拒绝' });
-  }
-  
-  // 2. 检测防抓包
-  const sniffingChecks = security.detectPacketSniffing(req);
-  if (sniffingChecks.length > 0) {
-    console.warn(`[安全] 检测到潜在抓包行为: ${sniffingChecks.join(', ')}`);
-  }
-  
-  // 3. 设置安全头
-  security.setSecurityHeaders(res);
-  
-  // 4. 记录操作日志（敏感操作）
-  if (['POST', 'PUT', 'DELETE'].includes(req.method) && !req.path.startsWith('/api/alipay')) {
-    db.addOperationLog({
-      id: `op-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      action: `API请求: ${req.method} ${req.path}`,
-      user: currentUser ? currentUser.username : 'guest',
-      details: `来自IP: ${security.getClientKey(req)}`,
-      createdAt: new Date().toISOString()
-    });
-  }
-  
-  next();
+    next();
 });
 
 // ==================== API速率限制 ====================
