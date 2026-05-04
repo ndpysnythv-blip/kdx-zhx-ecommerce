@@ -52,6 +52,10 @@
             border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 16px;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            width: 100%;
+            box-sizing: border-box;
         }
         
         .input-wrapper:focus-within {
@@ -77,7 +81,7 @@
             font-weight: 400;
             letter-spacing: 0.2px;
             padding: 8px 0;
-            width: 100%;
+            flex: 1;
             min-width: 0;
             box-sizing: border-box;
         }
@@ -209,7 +213,7 @@
                                         <i class="fas fa-phone text-lg"></i>
                                     </div>
                                     <input type="tel" id="signup-phone" required 
-                                           class="input-field flex-1 w-full"
+                                           class="input-field"
                                            placeholder="请输入手机号"
                                            oninput="checkAndRedirectExistingPhone(); updateSignupCaptchaBtn();">
                                     <div id="phone-verify-status" class="ml-2 text-sm"></div>
@@ -227,7 +231,7 @@
                                         <i class="fas fa-envelope text-lg"></i>
                                     </div>
                                     <input type="email" id="signup-email" required 
-                                           class="input-field flex-1 w-full"
+                                           class="input-field"
                                            placeholder="请输入邮箱地址"
                                            oninput="validateEmailInput(); updateSignupCaptchaBtn();">
                                     <div id="email-verify-status" class="ml-2 text-sm"></div>
@@ -242,7 +246,7 @@
                                         <i class="fas fa-lock text-lg"></i>
                                     </div>
                                     <input type="password" id="signup-password" required minlength="4" 
-                                           class="input-field flex-1 w-full"
+                                           class="input-field"
                                            placeholder="至少4位密码"
                                            oninput="updateSignupCaptchaBtn();">
                                 </div>
@@ -280,7 +284,7 @@
                                         <i class="fas fa-phone text-lg"></i>
                                     </div>
                                     <input type="tel" id="login-phone" required 
-                                           class="input-field flex-1 w-full"
+                                           class="input-field"
                                            placeholder="请输入手机号"
                                            oninput="updateCaptchaBtn()">
                                 </div>
@@ -294,7 +298,7 @@
                                         <i class="fas fa-lock text-lg"></i>
                                     </div>
                                     <input type="password" id="login-password" 
-                                           class="input-field flex-1 w-full"
+                                           class="input-field"
                                            placeholder="请输入密码">
                                 </div>
                             </div>
@@ -362,7 +366,7 @@
                                         <i class="fas fa-envelope text-lg"></i>
                                     </div>
                                     <input type="email" id="forgot-email" 
-                                           class="input-field flex-1 w-full"
+                                           class="input-field"
                                            placeholder="请输入注册时的邮箱"
                                            oninput="validateForgotEmailInput();">
                                     <div id="forgot-email-verify-status" class="ml-2 text-sm"></div>
@@ -380,7 +384,7 @@
                                             <i class="fas fa-receipt text-lg"></i>
                                         </div>
                                         <input type="text" id="forgot-order" 
-                                               class="input-field flex-1 w-full"
+                                               class="input-field"
                                                placeholder="请输入付款后的支付宝订单号">
                                     </div>
                                     <p class="text-xs text-gray-500 mt-2">
