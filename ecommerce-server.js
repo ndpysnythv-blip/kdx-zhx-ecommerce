@@ -747,7 +747,13 @@ app.post('/api/alipay/create', async (req, res) => {
     // 生成订单号（使用时间戳+随机数，以KZ开头）
     const outTradeNo = `KZ${Date.now()}${Math.floor(Math.random() * 1000)}`;
     
-    // 强制使用真实支付宝支付
+    // 检查是否启用真实支付宝支付
+    if (!alipayConfig.enabled || !alipaySdk) {
+      console.log('[支付] 使用模拟支付模式');
+      return createMockPayment(res, orderId, outTradeNo, totalAmount, subject);
+    }
+    
+    // 真实支付宝支付
     console.log(`[支付] 正在创建支付宝订单: ${outTradeNo}`);
     console.log(`[支付] 支付宝配置: appId=${alipayConfig.appId}, gateway=${alipayConfig.gateway}`);
     
@@ -840,69 +846,50 @@ function createMockPayment(res, orderId, outTradeNo, totalAmount, subject) {
 
 // 模拟支付页面
 app.get('/mock-payment', (req, res) => {
-  const { orderId, outTradeNo, totalAmount, subject } = req.query;
-  
-  res.send(`
-    <!DOCTYPE html>
-    <html lang="zh-CN">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>模拟支付宝支付</title>
-      <script src="https://cdn.tailwindcss.com"></script>
-    </head>
-    <body class="bg-gray-100 min-h-screen flex items-center justify-center">
-      <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center">
-        <div class="w-20 h-20 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-6">
-          <span class="text-4xl">💰</span>
-        </div>
-        <h1 class="text-2xl font-bold text-gray-800 mb-2">模拟支付宝支付</h1>
-        <p class="text-gray-500 mb-6">这是开发环境的模拟支付</p>
-        
-        <div class="bg-gray-50 rounded-xl p-6 mb-6 text-left">
-          <div class="flex justify-between mb-3">
-            <span class="text-gray-500">订单号:</span>
-            <span class="font-mono text-gray-800">${outTradeNo}</span>
-          </div>
-          <div class="flex justify-between mb-3">
-            <span class="text-gray-500">商品:</span>
-            <span class="text-gray-800">${decodeURIComponent(subject)}</span>
-          </div>
-          <div class="flex justify-between border-t pt-3 mt-3">
-            <span class="text-gray-800 font-semibold">支付金额:</span>
-            <span class="text-blue-600 font-bold text-xl">¥${totalAmount}</span>
-          </div>
-        </div>
-        
-        <button id="payBtn" onclick="completePayment()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-xl transition-all transform hover:scale-[1.02]">
-          <span id="btnText">确认支付 ¥${totalAmount}</span>
-        </button>
-        
-        <p class="text-xs text-gray-400 mt-4">这是模拟支付，不会产生真实扣款</p>
-      </div>
+  res.sendFile(path.join(__dirname, 'mock-payment.html'));
+});
+
+// 模拟支付成功API
+app.post('/api/alipay/mock-success', async (req, res) => {
+  try {
+    const { outTradeNo, orderId } = req.body;
+    
+    // 更新订单状态
+    const orders = db.getOrders();
+    const orderIndex = orders.findIndex(o => 
+      o.outTradeNo === outTradeNo || o.id === orderId
+    );
+    
+    if (orderIndex !== -1) {
+      orders[orderIndex] = {
+        ...orders[orderIndex],
+        status: 'paid',
+        paymentStatus: 'success',
+        paidAt: new Date().toISOString(),
+        alipayTradeNo: `MOCK${Date.now()}`
+      };
+      db.saveOrders(orders);
       
-      <script>
-        let paid = false;
-        
-        function completePayment() {
-          if (paid) return;
-          paid = true;
-          
-          const btn = document.getElementById('payBtn');
-          const btnText = document.getElementById('btnText');
-          
-          btn.disabled = true;
-          btn.classList.add('opacity-50', 'cursor-not-allowed');
-          btnText.innerHTML = '<span class="animate-pulse">处理中...</span>';
-          
-          setTimeout(() => {
-            window.location.href = '/payment-success?orderId=${orderId}&outTradeNo=${outTradeNo}&totalAmount=${totalAmount}';
-          }, 1500);
-        }
-      </script>
-    </body>
-    </html>
-  `);
+      console.log(`[支付] 模拟支付成功: ${orders[orderIndex].id}`);
+      
+      res.json({
+        success: true,
+        message: '支付成功',
+        orderId: orders[orderIndex].id
+      });
+    } else {
+      res.status(404).json({
+        success: false,
+        message: '订单不存在'
+      });
+    }
+  } catch (error) {
+    console.error('[支付] 模拟支付处理失败:', error);
+    res.status(500).json({
+      success: false,
+      message: '支付处理失败'
+    });
+  }
 });
 
 // 支付宝同步回调（支付成功后跳转）

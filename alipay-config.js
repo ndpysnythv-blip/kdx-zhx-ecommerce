@@ -39,47 +39,63 @@ function decrypt(encryptedText, key) {
     return decrypted;
   } catch (error) {
     console.error('❌ 密钥解密失败:', error.message);
-    console.error('请检查 .env 文件中的加密密钥和加密数据是否正确');
-    process.exit(1);
+    return null;
   }
 }
 
 // 从环境变量读取加密密钥
 const encryptKey = process.env.ALIPAY_ENCRYPT_KEY;
 
-if (!encryptKey) {
-  console.error('❌ 未找到加密密钥 ALIPAY_ENCRYPT_KEY');
-  console.error('请确保 .env 文件已正确配置，并包含 ALIPAY_ENCRYPT_KEY 变量');
-  console.error('运行 node key-manager.js encrypt 可以重新加密密钥');
-  process.exit(1);
+// 检查是否配置了支付宝密钥
+const hasEncryptKey = !!encryptKey;
+const hasAppId = !!process.env.ALIPAY_APP_ID_ENCRYPTED;
+const hasPrivateKey = !!process.env.ALIPAY_PRIVATE_KEY_ENCRYPTED;
+const hasPublicKey = !!process.env.ALIPAY_PUBLIC_KEY_ENCRYPTED;
+
+// 判断是否启用真实支付宝支付
+const useRealAlipay = hasEncryptKey && hasAppId && hasPrivateKey && hasPublicKey;
+
+let appId = '';
+let privateKey = '';
+let alipayPublicKey = '';
+
+if (useRealAlipay) {
+  // 解密支付宝密钥
+  appId = decrypt(process.env.ALIPAY_APP_ID_ENCRYPTED, encryptKey);
+  privateKey = decrypt(process.env.ALIPAY_PRIVATE_KEY_ENCRYPTED, encryptKey);
+  alipayPublicKey = decrypt(process.env.ALIPAY_PUBLIC_KEY_ENCRYPTED, encryptKey);
+  
+  if (!appId || !privateKey || !alipayPublicKey) {
+    console.warn('⚠️ 支付宝密钥解密失败，将使用模拟支付模式');
+  } else {
+    console.log('✅ 支付宝配置加载成功，使用真实支付模式');
+  }
+} else {
+  console.log('⚠️ 未配置支付宝密钥，将使用模拟支付模式');
+  console.log('提示: 请配置 .env 文件中的支付宝密钥以启用真实支付');
 }
 
-// 解密支付宝密钥
-const appId = decrypt(process.env.ALIPAY_APP_ID_ENCRYPTED, encryptKey);
-const privateKey = decrypt(process.env.ALIPAY_PRIVATE_KEY_ENCRYPTED, encryptKey);
-const alipayPublicKey = decrypt(process.env.ALIPAY_PUBLIC_KEY_ENCRYPTED, encryptKey);
-
 module.exports = {
-  // 是否启用真实支付宝支付 (false则使用模拟支付)
-  enabled: true,
+  // 是否启用真实支付宝支付
+  enabled: useRealAlipay && !!appId && !!privateKey && !!alipayPublicKey,
   
-  // 支付宝应用APPID (已加密)
-  appId: appId,
+  // 支付宝应用APPID
+  appId: appId || 'mock_app_id',
   
-  // 应用私钥 (已加密)
-  privateKey: privateKey,
+  // 应用私钥
+  privateKey: privateKey || 'mock_private_key',
   
-  // 支付宝公钥 (已加密)
-  alipayPublicKey: alipayPublicKey,
+  // 支付宝公钥
+  alipayPublicKey: alipayPublicKey || 'mock_public_key',
   
   // 支付宝网关地址
   gateway: process.env.ALIPAY_GATEWAY || 'https://openapi.alipaydev.com/gateway.do',
   
   // 支付结果异步通知地址 (需要公网可访问的URL)
-  notifyUrl: `http://localhost:${PORT}/api/alipay/notify`,
+  notifyUrl: process.env.ALIPAY_NOTIFY_URL || `http://localhost:${PORT}/api/alipay/notify`,
   
   // 支付结果同步返回地址
-  returnUrl: `http://localhost:${PORT}/payment-success`,
+  returnUrl: process.env.ALIPAY_RETURN_URL || `http://localhost:${PORT}/payment-success`,
   
   // 签名算法 (RSA2)
   signType: 'RSA2',
