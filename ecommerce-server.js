@@ -1312,8 +1312,8 @@ app.post('/api/check-phone', (req, res) => {
     const { phone } = req.body;
     const users = db.getUsers();
     
-    // 验证手机号格式
-    const phoneRegex = /^1[3-9]\d{9}$/;
+    // 宽松的手机号格式验证 - 只要是11位数字且以1开头即可
+    const phoneRegex = /^1\d{10}$/;
     if (!phone || !phoneRegex.test(phone)) {
       return res.status(400).json({ error: '请输入正确的11位手机号', exists: false });
     }

@@ -1,0 +1,28 @@
+[
+  {
+    "id": "admin-kdx",
+    "username": "kdx",
+    "phone": "13900000000",
+    "email": "kdx@kdxzhx.com",
+    "password": "kdx123456",
+    "role": "admin",
+    "isAdmin": true,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "autoLoginEnabled": true,
+    "lastLoginAt": "2024-01-01T00:00:00.000Z",
+    "lastLoginIp": "127.0.0.1"
+  },
+  {
+    "id": "user-001",
+    "username": "user001",
+    "phone": "13800138000",
+    "email": "user001@example.com",
+    "password": "user123456",
+    "role": "user",
+    "isAdmin": false,
+    "createdAt": "2024-01-02T00:00:00.000Z",
+    "autoLoginEnabled": false,
+    "lastLoginAt": null,
+    "lastLoginIp": null
+  }
+]
