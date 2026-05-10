@@ -278,28 +278,21 @@
                 const payData = await payResponse.json();
 
                 if (payData.success && payData.payUrl) {
-                    if (payData.isMock) {
-                        // 模拟支付：直接跳转URL
-                        showToast('正在跳转到模拟支付页面...');
-                        cart = [];
-                        localStorage.setItem('cart', JSON.stringify(cart));
-                        setTimeout(() => {
-                            window.location.href = payData.payUrl;
-                        }, 800);
-                    } else {
-                        // 真实支付宝支付：payUrl 是HTML表单，直接写入页面并自动提交
-                        showToast('正在跳转到支付宝...');
-                        cart = [];
-                        localStorage.setItem('cart', JSON.stringify(cart));
-                        
-                        // 将支付宝表单写入页面并自动提交
-                        setTimeout(() => {
-                            document.write(payData.payUrl);
+                    // 真实支付宝支付：payUrl 是HTML表单，直接写入页面并自动提交
+                    showToast('正在跳转到支付宝...');
+                    cart = [];
+                    localStorage.setItem('cart', JSON.stringify(cart));
+                    
+                    // 将支付宝表单写入页面并自动提交
+                    setTimeout(() => {
+                        document.write(payData.payUrl);
+                        // 自动提交表单
+                        if (document.forms.length > 0) {
                             document.forms[0].submit();
-                        }, 500);
-                    }
+                        }
+                    }, 500);
                 } else {
-                    const errorMsg = payData.details || '创建支付订单失败';
+                    const errorMsg = payData.details || payData.error || '创建支付订单失败';
                     showToast(errorMsg, true);
                     console.error('[支付] 创建支付订单失败:', payData);
                 }
