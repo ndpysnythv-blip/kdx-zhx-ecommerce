@@ -21,21 +21,26 @@ require('dotenv').config();
 const app = express();
 const PORT = config.server.port;
 
-// 初始化支付宝SDK
+// 初始化支付宝SDK（仅在启用真实支付时才初始化）
 let alipaySdk = null;
-try {
-  alipaySdk = new AlipaySdk({
-    appId: alipayConfig.appId,
-    privateKey: alipayConfig.privateKey,
-    alipayPublicKey: alipayConfig.alipayPublicKey,
-    gateway: alipayConfig.gateway,
-    signType: alipayConfig.signType,
-    charset: alipayConfig.charset
-  });
-  console.log('✅ 支付宝SDK初始化成功');
-} catch (error) {
-  console.error('❌ 支付宝SDK初始化失败:', error);
-  console.log('⚠️ 将使用模拟支付模式');
+if (alipayConfig.enabled) {
+  try {
+    alipaySdk = new AlipaySdk({
+      appId: alipayConfig.appId,
+      privateKey: alipayConfig.privateKey,
+      alipayPublicKey: alipayConfig.alipayPublicKey,
+      gateway: alipayConfig.gateway,
+      signType: alipayConfig.signType,
+      charset: alipayConfig.charset
+    });
+    console.log('✅ 支付宝SDK初始化成功');
+  } catch (error) {
+    console.error('❌ 支付宝SDK初始化失败:', error);
+    console.log('⚠️ 将使用模拟支付模式');
+    alipaySdk = null;
+  }
+} else {
+  console.log('💡 使用模拟支付模式（无需支付宝配置）');
 }
 
 // ==================== 安全中间件 ====================
