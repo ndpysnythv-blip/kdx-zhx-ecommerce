@@ -11,7 +11,6 @@ const crypto = require('crypto');
 const notificationService = require('./notification-service');
 const security = require('./security');
 const appleShortcuts = require('./apple-shortcuts');
-const alipayConfig = require('./alipay-config');
 
 // 加载环境变量
 require('dotenv').config();
@@ -19,14 +18,18 @@ require('dotenv').config();
 const app = express();
 const PORT = config.server.port;
 
-// 支付宝SDK（仅在需要时动态加载）
+// 支付宝SDK（安全加载，处理OpenSSL兼容性问题）
 let AlipaySdk = null;
 let AlipayFormData = null;
 let alipaySdk = null;
+const alipayConfig = require('./alipay-config');
 
 // 安全地初始化支付宝SDK
 function initAlipaySdk() {
-  if (!alipayConfig.enabled) return null;
+  if (!alipayConfig.enabled) {
+    console.log('💡 支付宝配置未启用，使用模拟支付模式');
+    return null;
+  }
   
   try {
     // 动态加载支付宝SDK
@@ -52,7 +55,13 @@ function initAlipaySdk() {
   }
 }
 
-console.log('💡 使用模拟支付模式（无需支付宝配置）');
+// 初始化支付宝SDK
+if (alipayConfig.enabled) {
+  console.log('🚀 正在初始化支付宝SDK...');
+  alipaySdk = initAlipaySdk();
+} else {
+  console.log('💡 使用模拟支付模式（无需支付宝配置）');
+}
 
 // ==================== 安全中间件 ====================
 // Helmet安全头
@@ -751,7 +760,7 @@ app.post('/api/refunds', async (req, res) => {
 });
 
 // ========== 支付宝支付API ==========
-// 创建支付订单（现在只使用模拟支付，避免OpenSSL问题）
+// 创建支付订单
 app.post('/api/alipay/create', async (req, res) => {
   try {
     const { orderId, totalAmount, subject, body } = req.body;
@@ -763,17 +772,77 @@ app.post('/api/alipay/create', async (req, res) => {
     // 生成订单号（使用时间戳+随机数，以KZ开头）
     const outTradeNo = `KZ${Date.now()}${Math.floor(Math.random() * 1000)}`;
     
-    // 直接使用模拟支付模式
-    console.log('[支付] 使用模拟支付模式（避免OpenSSL兼容性问题）');
-    return createMockPayment(res, orderId, outTradeNo, totalAmount, subject);
+    // 安全地初始化支付宝SDK
+    if (!alipaySdk) {
+      alipaySdk = initAlipaySdk();
+    }
+    
+    // 检查是否启用真实支付宝支付
+    if (!alipayConfig.enabled || !alipaySdk) {
+      console.log('[支付] 使用模拟支付模式');
+      return createMockPayment(res, orderId, outTradeNo, totalAmount, subject);
+    }
+    
+    // 真实支付宝支付
+    console.log(`[支付] 正在创建支付宝订单: ${outTradeNo}`);
+    console.log(`[支付] 支付宝配置: appId=${alipayConfig.appId}, gateway=${alipayConfig.gateway}`);
+    
+    const formData = new AlipayFormData();
+    formData.setMethod('get');
+    
+    // bizContent是必须的核心参数
+    formData.addField('bizContent', {
+      outTradeNo: outTradeNo,
+      productCode: 'FAST_INSTANT_TRADE_PAY',
+      totalAmount: parseFloat(totalAmount).toFixed(2),
+      subject: subject,
+      body: body || subject
+    });
+    
+    // returnUrl和notifyUrl通过formData添加
+    formData.addField('returnUrl', alipayConfig.returnUrl);
+    formData.addField('notifyUrl', alipayConfig.notifyUrl);
+    
+    // 获取支付宝支付页面URL
+    console.log('[支付] 正在调用支付宝SDK生成支付页面...');
+    const result = await alipaySdk.pageExec('alipay.trade.page.pay', {}, formData);
+    
+    console.log('[支付] 支付宝SDK返回结果长度:', result ? result.length : 0);
+    console.log('[支付] 支付宝SDK返回结果预览:', result ? result.substring(0, 200) : 'null');
+    
+    // 更新订单信息
+    const orders = db.getOrders();
+    const orderIndex = orders.findIndex(o => o.id === orderId);
+    if (orderIndex !== -1) {
+      orders[orderIndex] = {
+        ...orders[orderIndex],
+        outTradeNo: outTradeNo,
+        paymentStatus: 'pending',
+        paymentMethod: 'alipay'
+      };
+      db.saveOrders(orders);
+    }
+    
+    console.log(`[支付] 支付宝订单创建成功: ${outTradeNo}`);
+    res.json({
+      success: true,
+      payUrl: result,
+      outTradeNo: outTradeNo,
+      isMock: false
+    });
     
   } catch (error) {
     console.error('[支付] 创建支付订单失败:', error);
     console.error('[支付] 错误详情:', error.message);
-    res.status(500).json({ 
-      error: '创建支付订单失败', 
-      details: error.message 
-    });
+    if (error.response) {
+      console.error('[支付] 支付宝响应:', error.response.data || error.response);
+    }
+    
+    // 错误回退到模拟支付
+    console.log('[支付] 真实支付失败，回退到模拟支付');
+    const { orderId, totalAmount, subject } = req.body;
+    const outTradeNo = `KZ${Date.now()}${Math.floor(Math.random() * 1000)}`;
+    return createMockPayment(res, orderId, outTradeNo, totalAmount, subject);
   }
 });
 
