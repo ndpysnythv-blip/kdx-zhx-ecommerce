@@ -67,6 +67,35 @@ let appId = '';
 let privateKey = '';
 let alipayPublicKey = '';
 
+// 格式化密钥，确保符合支付宝要求
+function formatPrivateKey(key) {
+  if (!key) return key;
+  // 移除所有空白字符
+  key = key.replace(/\s+/g, '');
+  // 如果没有开始标记，添加格式化
+  if (!key.startsWith('-----BEGIN')) {
+    key = key.replace(/-----BEGIN.*?-----/g, '').replace(/-----END.*?-----/g, '');
+    // 每64字符换行
+    key = key.match(/.{1,64}/g).join('\n');
+    key = '-----BEGIN PRIVATE KEY-----\n' + key + '\n-----END PRIVATE KEY-----';
+  }
+  return key;
+}
+
+function formatPublicKey(key) {
+  if (!key) return key;
+  // 移除所有空白字符
+  key = key.replace(/\s+/g, '');
+  // 如果没有开始标记，添加格式化
+  if (!key.startsWith('-----BEGIN')) {
+    key = key.replace(/-----BEGIN.*?-----/g, '').replace(/-----END.*?-----/g, '');
+    // 每64字符换行
+    key = key.match(/.{1,64}/g).join('\n');
+    key = '-----BEGIN PUBLIC KEY-----\n' + key + '\n-----END PUBLIC KEY-----';
+  }
+  return key;
+}
+
 if (useRealAlipay) {
   try {
     // 解密支付宝密钥
@@ -74,14 +103,21 @@ if (useRealAlipay) {
     privateKey = decrypt(process.env.ALIPAY_PRIVATE_KEY_ENCRYPTED, encryptKey);
     alipayPublicKey = decrypt(process.env.ALIPAY_PUBLIC_KEY_ENCRYPTED, encryptKey);
     
-    // 验证密钥完整性
+    // 格式化密钥
+    privateKey = formatPrivateKey(privateKey);
+    alipayPublicKey = formatPublicKey(alipayPublicKey);
+    
+    // 验证密钥完整性（宽松要求）
     const appIdValid = appId && appId.length > 5;
-    const privateKeyValid = privateKey && privateKey.length > 10;
-    const publicKeyValid = alipayPublicKey && alipayPublicKey.length > 10;
+    const privateKeyValid = privateKey && privateKey.length > 50;
+    const publicKeyValid = alipayPublicKey && alipayPublicKey.length > 50;
     
     if (!appIdValid || !privateKeyValid || !publicKeyValid) {
       console.warn('⚠️ 支付宝密钥数据不完整，将使用模拟支付模式');
       console.warn('  提示: 请提供完整的应用私钥和支付宝公钥');
+      console.warn('  appId长度:', appId ? appId.length : 0);
+      console.warn('  privateKey长度:', privateKey ? privateKey.length : 0);
+      console.warn('  publicKey长度:', alipayPublicKey ? alipayPublicKey.length : 0);
       // 重置为模拟模式
       appId = '';
       privateKey = '';
@@ -89,6 +125,8 @@ if (useRealAlipay) {
     } else {
       console.log('✅ 支付宝配置加载成功，使用真实支付模式');
       console.log('  - AppId:', appId);
+      console.log('  - 私钥长度:', privateKey.length);
+      console.log('  - 公钥长度:', alipayPublicKey.length);
     }
   } catch (error) {
     console.warn('⚠️ 支付宝配置加载异常，将使用模拟支付模式');
