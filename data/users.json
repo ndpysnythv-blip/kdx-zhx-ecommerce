@@ -13,19 +13,6 @@
     "lastLoginIp": "127.0.0.1"
   },
   {
-    "id": "admin-15778001901",
-    "username": "admin157",
-    "phone": "15778001901",
-    "email": "admin@kdxzhx.com",
-    "password": "$2a$12$WRKBYiooLX8LUWD3tn6G/eFlxerC1X1myxFOn9XGpGZmJAglj.ZKa",
-    "role": "admin",
-    "isAdmin": true,
-    "createdAt": "2024-05-10T00:00:00.000Z",
-    "autoLoginEnabled": true,
-    "lastLoginAt": null,
-    "lastLoginIp": null
-  },
-  {
     "id": "user-001",
     "username": "user001",
     "phone": "13800138000",
