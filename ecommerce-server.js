@@ -777,10 +777,13 @@ app.post('/api/alipay/create', async (req, res) => {
       alipaySdk = initAlipaySdk();
     }
     
-    // 检查是否启用真实支付宝支付
+    // 检查是否配置正确
     if (!alipayConfig.enabled || !alipaySdk) {
-      console.log('[支付] 使用模拟支付模式');
-      return createMockPayment(res, orderId, outTradeNo, totalAmount, subject);
+      console.error('[支付] 支付宝配置未启用或SDK初始化失败');
+      return res.status(500).json({ 
+        success: false, 
+        error: '支付宝支付暂时不可用，请稍后再试' 
+      });
     }
     
     // 真实支付宝支付
@@ -827,8 +830,7 @@ app.post('/api/alipay/create', async (req, res) => {
     res.json({
       success: true,
       payUrl: result,
-      outTradeNo: outTradeNo,
-      isMock: false
+      outTradeNo: outTradeNo
     });
     
   } catch (error) {
@@ -838,85 +840,10 @@ app.post('/api/alipay/create', async (req, res) => {
       console.error('[支付] 支付宝响应:', error.response.data || error.response);
     }
     
-    // 错误回退到模拟支付
-    console.log('[支付] 真实支付失败，回退到模拟支付');
-    const { orderId, totalAmount, subject } = req.body;
-    const outTradeNo = `KZ${Date.now()}${Math.floor(Math.random() * 1000)}`;
-    return createMockPayment(res, orderId, outTradeNo, totalAmount, subject);
-  }
-});
-
-// 模拟支付函数
-function createMockPayment(res, orderId, outTradeNo, totalAmount, subject) {
-  // 更新订单信息
-  const orders = db.getOrders();
-  const orderIndex = orders.findIndex(o => o.id === orderId);
-  if (orderIndex !== -1) {
-    orders[orderIndex] = {
-      ...orders[orderIndex],
-      outTradeNo: outTradeNo,
-      paymentStatus: 'pending',
-      paymentMethod: 'alipay'
-    };
-    db.saveOrders(orders);
-  }
-  
-  // 返回模拟支付页面URL
-  const mockPayUrl = `/mock-payment?orderId=${orderId}&outTradeNo=${outTradeNo}&totalAmount=${totalAmount}&subject=${encodeURIComponent(subject)}`;
-  
-  console.log(`[支付] 模拟支付订单创建成功: ${outTradeNo}`);
-  res.json({
-    success: true,
-    payUrl: mockPayUrl,
-    outTradeNo: outTradeNo,
-    isMock: true
-  });
-}
-
-// 模拟支付页面
-app.get('/mock-payment', (req, res) => {
-  res.sendFile(path.join(__dirname, 'mock-payment.html'));
-});
-
-// 模拟支付成功API
-app.post('/api/alipay/mock-success', async (req, res) => {
-  try {
-    const { outTradeNo, orderId } = req.body;
-    
-    // 更新订单状态
-    const orders = db.getOrders();
-    const orderIndex = orders.findIndex(o => 
-      o.outTradeNo === outTradeNo || o.id === orderId
-    );
-    
-    if (orderIndex !== -1) {
-      orders[orderIndex] = {
-        ...orders[orderIndex],
-        status: 'paid',
-        paymentStatus: 'success',
-        paidAt: new Date().toISOString(),
-        alipayTradeNo: `MOCK${Date.now()}`
-      };
-      db.saveOrders(orders);
-      
-      console.log(`[支付] 模拟支付成功: ${orders[orderIndex].id}`);
-      
-      res.json({
-        success: true,
-        message: '支付成功',
-        orderId: orders[orderIndex].id
-      });
-    } else {
-      res.status(404).json({
-        success: false,
-        message: '订单不存在'
-      });
-    }
-  } catch (error) {
-    console.error('[支付] 模拟支付处理失败:', error);
-    res.status(500).json({
-      success: false,
-      message: '支付处理失败'
+    res.status(500).json({ 
+      success: false, 
+      error: '创建支付订单失败，请稍后再试',
+      details: error.message
     });
   }
 });
