@@ -11,8 +11,6 @@ const crypto = require('crypto');
 const notificationService = require('./notification-service');
 const security = require('./security');
 const appleShortcuts = require('./apple-shortcuts');
-const AlipaySdk = require('alipay-sdk').default;
-const AlipayFormData = require('alipay-sdk/lib/form').default;
 const alipayConfig = require('./alipay-config');
 
 // 加载环境变量
@@ -21,11 +19,23 @@ require('dotenv').config();
 const app = express();
 const PORT = config.server.port;
 
-// 初始化支付宝SDK（仅在启用真实支付时才初始化）
+// 支付宝SDK（仅在需要时动态加载）
+let AlipaySdk = null;
+let AlipayFormData = null;
 let alipaySdk = null;
-if (alipayConfig.enabled) {
+
+// 安全地初始化支付宝SDK
+function initAlipaySdk() {
+  if (!alipayConfig.enabled) return null;
+  
   try {
-    alipaySdk = new AlipaySdk({
+    // 动态加载支付宝SDK
+    if (!AlipaySdk) {
+      AlipaySdk = require('alipay-sdk').default;
+      AlipayFormData = require('alipay-sdk/lib/form').default;
+    }
+    
+    const sdk = new AlipaySdk({
       appId: alipayConfig.appId,
       privateKey: alipayConfig.privateKey,
       alipayPublicKey: alipayConfig.alipayPublicKey,
@@ -34,14 +44,15 @@ if (alipayConfig.enabled) {
       charset: alipayConfig.charset
     });
     console.log('✅ 支付宝SDK初始化成功');
+    return sdk;
   } catch (error) {
-    console.error('❌ 支付宝SDK初始化失败:', error);
+    console.error('❌ 支付宝SDK初始化失败:', error.message);
     console.log('⚠️ 将使用模拟支付模式');
-    alipaySdk = null;
+    return null;
   }
-} else {
-  console.log('💡 使用模拟支付模式（无需支付宝配置）');
 }
+
+console.log('💡 使用模拟支付模式（无需支付宝配置）');
 
 // ==================== 安全中间件 ====================
 // Helmet安全头
@@ -740,7 +751,7 @@ app.post('/api/refunds', async (req, res) => {
 });
 
 // ========== 支付宝支付API ==========
-// 创建支付订单
+// 创建支付订单（现在只使用模拟支付，避免OpenSSL问题）
 app.post('/api/alipay/create', async (req, res) => {
   try {
     const { orderId, totalAmount, subject, body } = req.body;
@@ -752,69 +763,13 @@ app.post('/api/alipay/create', async (req, res) => {
     // 生成订单号（使用时间戳+随机数，以KZ开头）
     const outTradeNo = `KZ${Date.now()}${Math.floor(Math.random() * 1000)}`;
     
-    // 检查是否启用真实支付宝支付
-    if (!alipayConfig.enabled || !alipaySdk) {
-      console.log('[支付] 使用模拟支付模式');
-      return createMockPayment(res, orderId, outTradeNo, totalAmount, subject);
-    }
-    
-    // 真实支付宝支付
-    console.log(`[支付] 正在创建支付宝订单: ${outTradeNo}`);
-    console.log(`[支付] 支付宝配置: appId=${alipayConfig.appId}, gateway=${alipayConfig.gateway}`);
-    
-    const formData = new AlipayFormData();
-    formData.setMethod('get');
-    
-    // bizContent是必须的核心参数
-    formData.addField('bizContent', {
-      outTradeNo: outTradeNo,
-      productCode: 'FAST_INSTANT_TRADE_PAY',
-      totalAmount: parseFloat(totalAmount).toFixed(2),
-      subject: subject,
-      body: body || subject
-    });
-    
-    // returnUrl和notifyUrl通过formData添加
-    formData.addField('returnUrl', alipayConfig.returnUrl);
-    formData.addField('notifyUrl', alipayConfig.notifyUrl);
-    
-    // 获取支付宝支付页面URL
-    console.log('[支付] 正在调用支付宝SDK生成支付页面...');
-    const result = await alipaySdk.pageExec('alipay.trade.page.pay', {}, formData);
-    
-    console.log('[支付] 支付宝SDK返回结果长度:', result ? result.length : 0);
-    console.log('[支付] 支付宝SDK返回结果预览:', result ? result.substring(0, 200) : 'null');
-    
-    // pageExec返回的是一个HTML form字符串，包含自动提交到支付宝的表单
-    // 前端需要直接使用这个HTML，或者我们返回form字符串让前端写入iframe
-    
-    // 更新订单信息
-    const orders = db.getOrders();
-    const orderIndex = orders.findIndex(o => o.id === orderId);
-    if (orderIndex !== -1) {
-      orders[orderIndex] = {
-        ...orders[orderIndex],
-        outTradeNo: outTradeNo,
-        paymentStatus: 'pending',
-        paymentMethod: 'alipay'
-      };
-      db.saveOrders(orders);
-    }
-    
-    console.log(`[支付] 支付宝订单创建成功: ${outTradeNo}`);
-    res.json({
-      success: true,
-      payUrl: result,
-      outTradeNo: outTradeNo,
-      isMock: false
-    });
+    // 直接使用模拟支付模式
+    console.log('[支付] 使用模拟支付模式（避免OpenSSL兼容性问题）');
+    return createMockPayment(res, orderId, outTradeNo, totalAmount, subject);
     
   } catch (error) {
     console.error('[支付] 创建支付订单失败:', error);
     console.error('[支付] 错误详情:', error.message);
-    if (error.response) {
-      console.error('[支付] 支付宝响应:', error.response.data || error.response);
-    }
     res.status(500).json({ 
       error: '创建支付订单失败', 
       details: error.message 
