@@ -1,0 +1,68 @@
+[
+  {
+    "id": "prod-1",
+    "name": "智能手表 - 星空黑",
+    "price": 299,
+    "category": "watch",
+    "image": "https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=400&h=400&fit=crop",
+    "description": "高端智能手表，健康监测、运动追踪、消息提醒",
+    "stock": 50,
+    "sales": 128,
+    "features": ["健康监测", "运动追踪", "消息提醒"]
+  },
+  {
+    "id": "prod-2",
+    "name": "智能手表 - 玫瑰金",
+    "price": 329,
+    "category": "watch",
+    "image": "https://images.unsplash.com/photo-1609081219090-a6d81d3085bf?w=400&h=400&fit=crop",
+    "description": "时尚玫瑰金配色，高端质感",
+    "stock": 35,
+    "sales": 89,
+    "features": ["健康监测", "运动追踪", "消息提醒"]
+  },
+  {
+    "id": "prod-3",
+    "name": "高品质数据线 - 2米",
+    "price": 39,
+    "category": "cable",
+    "image": "https://images.unsplash.com/photo-1586864387967-d02ef85d93e8?w=400&h=400&fit=crop",
+    "description": "耐用编织线，快充传输二合一",
+    "stock": 200,
+    "sales": 456,
+    "features": ["编织材质", "快充", "数据传输"]
+  },
+  {
+    "id": "prod-4",
+    "name": "无线充电器",
+    "price": 89,
+    "category": "accessory",
+    "image": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop",
+    "description": "15W快充，兼容各种设备",
+    "stock": 80,
+    "sales": 234,
+    "features": ["15W快充", "无线充电", "多设备兼容"]
+  },
+  {
+    "id": "prod-5",
+    "name": "保护壳 - 透明",
+    "price": 29,
+    "category": "accessory",
+    "image": "https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?w=400&h=400&fit=crop",
+    "description": "高透明不发黄，防摔耐磨",
+    "stock": 150,
+    "sales": 567,
+    "features": ["高透明", "防摔", "不发黄"]
+  },
+  {
+    "id": "prod-6",
+    "name": "蓝牙耳机 Pro",
+    "price": 199,
+    "category": "other",
+    "image": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop",
+    "description": "主动降噪，音质出色",
+    "stock": 60,
+    "sales": 189,
+    "features": ["主动降噪", "超长续航", "Hi-Fi音质"]
+  }
+]
