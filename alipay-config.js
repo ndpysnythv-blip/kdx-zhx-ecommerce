@@ -77,7 +77,8 @@ function formatPrivateKey(key) {
     key = key.replace(/-----BEGIN.*?-----/g, '').replace(/-----END.*?-----/g, '');
     // 每64字符换行
     key = key.match(/.{1,64}/g).join('\n');
-    key = '-----BEGIN PRIVATE KEY-----\n' + key + '\n-----END PRIVATE KEY-----';
+    // 使用PKCS#1格式（RSA PRIVATE KEY）而不是PKCS#8（PRIVATE KEY）
+    key = '-----BEGIN RSA PRIVATE KEY-----\n' + key + '\n-----END RSA PRIVATE KEY-----';
   }
   return key;
 }
