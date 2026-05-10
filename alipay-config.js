@@ -8,106 +8,73 @@
  * 2. 创建应用获取 APPID
  * 3. 生成应用私钥和应用公钥（使用支付宝密钥生成工具，推荐PKCS8格式）
  * 4. 在开放平台配置应用公钥，获取支付宝公钥（注意：不是应用公钥）
- * 5. 运行 node key-manager.js encrypt 加密密钥
+ * 5. 在 .env 文件中配置相关参数
  * 
- * 安全机制:
- * - 所有密钥使用 AES-256-CBC 加密后存储在 .env 文件中
- * - .env 文件已添加到 .gitignore，不会泄露到代码仓库
- * - 运行时自动解密，内存中使用明文
- * - 即使 .env 文件被窃取，没有加密密钥也无法解密
- * 
- * 加密密钥管理:
- * - 加密密钥存储在 .env 的 ALIPAY_ENCRYPT_KEY 变量中
- * - 运行 node key-manager.js encrypt 可以重新加密密钥
- * - 运行 node key-manager.js decrypt 可以验证解密
- * - 运行 node key-manager.js generate 可以生成新的加密密钥
+ * 重要: 本系统仅支持真实支付宝支付，不提供模拟支付功能
  */
 
 const crypto = require('crypto');
 const config = require('./config');
 const PORT = config.server.port || 9999;
 
-// 安全的AES-256-CBC解密函数
-function decrypt(encryptedText, key) {
-  try {
-    if (!encryptedText || !key) return null;
-    
-    const parts = encryptedText.split(':');
-    if (parts.length !== 2) return null;
-    
-    const iv = Buffer.from(parts[0], 'hex');
-    const encrypted = parts[1];
-    
-    // 使用更兼容的方式处理解密
-    const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(key, 'hex'), iv);
-    decipher.setAutoPadding(true);
-    
-    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-    decrypted += decipher.final('utf8');
-    return decrypted;
-  } catch (error) {
-    console.error('❌ 密钥解密失败:', error.message);
-    return null;
+// 读取支付宝配置（支持明文和加密两种方式，兼容旧版本）
+let appId = process.env.ALIPAY_APP_ID || '';
+let privateKey = process.env.ALIPAY_PRIVATE_KEY || '';
+let alipayPublicKey = process.env.ALIPAY_PUBLIC_KEY || '';
+
+// 如果没有明文配置，尝试解密方式
+if (!appId || !privateKey || !alipayPublicKey) {
+  const encryptKey = process.env.ALIPAY_ENCRYPT_KEY;
+  if (encryptKey && encryptKey.length === 64) {
+    try {
+      function decrypt(encryptedText, key) {
+        const parts = encryptedText.split(':');
+        if (parts.length !== 2) return null;
+        const iv = Buffer.from(parts[0], 'hex');
+        const encrypted = parts[1];
+        const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(key, 'hex'), iv);
+        decipher.setAutoPadding(true);
+        let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+        decrypted += decipher.final('utf8');
+        return decrypted;
+      }
+      
+      appId = appId || decrypt(process.env.ALIPAY_APP_ID_ENCRYPTED, encryptKey);
+      privateKey = privateKey || decrypt(process.env.ALIPAY_PRIVATE_KEY_ENCRYPTED, encryptKey);
+      alipayPublicKey = alipayPublicKey || decrypt(process.env.ALIPAY_PUBLIC_KEY_ENCRYPTED, encryptKey);
+    } catch (error) {
+      console.error('❌ 支付宝密钥解密失败:', error.message);
+    }
   }
 }
 
-// 从环境变量读取加密密钥
-const encryptKey = process.env.ALIPAY_ENCRYPT_KEY;
+// 验证配置是否完整
+const isConfigured = !!appId && !!privateKey && !!alipayPublicKey;
 
-// 检查是否配置了支付宝密钥（更安全的检查）
-const hasEncryptKey = !!encryptKey && encryptKey.length === 64; // 256位密钥是64个十六进制字符
-const hasAppId = !!process.env.ALIPAY_APP_ID_ENCRYPTED;
-const hasPrivateKey = !!process.env.ALIPAY_PRIVATE_KEY_ENCRYPTED;
-const hasPublicKey = !!process.env.ALIPAY_PUBLIC_KEY_ENCRYPTED;
-
-// 判断是否启用真实支付宝支付
-const useRealAlipay = hasEncryptKey && hasAppId && hasPrivateKey && hasPublicKey;
-
-let appId = '';
-let privateKey = '';
-let alipayPublicKey = '';
-
-if (useRealAlipay) {
-  try {
-    // 解密支付宝密钥
-    appId = decrypt(process.env.ALIPAY_APP_ID_ENCRYPTED, encryptKey);
-    privateKey = decrypt(process.env.ALIPAY_PRIVATE_KEY_ENCRYPTED, encryptKey);
-    alipayPublicKey = decrypt(process.env.ALIPAY_PUBLIC_KEY_ENCRYPTED, encryptKey);
-    
-    if (!appId || !privateKey || !alipayPublicKey) {
-      console.warn('⚠️ 支付宝密钥解密失败，将使用模拟支付模式');
-      // 重置为模拟模式
-      appId = '';
-      privateKey = '';
-      alipayPublicKey = '';
-    } else {
-      console.log('✅ 支付宝配置加载成功，使用真实支付模式');
-    }
-  } catch (error) {
-    console.warn('⚠️ 支付宝配置加载异常，将使用模拟支付模式');
-    console.error('详细错误:', error.message);
-    // 确保重置为模拟模式
-    appId = '';
-    privateKey = '';
-    alipayPublicKey = '';
-  }
+if (isConfigured) {
+  console.log('✅ 支付宝配置加载成功');
 } else {
-  console.log('💡 使用模拟支付模式（无需支付宝配置）');
-  console.log('提示: 配置 .env 文件中的支付宝密钥可启用真实支付');
+  console.error('❌ 支付宝配置不完整，请在 .env 文件中配置以下参数:');
+  console.error('   - ALIPAY_APP_ID');
+  console.error('   - ALIPAY_PRIVATE_KEY');
+  console.error('   - ALIPAY_PUBLIC_KEY');
+  console.error('   - ALIPAY_GATEWAY (可选，默认沙箱环境)');
+  console.error('   - ALIPAY_NOTIFY_URL (可选)');
+  console.error('   - ALIPAY_RETURN_URL (可选)');
 }
 
 module.exports = {
-  // 是否启用真实支付宝支付
-  enabled: useRealAlipay && !!appId && !!privateKey && !!alipayPublicKey,
+  // 配置是否完整
+  isConfigured: isConfigured,
   
   // 支付宝应用APPID
-  appId: appId || 'mock_app_id',
+  appId: appId,
   
   // 应用私钥
-  privateKey: privateKey || 'mock_private_key',
+  privateKey: privateKey,
   
   // 支付宝公钥
-  alipayPublicKey: alipayPublicKey || 'mock_public_key',
+  alipayPublicKey: alipayPublicKey,
   
   // 支付宝网关地址
   gateway: process.env.ALIPAY_GATEWAY || 'https://openapi.alipaydev.com/gateway.do',
