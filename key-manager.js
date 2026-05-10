@@ -141,13 +141,11 @@ async function decryptKeys() {
     const appId = decrypt(env.ALIPAY_APP_ID_ENCRYPTED, encryptKey);
     const privateKey = decrypt(env.ALIPAY_PRIVATE_KEY_ENCRYPTED, encryptKey);
     const alipayPublicKey = decrypt(env.ALIPAY_PUBLIC_KEY_ENCRYPTED, encryptKey);
-    const appPublicKey = decrypt(env.ALIPAY_APP_PUBLIC_KEY_ENCRYPTED, encryptKey);
     
     console.log('📋 解密结果:\n');
     console.log(`AppID: ${appId}`);
     console.log(`\n应用私钥 (前50字符): ${privateKey.substring(0, 50)}...`);
     console.log(`\n支付宝公钥 (前50字符): ${alipayPublicKey.substring(0, 50)}...`);
-    console.log(`\n应用公钥 (前50字符): ${appPublicKey.substring(0, 50)}...`);
     console.log('\n✅ 解密成功！\n');
   } catch (error) {
     console.log('❌ 解密失败，请检查加密密钥是否正确');

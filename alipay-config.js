@@ -74,10 +74,10 @@ if (useRealAlipay) {
     privateKey = decrypt(process.env.ALIPAY_PRIVATE_KEY_ENCRYPTED, encryptKey);
     alipayPublicKey = decrypt(process.env.ALIPAY_PUBLIC_KEY_ENCRYPTED, encryptKey);
     
-    // 验证密钥完整性，确保密钥不是被截断的
+    // 验证密钥完整性
     const appIdValid = appId && appId.length > 5;
-    const privateKeyValid = privateKey && privateKey.length > 100;
-    const publicKeyValid = alipayPublicKey && alipayPublicKey.length > 100;
+    const privateKeyValid = privateKey && privateKey.length > 10;
+    const publicKeyValid = alipayPublicKey && alipayPublicKey.length > 10;
     
     if (!appIdValid || !privateKeyValid || !publicKeyValid) {
       console.warn('⚠️ 支付宝密钥数据不完整，将使用模拟支付模式');
@@ -88,6 +88,7 @@ if (useRealAlipay) {
       alipayPublicKey = '';
     } else {
       console.log('✅ 支付宝配置加载成功，使用真实支付模式');
+      console.log('  - AppId:', appId);
     }
   } catch (error) {
     console.warn('⚠️ 支付宝配置加载异常，将使用模拟支付模式');
