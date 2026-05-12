@@ -589,6 +589,10 @@ app.get('/payment-success', (req, res) => {
   res.sendFile(path.join(__dirname, 'payment-success.html'));
 });
 
+app.get('/manual-payment', (req, res) => {
+  res.sendFile(path.join(__dirname, 'manual-payment.html'));
+});
+
 // 商品API
 app.get('/api/products', (req, res) => {
   res.json(db.getProducts());
@@ -719,6 +723,181 @@ app.put('/api/orders/:id', async (req, res) => {
 app.delete('/api/orders/:id', (req, res) => {
   db.deleteItem('orders.json', req.params.id);
   res.json({ success: true });
+});
+
+// 用户提交支付确认
+app.post('/api/orders/:id/confirm-payment', async (req, res) => {
+  try {
+    const orderId = req.params.id;
+    const { transactionNo, paymentMethod, screenshot } = req.body;
+    
+    if (!transactionNo) {
+      return res.status(400).json({ error: '请输入交易号' });
+    }
+    
+    const orders = db.getOrders();
+    const orderIndex = orders.findIndex(o => o.id === orderId);
+    
+    if (orderIndex === -1) {
+      return res.status(404).json({ error: '订单不存在' });
+    }
+    
+    // 更新订单状态为待审核
+    orders[orderIndex] = {
+      ...orders[orderIndex],
+      status: 'payment_pending',
+      paymentStatus: 'pending_confirmation',
+      paymentMethod: paymentMethod,
+      paymentType: 'manual',
+      transactionNo: transactionNo,
+      paymentScreenshot: screenshot,
+      paymentSubmittedAt: new Date().toISOString()
+    };
+    
+    db.saveOrders(orders);
+    
+    // 发送通知给管理员
+    const users = db.getUsers();
+    const admins = users.filter(u => u.isAdmin);
+    for (const admin of admins) {
+      if (admin.email) {
+        await notificationService.sendOrderNotification(
+          orders[orderIndex],
+          'payment_pending',
+          admin.email,
+          admin.phone
+        );
+      }
+    }
+    
+    res.json({ success: true, message: '支付确认已提交，等待审核' });
+  } catch (error) {
+    console.error('Error confirming payment:', error);
+    res.status(500).json({ error: '提交失败' });
+  }
+});
+
+// 管理员确认支付
+app.post('/api/orders/:id/verify-payment', async (req, res) => {
+  try {
+    const orderId = req.params.id;
+    const { verified, note } = req.body;
+    
+    const orders = db.getOrders();
+    const orderIndex = orders.findIndex(o => o.id === orderId);
+    
+    if (orderIndex === -1) {
+      return res.status(404).json({ error: '订单不存在' });
+    }
+    
+    if (verified) {
+      // 确认支付成功
+      orders[orderIndex] = {
+        ...orders[orderIndex],
+        status: 'paid',
+        paymentStatus: 'confirmed',
+        paymentVerifiedAt: new Date().toISOString(),
+        paymentVerifiedNote: note
+      };
+    } else {
+      // 支付验证失败
+      orders[orderIndex] = {
+        ...orders[orderIndex],
+        status: 'pending',
+        paymentStatus: 'payment_rejected',
+        paymentVerifiedAt: new Date().toISOString(),
+        paymentVerifiedNote: note
+      };
+    }
+    
+    db.saveOrders(orders);
+    
+    // 发送通知给用户
+    const users = db.getUsers();
+    const user = users.find(u => u.id === orders[orderIndex].userId);
+    if (user && user.email) {
+      await notificationService.sendOrderNotification(
+        orders[orderIndex],
+        verified ? 'paid' : 'payment_rejected',
+        user.email,
+        user.phone
+      );
+    }
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error verifying payment:', error);
+    res.status(500).json({ error: '验证失败' });
+  }
+});
+
+// 取消订单
+app.post('/api/orders/:id/cancel', async (req, res) => {
+  try {
+    const orderId = req.params.id;
+    
+    const orders = db.getOrders();
+    const orderIndex = orders.findIndex(o => o.id === orderId);
+    
+    if (orderIndex === -1) {
+      return res.status(404).json({ error: '订单不存在' });
+    }
+    
+    orders[orderIndex] = {
+      ...orders[orderIndex],
+      status: 'cancelled',
+      cancelledAt: new Date().toISOString()
+    };
+    
+    db.saveOrders(orders);
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error cancelling order:', error);
+    res.status(500).json({ error: '取消失败' });
+  }
+});
+
+// 订单发货
+app.post('/api/orders/:id/ship', async (req, res) => {
+  try {
+    const orderId = req.params.id;
+    const { trackingNo, shippingCompany } = req.body;
+    
+    const orders = db.getOrders();
+    const orderIndex = orders.findIndex(o => o.id === orderId);
+    
+    if (orderIndex === -1) {
+      return res.status(404).json({ error: '订单不存在' });
+    }
+    
+    orders[orderIndex] = {
+      ...orders[orderIndex],
+      status: 'shipped',
+      trackingNo,
+      shippingCompany,
+      shippedAt: new Date().toISOString()
+    };
+    
+    db.saveOrders(orders);
+    
+    // 发送通知给用户
+    const users = db.getUsers();
+    const user = users.find(u => u.id === orders[orderIndex].userId);
+    if (user && user.email) {
+      await notificationService.sendOrderNotification(
+        orders[orderIndex],
+        'shipped',
+        user.email,
+        user.phone
+      );
+    }
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error shipping order:', error);
+    res.status(500).json({ error: '发货失败' });
+  }
 });
 
 // 退款API
