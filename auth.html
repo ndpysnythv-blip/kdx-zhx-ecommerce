@@ -182,6 +182,7 @@
             to { transform: rotate(360deg); }
         }
     </style>
+    <script src="/vercel-analytics.js"></script>
 </head>
 <body class="text-white">
     <div class="min-h-screen flex items-center justify-center p-4">
@@ -1212,7 +1213,7 @@
                 return { valid: false, message: '顶级域名至少需要2个字符' };
             }
             
-            // 检查是否为一次性邮箱
+            // 检查��否为一次性邮箱
             if (isDisposableEmail(domainPart)) {
                 return { valid: false, message: '不支持使用临时邮箱，请使用正规邮箱' };
             }
