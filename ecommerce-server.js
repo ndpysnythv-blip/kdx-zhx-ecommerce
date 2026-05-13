@@ -597,6 +597,10 @@ app.get('/dy', (req, res) => {
   res.sendFile(path.join(__dirname, 'dy.html'));
 });
 
+app.get('/hz', (req, res) => {
+  res.sendFile(path.join(__dirname, 'hz.html'));
+});
+
 // 商品API
 app.get('/api/products', (req, res) => {
   res.json(db.getProducts());
