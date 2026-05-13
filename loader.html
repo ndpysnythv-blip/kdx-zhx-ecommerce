@@ -165,33 +165,32 @@
             display: inline-block;
             opacity: 0;
             transform: translateX(-20px);
-            animation: letterReveal 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            animation: letterRevealLoop 4s ease-in-out infinite;
         }
 
-        .logo-text span:nth-child(1) { animation-delay: 0.2s; }
-        .logo-text span:nth-child(2) { animation-delay: 0.3s; }
-        .logo-text span:nth-child(3) { animation-delay: 0.4s; }
-        .logo-text span:nth-child(4) { animation-delay: 0.5s; }
-        .logo-text span:nth-child(5) { animation-delay: 0.6s; }
-        .logo-text span:nth-child(6) { animation-delay: 0.7s; }
-        .logo-text span:nth-child(7) { animation-delay: 0.8s; }
-        .logo-text span:nth-child(8) { animation-delay: 0.9s; }
+        .logo-text span:nth-child(1) { animation-delay: 0.1s; }
+        .logo-text span:nth-child(2) { animation-delay: 0.2s; }
+        .logo-text span:nth-child(3) { animation-delay: 0.3s; }
+        .logo-text span:nth-child(4) { animation-delay: 0.4s; }
+        .logo-text span:nth-child(5) { animation-delay: 0.5s; }
+        .logo-text span:nth-child(6) { animation-delay: 0.6s; }
+        .logo-text span:nth-child(7) { animation-delay: 0.7s; }
 
-        @keyframes letterReveal {
-            0% {
+        @keyframes letterRevealLoop {
+            0%, 10% {
                 opacity: 0;
                 transform: translateX(-20px);
                 filter: blur(4px);
             }
-            50% {
-                opacity: 0.8;
-                transform: translateX(5px);
-                filter: blur(1px);
-            }
-            100% {
+            15%, 75% {
                 opacity: 1;
                 transform: translateX(0);
                 filter: blur(0);
+            }
+            85%, 100% {
+                opacity: 0;
+                transform: translateX(20px);
+                filter: blur(4px);
             }
         }
 
@@ -209,15 +208,15 @@
             background: linear-gradient(90deg, #1a1a2e 0%, #667eea 50%, #764ba2 100%);
             border-radius: 2px;
             width: 0;
-            animation: progressFill 2s ease-in-out infinite;
+            animation: progressFillLoop 3s ease-in-out infinite;
         }
 
-        @keyframes progressFill {
+        @keyframes progressFillLoop {
             0% {
                 width: 0%;
             }
             80% {
-                width: 80%;
+                width: 85%;
             }
             100% {
                 width: 100%;
@@ -284,6 +283,88 @@
                 opacity: 0;
             }
         }
+
+        .response-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            border-radius: 24px;
+            opacity: 0;
+            visibility: hidden;
+            transform: scale(0.9);
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .response-container.show {
+            opacity: 1;
+            visibility: visible;
+            transform: scale(1);
+        }
+
+        .response-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            animation: responseIconPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes responseIconPop {
+            0% {
+                transform: scale(0);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .response-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .response-content {
+            font-size: 16px;
+            color: #666666;
+            line-height: 1.8;
+            text-align: center;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-line;
+        }
+
+        .response-close {
+            margin-top: 24px;
+            padding: 12px 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .response-close:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
     </style>
 </head>
 <body>
@@ -306,41 +387,88 @@
                 <div class="loader-bar">
                     <div class="loader-progress"></div>
                 </div>
-                <div class="loader-status" id="status">正在加载...</div>
+                <div class="loader-status" id="status">正在连接服务器...</div>
+            </div>
+            
+            <div class="response-container" id="responseContainer">
+                <div class="response-icon">
+                    <i style="color: white; font-size: 28px;" class="fas fa-check-circle"></i>
+                </div>
+                <div class="response-title">处理完成</div>
+                <div class="response-content" id="responseContent"></div>
+                <button class="response-close" onclick="closeLoader()">关闭</button>
             </div>
         </div>
     </div>
 
     <script>
         const statusTexts = [
-            '正在加载资源...',
-            '正在初始化组件...',
             '正在连接服务器...',
-            '正在加载数据...',
-            '即将完成...'
+            '正在获取数据...',
+            '正在处理请求...',
+            '即将完成...',
+            '正在加载资源...'
         ];
 
         let statusIndex = 0;
         const statusElement = document.getElementById('status');
+        const loaderContainer = document.getElementById('loader');
+        const responseContainer = document.getElementById('responseContainer');
+        const responseContent = document.getElementById('responseContent');
 
-        setInterval(() => {
+        const statusInterval = setInterval(() => {
             statusIndex = (statusIndex + 1) % statusTexts.length;
             statusElement.textContent = statusTexts[statusIndex];
-        }, 800);
+        }, 1200);
 
-        function hideLoader() {
-            const loader = document.getElementById('loader');
-            loader.classList.add('hidden');
+        function showResponse(content) {
+            responseContent.textContent = content;
+            responseContainer.classList.add('show');
+            
+            setTimeout(() => {
+                document.querySelector('.logo-wrapper').style.opacity = '0';
+                document.querySelector('.logo-wrapper').style.pointerEvents = 'none';
+            }, 300);
+            
+            clearInterval(statusInterval);
         }
 
-        function showLoader() {
-            const loader = document.getElementById('loader');
-            loader.classList.remove('hidden');
+        function hideLoader() {
+            loaderContainer.classList.add('hidden');
+        }
+
+        function closeLoader() {
+            hideLoader();
+        }
+
+        async function simulateBackendRequest() {
+            try {
+                const response = await fetch('/api/ai', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        messages: [{ role: 'user', content: '你好，有什么可以帮我的？' }] 
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.choices && data.choices[0] && data.choices[0].message) {
+                        showResponse(data.choices[0].message.content);
+                    }
+                } else {
+                    showResponse('抱歉，服务器暂时无法响应，请稍后再试。');
+                }
+            } catch (error) {
+                console.error('请求失败:', error);
+                showResponse('抱歉，连接服务器失败，请检查网络连接后重试。');
+            }
         }
 
         window.addEventListener('load', () => {
-            setTimeout(hideLoader, 2500);
+            simulateBackendRequest();
         });
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"></script>
 </body>
 </html>
