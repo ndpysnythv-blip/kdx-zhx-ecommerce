@@ -16,7 +16,7 @@
     "NODE_OPTIONS": "--openssl-legacy-provider"
   },
   "domains": [
-    "kdxzhx.top",
-    "www.kdxzhx.top"
+    "shop.kdxzhx.top",
+    "store.kdxzhx.top"
   ]
 }
