@@ -601,7 +601,7 @@ app.get('/hz', (req, res) => {
   res.sendFile(path.join(__dirname, 'hz.html'));
 });
 
-// 商品API
+// 商品API - 公开读取，写入需要管理员权限
 app.get('/api/products', (req, res) => {
   res.json(db.getProducts());
 });
@@ -616,10 +616,12 @@ app.get('/api/products/:id', (req, res) => {
   }
 });
 
-app.post('/api/products', (req, res) => {
+// 添加商品 - 需要管理员权限
+app.post('/api/products', requireAdmin, (req, res) => {
   const product = {
     id: uuidv4(),
     ...req.body,
+    sold: 0,
     createdAt: new Date().toISOString()
   };
   const products = db.getProducts();
@@ -628,14 +630,45 @@ app.post('/api/products', (req, res) => {
   res.json(product);
 });
 
-app.put('/api/products/:id', (req, res) => {
-  db.updateItem('products.json', req.params.id, req.body);
+// 更新商品 - 需要管理员权限
+app.put('/api/products/:id', requireAdmin, (req, res) => {
+  const products = db.getProducts();
+  const index = products.findIndex(p => p.id === req.params.id);
+  if (index !== -1) {
+    products[index] = { ...products[index], ...req.body };
+    db.saveProducts(products);
+    res.json({ success: true });
+  } else {
+    res.status(404).json({ error: 'Product not found' });
+  }
+});
+
+// 删除商品 - 需要管理员权限
+app.delete('/api/products/:id', requireAdmin, (req, res) => {
+  const products = db.getProducts();
+  const filtered = products.filter(p => p.id !== req.params.id);
+  db.saveProducts(filtered);
   res.json({ success: true });
 });
 
-app.delete('/api/products/:id', (req, res) => {
-  db.deleteItem('products.json', req.params.id);
-  res.json({ success: true });
+// 管理后台统计数据
+app.get('/api/stats', requireAdmin, (req, res) => {
+  const products = db.getProducts();
+  const orders = db.getOrders();
+  const refunds = db.getRefunds();
+  
+  const totalRevenue = orders
+    .filter(o => o.status === 'paid' || o.status === 'shipped' || o.status === 'delivered')
+    .reduce((sum, o) => sum + (o.total || 0), 0);
+  
+  const pendingRefunds = refunds.filter(r => r.status === 'pending').length;
+  
+  res.json({
+    totalProducts: products.length,
+    totalOrders: orders.length,
+    totalRevenue: totalRevenue,
+    pendingRefunds: pendingRefunds
+  });
 });
 
 // 订单API
@@ -1662,28 +1695,36 @@ app.post('/api/auto-login', (req, res) => {
 // 后台权限验证中间件
 function requireAdmin(req, res, next) {
     // 如果已经有currentUser，检查是否是管理员
-    if (currentUser && currentUser.role === 'admin') {
+    if (currentUser && (currentUser.role === 'admin' || currentUser.isAdmin)) {
         return next();
     }
     
-    // 否则，检查是否是从本地访问或已知的管理员IP
-    const location = getLoginLocation(req);
-    const adminPhones = ['13800138000']; // 管理员手机号
-    const adminEmails = ['admin@example.com'];
+    // 检查数据库中的管理员用户
+    const users = db.getUsers();
+    const adminUsers = users.filter(u => u.role === 'admin' || u.isAdmin);
     
-    // 检查当前用户是否是管理员
-    if (currentUser && (adminPhones.includes(currentUser.phone) || adminEmails.includes(currentUser.email))) {
-        return next();
+    // 检查当前用户是否在管理员列表中
+    if (currentUser) {
+        const isAdminUser = adminUsers.some(u => u.id === currentUser.id || u.phone === currentUser.phone || u.email === currentUser.email);
+        if (isAdminUser) {
+            return next();
+        }
     }
     
-    // 如果没有登录，返回403
-    res.status(403).sendFile(path.join(__dirname, 'auth.html'));
+    // 如果没有登录或不是管理员，返回403
+    res.status(403).json({ error: '需要管理员权限' });
 }
 
-// 后台页面（需要管理员权限）
+// 检查是否已登录的中间件
+function requireAuth(req, res, next) {
+    if (currentUser) {
+        return next();
+    }
+    res.status(401).json({ error: '需要登录' });
+}
+
+// 后台页面
 app.get('/admin', (req, res) => {
-    // 检查是否是管理员账号访问
-    // 这里简化处理，实际项目中应该有更严格的验证
     res.sendFile(path.join(__dirname, 'admin-shop.html'));
 });
 
