@@ -989,19 +989,178 @@
             }, 1000);
         }
 
+        let viewedProducts = [];
+        let userOrders = [];
+
+        async function loadUserContext() {
+            try {
+                const viewedResponse = await fetch('/api/user/viewed-products');
+                if (viewedResponse.ok) {
+                    viewedProducts = await viewedResponse.json();
+                }
+                
+                const ordersResponse = await fetch('/api/orders');
+                if (ordersResponse.ok) {
+                    userOrders = await ordersResponse.json();
+                }
+            } catch (error) {
+                console.error('加载用户上下文失败:', error);
+            }
+        }
+
+        function generateRecommendedQuestions() {
+            const questions = [];
+            
+            if (viewedProducts.length > 0) {
+                const recentProduct = viewedProducts[0];
+                questions.push({
+                    id: 1,
+                    text: `咨询「${recentProduct.name || '商品'}」的详细信息`,
+                    action: 'product_info',
+                    data: { productId: recentProduct.id }
+                });
+                
+                if (recentProduct.stock !== undefined) {
+                    questions.push({
+                        id: 2,
+                        text: `查询「${recentProduct.name || '商品'}」的库存情况`,
+                        action: 'check_stock',
+                        data: { productId: recentProduct.id }
+                    });
+                }
+                
+                if (recentProduct.price !== undefined) {
+                    questions.push({
+                        id: 3,
+                        text: `了解「${recentProduct.name || '商品'}」的价格和优惠`,
+                        action: 'check_price',
+                        data: { productId: recentProduct.id }
+                    });
+                }
+            }
+            
+            if (userOrders.length > 0) {
+                const recentOrder = userOrders[userOrders.length - 1];
+                questions.push({
+                    id: questions.length + 1,
+                    text: `查询订单 ${recentOrder.orderNo || recentOrder.id} 的物流状态`,
+                    action: 'track_order',
+                    data: { orderId: recentOrder.id }
+                });
+            }
+            
+            questions.push({
+                id: questions.length + 1,
+                text: '了解售后服务和退换货政策',
+                action: 'after_sales',
+                data: {}
+            });
+            
+            return questions.slice(0, 5);
+        }
+
         function initConversation() {
             conversationStarted = true;
             
-            const platforms = [
-                { name: '闲鱼', icon: 'fa-store' },
-                { name: '抖音', icon: 'fa-music' },
-                { name: '淘宝', icon: 'fa-shopping-bag' },
-                { name: '其他', icon: 'fa-ellipsis-h' }
-            ];
+            addMessage('您好！我是智能客服小K，很高兴为您服务！', false, false);
+            chatHistory.push({ role: 'assistant', content: '您好！我是智能客服小K，很高兴为您服务！' });
             
-            addMessage('您好！我是智能客服小K。请问您来自哪个平台呢？', false, false, null, true, platforms);
-            chatHistory.push({ role: 'assistant', content: '您好！我是智能客服小K。请问您来自哪个平台呢？' });
+            loadUserContext().then(() => {
+                const recommended = generateRecommendedQuestions();
+                if (recommended.length > 0) {
+                    addMessage('根据您的浏览记录和订单，我为您推荐以下问题：', false, false);
+                    chatHistory.push({ role: 'assistant', content: '根据您的浏览记录和订单，我为您推荐以下问题：' });
+                    
+                    const questionsHtml = recommended.map((q, index) => `
+                        <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-purple-50 hover:border-purple-200 border border-transparent transition-all recommended-question" 
+                             data-action="${q.action}" data-data="${encodeURIComponent(JSON.stringify(q.data))}">
+                            <span class="w-7 h-7 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white text-sm font-bold flex items-center justify-center">${index + 1}</span>
+                            <span class="text-gray-700 font-medium">${q.text}</span>
+                            <i class="fas fa-chevron-right text-gray-400 ml-auto"></i>
+                        </div>
+                    `).join('');
+                    
+                    const chatMessages = document.getElementById('chatMessages');
+                    const questionsDiv = document.createElement('div');
+                    questionsDiv.className = 'chat-message';
+                    questionsDiv.innerHTML = `
+                        <div class="message-avatar"><i class="fas fa-robot text-white text-lg"></i></div>
+                        <div>
+                            <div class="bot-label">小K</div>
+                            <div class="message-bubble assistant" style="white-space: normal;">
+                                <div style="display: flex; flex-direction: column; gap: 8px;">
+                                    ${questionsHtml}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    chatMessages.appendChild(questionsDiv);
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                    
+                    document.querySelectorAll('.recommended-question').forEach(elem => {
+                        elem.addEventListener('click', function() {
+                            const action = this.dataset.action;
+                            const data = JSON.parse(decodeURIComponent(this.dataset.data));
+                            handleRecommendedQuestion(action, data);
+                        });
+                    });
+                } else {
+                    addMessage('请问有什么可以帮助您的？', false, false);
+                    chatHistory.push({ role: 'assistant', content: '请问有什么可以帮助您的？' });
+                }
+                saveChatToStorage();
+            });
+        }
+
+        function handleRecommendedQuestion(action, data) {
+            let question = '';
+            
+            switch(action) {
+                case 'product_info':
+                    question = `请介绍一下商品详情`;
+                    break;
+                case 'check_stock':
+                    question = `这个商品还有库存吗？`;
+                    break;
+                case 'check_price':
+                    question = `这个商品多少钱？有优惠吗？`;
+                    break;
+                case 'track_order':
+                    question = `我的订单物流到哪里了？`;
+                    break;
+                case 'after_sales':
+                    question = `售后服务和退换货政策是怎样的？`;
+                    break;
+            }
+            
+            addMessage(question, true, false);
+            chatHistory.push({ role: 'user', content: question });
             saveChatToStorage();
+            
+            addTypingIndicator();
+            
+            setTimeout(() => {
+                fetch('/api/ai', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ messages: chatHistory, actionData: data })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.choices && data.choices[0] && data.choices[0].message) {
+                        const assistantMessage = data.choices[0].message.content;
+                        chatHistory.push({ role: 'assistant', content: assistantMessage });
+                        saveChatToStorage();
+                        removeTypingIndicator();
+                        addMessage(assistantMessage, false);
+                    }
+                })
+                .catch(error => {
+                    console.error('API error:', error);
+                    removeTypingIndicator();
+                    addMessage('抱歉，我现在无法响应，请稍后再试。', false);
+                });
+            }, 500);
         }
 
         function openMenu() {

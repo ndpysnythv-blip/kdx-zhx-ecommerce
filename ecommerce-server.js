@@ -779,6 +779,26 @@ app.delete('/api/orders/:id', (req, res) => {
   res.json({ success: true });
 });
 
+// 用户浏览记录API
+let viewedProducts = [];
+
+app.get('/api/user/viewed-products', (req, res) => {
+  res.json(viewedProducts);
+});
+
+app.post('/api/user/viewed-products', (req, res) => {
+  const { product } = req.body;
+  if (product && product.id) {
+    const existingIndex = viewedProducts.findIndex(p => p.id === product.id);
+    if (existingIndex > -1) {
+      viewedProducts.splice(existingIndex, 1);
+    }
+    viewedProducts.unshift(product);
+    viewedProducts = viewedProducts.slice(0, 10);
+  }
+  res.json(viewedProducts);
+});
+
 // 用户提交支付确认
 app.post('/api/orders/:id/confirm-payment', async (req, res) => {
   try {

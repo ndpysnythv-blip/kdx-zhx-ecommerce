@@ -254,7 +254,30 @@
                 renderProduct();
                 bindSliderButtons();
                 startAutoSlide();
+                recordViewedProduct();
             } catch (err) { console.error('加载失败:', err); alert('加载失败'); }
+        }
+
+        async function recordViewedProduct() {
+            if (currentProduct) {
+                try {
+                    await fetch('/api/user/viewed-products', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            product: {
+                                id: currentProduct.id,
+                                name: currentProduct.name,
+                                price: currentProduct.price,
+                                image: currentProduct.image,
+                                stock: currentProduct.stock
+                            }
+                        })
+                    });
+                } catch (error) {
+                    console.error('记录浏览失败:', error);
+                }
+            }
         }
 
         function renderProduct() {
