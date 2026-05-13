@@ -34,7 +34,7 @@
 
                 <!-- 功能按钮 - 右侧 -->
                 <div class="flex items-center gap-4">
-                    <button onclick="window.location.href='chat'" class="text-gray-600 hover:text-black transition">
+                    <button onclick="window.location.href='/chat'" class="text-gray-600 hover:text-black transition">
                         <i class="fas fa-headset text-xl"></i>
                     </button>
                     
@@ -109,7 +109,7 @@
                             </h3>
                             
                             <div class="space-y-4">
-                                <div class="p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition" onclick="window.location.href='chat?type=ai'">
+                                <div class="p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition" onclick="window.location.href='/chat?type=ai'">
                                     <div class="flex items-center gap-4">
                                         <div class="w-12 h-12 bg-black rounded-xl flex items-center justify-center">
                                             <i class="fas fa-robot text-white text-xl"></i>
@@ -122,7 +122,7 @@
                                     </div>
                                 </div>
                                 
-                                <div class="p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition" onclick="window.location.href='chat?type=human'">
+                                <div class="p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition" onclick="window.location.href='/chat?type=human'">
                                     <div class="flex items-center gap-4">
                                         <div class="w-12 h-12 bg-gray-800 rounded-xl flex items-center justify-center">
                                             <i class="fas fa-user-circle text-white text-xl"></i>
@@ -239,12 +239,13 @@
         // 加载进行中的订单
         async function loadActiveOrders() {
             try {
-                const response = await fetch('data/orders.json');
+                const response = await fetch('/api/orders');
                 if (response.ok) {
-                    const orders = await response.json();
-                    const activeOrders = orders.filter(order => 
+                    const allOrders = await response.json();
+                    const activeOrders = allOrders.filter(order => 
                         order.status === 'pending' || 
-                        order.status === 'processing' || 
+                        order.status === 'payment_pending' || 
+                        order.status === 'paid' ||
                         order.status === 'shipped'
                     );
                     
@@ -270,19 +271,21 @@
             }
             
             container.innerHTML = orders.map(order => {
-                const item = order.items && order.items.length > 0 ? order.items[0] : null;
+                const items = order.items || [];
+                const item = items.length > 0 ? items[0] : null;
                 const productName = item ? item.name : '商品';
                 const productImage = item ? item.image : 'https://via.placeholder.com/112';
                 const quantity = item ? item.quantity : 0;
                 const totalPrice = order.total || 0;
+                const orderNo = order.orderNo || order.outTradeNo || order.id;
                 
                 return `
                 <div class="p-6 bg-gray-50 rounded-xl">
                     <div class="flex items-start justify-between mb-4">
                         <div>
-                            <span class="text-sm text-gray-500">订单号: ${order.orderNo}</span>
+                            <span class="text-sm text-gray-500">订单号: ${orderNo}</span>
                         </div>
-                        <span class="px-4 py-2 rounded-full text-sm font-medium ${order.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : order.status === 'processing' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}">
+                        <span class="px-4 py-2 rounded-full text-sm font-medium ${order.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : order.status === 'payment_pending' ? 'bg-orange-100 text-orange-700' : order.status === 'paid' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}">
                             ${getStatusText(order.status)}
                         </span>
                     </div>
@@ -302,10 +305,14 @@
         function getStatusText(status) {
             const statusMap = {
                 'pending': '待付款',
+                'payment_pending': '待审核',
+                'paid': '已付款',
                 'processing': '处理中',
                 'shipped': '已发货',
+                'delivered': '已收货',
                 'completed': '已完成',
                 'cancelled': '已取消',
+                'refund_pending': '退款中',
                 'refunded': '已退款'
             };
             return statusMap[status] || status;

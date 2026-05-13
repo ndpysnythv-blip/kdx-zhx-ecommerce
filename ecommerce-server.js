@@ -601,6 +601,10 @@ app.get('/hz', (req, res) => {
   res.sendFile(path.join(__dirname, 'hz.html'));
 });
 
+app.get('/user-center', (req, res) => {
+  res.sendFile(path.join(__dirname, 'user-center.html'));
+});
+
 // 商品API - 公开读取，写入需要管理员权限
 app.get('/api/products', (req, res) => {
   res.json(db.getProducts());
