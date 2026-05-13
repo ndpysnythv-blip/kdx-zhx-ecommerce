@@ -1,0 +1,206 @@
+/* 通用加载动画样式 */
+.loader-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    transition: opacity 0.6s ease-out, visibility 0.6s ease-out;
+}
+
+.loader-overlay.hidden {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.loader-overlay .loader-box {
+    background: #ffffff;
+    border-radius: 24px;
+    padding: 60px 80px;
+    box-shadow: 0 25px 80px -20px rgba(0, 0, 0, 0.4);
+    position: relative;
+    overflow: hidden;
+    animation: loaderBoxAppear 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes loaderBoxAppear {
+    0% { transform: scale(0.8); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.loader-overlay .loader-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, transparent 0%, #1a1a2e 20%, #667eea 50%, #764ba2 80%, transparent 100%);
+    animation: loaderGradientSlide 2s ease-in-out infinite;
+}
+
+@keyframes loaderGradientSlide {
+    0%, 100% { transform: translateX(-100%); }
+    50% { transform: translateX(100%); }
+}
+
+.loader-overlay .logo-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 30px;
+}
+
+.loader-overlay .logo-icon {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    animation: loaderIconFloat 3s ease-in-out infinite;
+    position: relative;
+}
+
+@keyframes loaderIconFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+.loader-overlay .logo-icon::before {
+    content: 'K';
+    font-size: 40px;
+    font-weight: 900;
+    color: #ffffff;
+    letter-spacing: -2px;
+}
+
+.loader-overlay .logo-icon::after {
+    content: '';
+    position: absolute;
+    top: -3px;
+    left: -3px;
+    right: -3px;
+    bottom: -3px;
+    border: 2px solid transparent;
+    border-radius: 22px;
+    background: linear-gradient(135deg, #667eea, #764ba2) border-box;
+    -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    animation: loaderBorderRotate 3s linear infinite;
+}
+
+@keyframes loaderBorderRotate {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loader-overlay .logo-text {
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: 8px;
+    color: #1a1a2e;
+    position: relative;
+    overflow: hidden;
+    min-width: 280px;
+    text-align: center;
+}
+
+.loader-overlay .logo-text span {
+    display: inline-block;
+    opacity: 0;
+    transform: translateX(-20px);
+    animation: loaderLetterRevealLoop 4s ease-in-out infinite;
+}
+
+.loader-overlay .logo-text span:nth-child(1) { animation-delay: 0.1s; }
+.loader-overlay .logo-text span:nth-child(2) { animation-delay: 0.2s; }
+.loader-overlay .logo-text span:nth-child(3) { animation-delay: 0.3s; }
+.loader-overlay .logo-text span:nth-child(4) { animation-delay: 0.4s; }
+.loader-overlay .logo-text span:nth-child(5) { animation-delay: 0.5s; }
+.loader-overlay .logo-text span:nth-child(6) { animation-delay: 0.6s; }
+.loader-overlay .logo-text span:nth-child(7) { animation-delay: 0.7s; }
+
+@keyframes loaderLetterRevealLoop {
+    0%, 10% { opacity: 0; transform: translateX(-20px); filter: blur(4px); }
+    15%, 75% { opacity: 1; transform: translateX(0); filter: blur(0); }
+    85%, 100% { opacity: 0; transform: translateX(20px); filter: blur(4px); }
+}
+
+.loader-overlay .loader-bar {
+    width: 100%;
+    height: 3px;
+    background: #f0f0f0;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 20px;
+}
+
+.loader-overlay .loader-progress {
+    height: 100%;
+    background: linear-gradient(90deg, #1a1a2e 0%, #667eea 50%, #764ba2 100%);
+    border-radius: 2px;
+    width: 0;
+    animation: loaderProgressFillLoop 3s ease-in-out infinite;
+}
+
+@keyframes loaderProgressFillLoop {
+    0% { width: 0%; }
+    80% { width: 85%; }
+    100% { width: 100%; }
+}
+
+.loader-overlay .loader-status {
+    font-size: 13px;
+    color: #888888;
+    margin-top: 16px;
+    text-align: center;
+    letter-spacing: 2px;
+    animation: loaderStatusPulse 2s ease-in-out infinite;
+}
+
+@keyframes loaderStatusPulse {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+}
+
+.loader-overlay .particles {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.loader-overlay .particle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: rgba(102, 126, 234, 0.6);
+    border-radius: 50%;
+    animation: loaderParticleFloat 4s ease-in-out infinite;
+}
+
+.loader-overlay .particle:nth-child(1) { left: 10%; animation-delay: 0s; }
+.loader-overlay .particle:nth-child(2) { left: 25%; animation-delay: 0.5s; }
+.loader-overlay .particle:nth-child(3) { left: 40%; animation-delay: 1s; }
+.loader-overlay .particle:nth-child(4) { left: 55%; animation-delay: 1.5s; }
+.loader-overlay .particle:nth-child(5) { left: 70%; animation-delay: 2s; }
+.loader-overlay .particle:nth-child(6) { left: 85%; animation-delay: 2.5s; }
+
+@keyframes loaderParticleFloat {
+    0%, 100% { transform: translateY(0) scale(1); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateY(-100px) scale(0); opacity: 0; }
+}
