@@ -10,12 +10,17 @@
     align-items: center;
     justify-content: center;
     z-index: 9999;
-    transition: opacity 0.6s ease-out, visibility 0.6s ease-out;
+    transition: opacity 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+                visibility 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    will-change: opacity, visibility;
 }
 
 .loader-overlay.hidden {
     opacity: 0;
     visibility: hidden;
+    pointer-events: none;
 }
 
 .loader-overlay .loader-box {
@@ -25,12 +30,21 @@
     box-shadow: 0 25px 80px -20px rgba(0, 0, 0, 0.4);
     position: relative;
     overflow: visible;
-    animation: loaderBoxAppear 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: loaderBoxAppear 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    will-change: transform, opacity;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
 }
 
 @keyframes loaderBoxAppear {
-    0% { transform: scale(0.8); opacity: 0; }
-    100% { transform: scale(1); opacity: 1; }
+    0% { 
+        transform: scale(0.85) translateY(20px); 
+        opacity: 0; 
+    }
+    100% { 
+        transform: scale(1) translateY(0); 
+        opacity: 1; 
+    }
 }
 
 /* Apple Intelligence 风格边框走马灯呼吸灯效果 */
@@ -57,6 +71,9 @@
     animation: borderGlowRotate 3s linear infinite, borderGlowPulse 2s ease-in-out infinite;
     filter: blur(8px);
     opacity: 0.7;
+    will-change: background-position, filter, opacity;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
 }
 
 @keyframes borderGlowRotate {
@@ -94,12 +111,7 @@
     background-size: 300% 300%;
     animation: innerGlowRotate 4s ease-in-out infinite;
     pointer-events: none;
-}
-
-@keyframes innerGlowRotate {
-    0% { background-position: 0% 0%; }
-    50% { background-position: 100% 100%; }
-    100% { background-position: 0% 0%; }
+    will-change: background-position;
 }
 
 .loader-overlay .logo-wrapper {
@@ -107,6 +119,7 @@
     flex-direction: column;
     align-items: center;
     gap: 30px;
+    will-change: transform;
 }
 
 .loader-overlay .logo-icon {
@@ -120,6 +133,9 @@
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     animation: loaderIconFloat 3s ease-in-out infinite;
     position: relative;
+    will-change: transform;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
 }
 
 @keyframes loaderIconFloat {
@@ -149,6 +165,9 @@
     -webkit-mask-composite: xor;
     mask-composite: exclude;
     animation: loaderBorderRotate 3s linear infinite;
+    will-change: transform;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
 }
 
 @keyframes loaderBorderRotate {
@@ -172,6 +191,9 @@
     opacity: 0;
     transform: translateX(-20px);
     animation: loaderLetterRevealLoop 6s ease-in-out infinite;
+    will-change: opacity, transform, filter;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
 }
 
 .loader-overlay .logo-text span:nth-child(1) { animation-delay: 0s; }
@@ -183,9 +205,21 @@
 .loader-overlay .logo-text span:nth-child(7) { animation-delay: 1.8s; }
 
 @keyframes loaderLetterRevealLoop {
-    0%, 5% { opacity: 0; transform: translateX(-20px); filter: blur(4px); }
-    20%, 80% { opacity: 1; transform: translateX(0); filter: blur(0); }
-    90%, 100% { opacity: 0; transform: translateX(20px); filter: blur(4px); }
+    0%, 5% { 
+        opacity: 0; 
+        transform: translateX(-20px); 
+        filter: blur(4px); 
+    }
+    20%, 80% { 
+        opacity: 1; 
+        transform: translateX(0); 
+        filter: blur(0); 
+    }
+    90%, 100% { 
+        opacity: 0; 
+        transform: translateX(20px); 
+        filter: blur(4px); 
+    }
 }
 
 .loader-overlay .loader-bar {
@@ -195,6 +229,7 @@
     border-radius: 2px;
     overflow: hidden;
     margin-top: 20px;
+    will-change: transform;
 }
 
 .loader-overlay .loader-progress {
@@ -203,6 +238,9 @@
     border-radius: 2px;
     width: 0;
     animation: loaderProgressFillLoop 6s ease-in-out infinite;
+    will-change: width;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
 }
 
 @keyframes loaderProgressFillLoop {
@@ -218,6 +256,7 @@
     text-align: center;
     letter-spacing: 2px;
     animation: loaderStatusPulse 2s ease-in-out infinite;
+    will-change: opacity;
 }
 
 @keyframes loaderStatusPulse {
@@ -242,6 +281,9 @@
     background: rgba(102, 126, 234, 0.6);
     border-radius: 50%;
     animation: loaderParticleFloat 4s ease-in-out infinite;
+    will-change: transform, opacity;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
 }
 
 .loader-overlay .particle:nth-child(1) { left: 10%; animation-delay: 0s; }
@@ -252,8 +294,14 @@
 .loader-overlay .particle:nth-child(6) { left: 85%; animation-delay: 2.5s; }
 
 @keyframes loaderParticleFloat {
-    0%, 100% { transform: translateY(0) scale(1); opacity: 0; }
+    0%, 100% { 
+        transform: translateY(0) scale(1); 
+        opacity: 0; 
+    }
     10% { opacity: 1; }
     90% { opacity: 1; }
-    100% { transform: translateY(-100px) scale(0); opacity: 0; }
+    100% { 
+        transform: translateY(-100px) scale(0); 
+        opacity: 0; 
+    }
 }

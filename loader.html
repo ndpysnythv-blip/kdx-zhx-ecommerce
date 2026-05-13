@@ -32,129 +32,114 @@
             align-items: center;
             justify-content: center;
             z-index: 9999;
-            transition: opacity 0.6s ease-out, visibility 0.6s ease-out;
+            transition: opacity 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+                        visibility 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            will-change: opacity, visibility;
         }
 
         .loader-container.hidden {
             opacity: 0;
             visibility: hidden;
+            pointer-events: none;
         }
 
         .loader-box {
-    background: #ffffff;
-    border-radius: 24px;
-    padding: 60px 80px;
-    box-shadow: 0 25px 80px -20px rgba(0, 0, 0, 0.4),
-                0 0 0 1px rgba(255, 255, 255, 0.1) inset;
-    position: relative;
-    overflow: visible;
-    animation: boxAppear 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-/* Apple Intelligence 风格边框走马灯呼吸灯效果 */
-.loader-box::before {
-    content: '';
-    position: absolute;
-    top: -3px;
-    left: -3px;
-    right: -3px;
-    bottom: -3px;
-    border-radius: 27px;
-    background: linear-gradient(
-        45deg,
-        #667eea,
-        #764ba2,
-        #f093fb,
-        #f5576c,
-        #4facfe,
-        #00f2fe,
-        #667eea
-    );
-    background-size: 400% 400%;
-    z-index: -1;
-    animation: borderGlowRotate 3s linear infinite, borderGlowPulse 2s ease-in-out infinite;
-    filter: blur(8px);
-    opacity: 0.7;
-}
-
-@keyframes borderGlowRotate {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-}
-
-@keyframes borderGlowPulse {
-    0%, 100% {
-        filter: blur(8px);
-        opacity: 0.6;
-    }
-    50% {
-        filter: blur(12px);
-        opacity: 1;
-    }
-}
-
-/* 内层细边框效果 */
-.loader-box::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    border-radius: 24px;
-    background: linear-gradient(
-        45deg,
-        transparent 30%,
-        rgba(102, 126, 234, 0.15) 50%,
-        transparent 70%
-    );
-    background-size: 300% 300%;
-    animation: innerGlowRotate 4s ease-in-out infinite;
-    pointer-events: none;
-}
-
-@keyframes innerGlowRotate {
-    0% { background-position: 0% 0%; }
-    50% { background-position: 100% 100%; }
-    100% { background-position: 0% 0%; }
-}
+            background: #ffffff;
+            border-radius: 24px;
+            padding: 60px 80px;
+            box-shadow: 0 25px 80px -20px rgba(0, 0, 0, 0.4);
+            position: relative;
+            overflow: visible;
+            animation: boxAppear 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            will-change: transform, opacity;
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
+        }
 
         @keyframes boxAppear {
             0% {
-                transform: scale(0.8);
+                transform: scale(0.85) translateY(20px);
                 opacity: 0;
             }
             100% {
-                transform: scale(1);
+                transform: scale(1) translateY(0);
                 opacity: 1;
             }
         }
 
+        /* Apple Intelligence 风格边框走马灯呼吸灯效果 */
         .loader-box::before {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            border-radius: 27px;
+            background: linear-gradient(
+                45deg,
+                #667eea,
+                #764ba2,
+                #f093fb,
+                #f5576c,
+                #4facfe,
+                #00f2fe,
+                #667eea
+            );
+            background-size: 400% 400%;
+            z-index: -1;
+            animation: borderGlowRotate 3s linear infinite, borderGlowPulse 2s ease-in-out infinite;
+            filter: blur(8px);
+            opacity: 0.7;
+            will-change: background-position, filter, opacity;
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
+        }
+
+        @keyframes borderGlowRotate {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @keyframes borderGlowPulse {
+            0%, 100% {
+                filter: blur(8px);
+                opacity: 0.6;
+            }
+            50% {
+                filter: blur(12px);
+                opacity: 1;
+            }
+        }
+
+        /* 内层细边框效果 */
+        .loader-box::after {
             content: '';
             position: absolute;
             top: 0;
             left: 0;
             right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, 
-                transparent 0%,
-                #1a1a2e 20%,
-                #667eea 50%,
-                #764ba2 80%,
-                transparent 100%
+            bottom: 0;
+            border-radius: 24px;
+            background: linear-gradient(
+                45deg,
+                transparent 30%,
+                rgba(102, 126, 234, 0.15) 50%,
+                transparent 70%
             );
-            animation: gradientSlide 2s ease-in-out infinite;
+            background-size: 300% 300%;
+            animation: innerGlowRotate 4s ease-in-out infinite;
+            pointer-events: none;
+            will-change: background-position;
         }
 
-        @keyframes gradientSlide {
-            0%, 100% {
-                transform: translateX(-100%);
-            }
-            50% {
-                transform: translateX(100%);
-            }
+        @keyframes innerGlowRotate {
+            0% { background-position: 0% 0%; }
+            50% { background-position: 100% 100%; }
+            100% { background-position: 0% 0%; }
         }
 
         .logo-wrapper {
@@ -162,6 +147,7 @@
             flex-direction: column;
             align-items: center;
             gap: 30px;
+            will-change: transform;
         }
 
         .logo-icon {
@@ -175,6 +161,9 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
             animation: iconFloat 3s ease-in-out infinite;
             position: relative;
+            will-change: transform;
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
         }
 
         @keyframes iconFloat {
@@ -208,6 +197,9 @@
             -webkit-mask-composite: xor;
             mask-composite: exclude;
             animation: borderRotate 3s linear infinite;
+            will-change: transform;
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
         }
 
         @keyframes borderRotate {
@@ -235,6 +227,9 @@
             opacity: 0;
             transform: translateX(-20px);
             animation: letterRevealLoop 6s ease-in-out infinite;
+            will-change: opacity, transform, filter;
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
         }
 
         .logo-text span:nth-child(1) { animation-delay: 0s; }
@@ -270,6 +265,7 @@
             border-radius: 2px;
             overflow: hidden;
             margin-top: 20px;
+            will-change: transform;
         }
 
         .loader-progress {
@@ -278,6 +274,9 @@
             border-radius: 2px;
             width: 0;
             animation: progressFillLoop 6s ease-in-out infinite;
+            will-change: width;
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
         }
 
         @keyframes progressFillLoop {
@@ -299,6 +298,7 @@
             text-align: center;
             letter-spacing: 2px;
             animation: statusPulse 2s ease-in-out infinite;
+            will-change: opacity;
         }
 
         @keyframes statusPulse {
@@ -327,6 +327,9 @@
             background: rgba(102, 126, 234, 0.6);
             border-radius: 50%;
             animation: particleFloat 4s ease-in-out infinite;
+            will-change: transform, opacity;
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
         }
 
         .particle:nth-child(1) { left: 10%; animation-delay: 0s; }
@@ -369,7 +372,7 @@
             opacity: 0;
             visibility: hidden;
             transform: scale(0.9);
-            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
         .response-container.show {
@@ -387,7 +390,7 @@
             align-items: center;
             justify-content: center;
             margin-bottom: 20px;
-            animation: responseIconPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            animation: responseIconPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
         @keyframes responseIconPop {
@@ -538,6 +541,6 @@
             simulateBackendRequest();
         });
     </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </body>
 </html>
