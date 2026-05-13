@@ -1,0 +1,2707 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="description" content="KDX丨ZHX - 10后短视频博主，捕捉校园叙事，定格成长轨迹，分享校园生活与成长瞬间">
+    <meta name="keywords" content="KDX丨ZHX,短视频,校园生活,VLOG,成长瞬间,抖音,微博,快手,闲鱼">
+    <meta name="author" content="KDX丨ZHX">
+    <meta property="og:title" content="KDX丨ZHX - 个人主页">
+    <meta property="og:description" content="10后短视频博主，捕捉校园叙事，定格成长轨迹">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <title>KDX丨ZHX - 个人主页</title>
+    <!-- 引入Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入Font Awesome图标 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- 引入Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    
+    <!-- 自定义配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#000000',
+                        secondary: '#ffffff',
+                        neutral: '#f5f5f7',
+                        accent: '#0071e3',
+                    },
+                    fontFamily: {
+                        sans: ['SF Pro Display', 'SF Pro Icons', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'],
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 1s cubic-bezier(0.25, 0.1, 0.25, 1) forwards',
+                        'slide-up': 'slideUp 1s cubic-bezier(0.25, 0.1, 0.25, 1) forwards',
+                        'scale-in': 'scaleIn 1s cubic-bezier(0.25, 0.1, 0.25, 1) forwards',
+                        'letter-merge': 'letterMerge 1.5s cubic-bezier(0.25, 0.1, 0.25, 1) forwards',
+                        'pulse-glow': 'pulseGlow 2s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { opacity: '0', transform: 'translateY(60px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                        scaleIn: {
+                            '0%': { opacity: '0', transform: 'scale(0.9)' },
+                            '100%': { opacity: '1', transform: 'scale(1)' },
+                        },
+                        letterMerge: {
+                            '0%': { opacity: '0', transform: 'scale(2)', letterSpacing: '1em' },
+                            '50%': { opacity: '0.5', transform: 'scale(1.2)', letterSpacing: '0.5em' },
+                            '100%': { opacity: '1', transform: 'scale(1)', letterSpacing: '0.1em' },
+                        },
+                        pulseGlow: {
+                            '0%, 100%': { boxShadow: '0 0 0 0 rgba(255, 255, 255, 0.4)' },
+                            '50%': { boxShadow: '0 0 0 20px rgba(255, 255, 255, 0)' },
+                        },
+                    },
+                },
+            }
+        }
+    </script>
+
+    <style>
+        html {
+            scroll-behavior: smooth;
+            scroll-padding-top: 80px;
+            overscroll-behavior: none;
+            scroll-timeline: --page-scroll block;
+        }
+        
+        /* 平滑滚动动画 */
+        @keyframes smoothScroll {
+            from {
+                transform: translateY(var(--scroll-start));
+            }
+            to {
+                transform: translateY(var(--scroll-end));
+            }
+        }
+        
+        body {
+            font-family: 'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: #ffffff;
+            color: #000000;
+            line-height: 1.6;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            overflow-x: hidden;
+            overscroll-behavior-y: contain;
+            scroll-behavior: smooth;
+        }
+        
+        /* 桌面端完全阻止滚动 */
+        @media (min-width: 769px) {
+            html, body {
+                overflow: hidden !important;
+                overscroll-behavior-y: none !important;
+            }
+        }
+        
+        /* 允许输入框和文本区域选择 */
+        input, textarea, [contenteditable] {
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+            user-select: text;
+        }
+
+        /* 探索页面样式 */
+        .explore-page {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000000;
+            color: #ffffff;
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: background 1.5s ease-in-out;
+        }
+
+        .explore-page.transitioning {
+            background: #ffffff;
+            color: #000000;
+        }
+        
+        .explore-page-content {
+            transition: opacity 1.5s ease, transform 1.5s ease;
+        }
+        
+        .explore-page.transitioning .explore-page-content {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        
+        .explore-page.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+
+
+        .splash-logo-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(4rem, 15vw, 12rem);
+            font-weight: 900;
+            color: #ffffff;
+            animation: logoPulse 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 3.3s forwards;
+        }
+
+        .splash-vertical {
+            position: absolute;
+            opacity: 0;
+            animation: verticalFadeIn 0.8s ease-out 0.5s forwards;
+            text-shadow: 0 0 60px rgba(255, 255, 255, 0.5);
+        }
+
+        .splash-left {
+            opacity: 0;
+            transform: translateY(-100px);
+            animation: leftSlideInSimple 2s cubic-bezier(0.34, 1.56, 0.64, 1) 1.3s forwards;
+            text-shadow: 0 0 40px rgba(255, 255, 255, 0.3);
+            margin-right: 0.3em;
+        }
+
+        .splash-right {
+            opacity: 0;
+            transform: translateY(100px);
+            animation: rightSlideInSimple 2s cubic-bezier(0.34, 1.56, 0.64, 1) 1.3s forwards;
+            text-shadow: 0 0 40px rgba(255, 255, 255, 0.3);
+            margin-left: 0.3em;
+        }
+
+        .splash-text {
+            margin-top: 3rem;
+            text-align: center;
+            opacity: 0;
+            animation: fadeIn 0.8s ease 3.5s forwards;
+        }
+
+        .splash-welcome {
+            font-size: clamp(1rem, 3vw, 1.5rem);
+            color: #a1a1a6;
+            margin-bottom: 1rem;
+        }
+
+        .splash-subtitle {
+            font-size: clamp(0.9rem, 2.5vw, 1.2rem);
+            color: #86868b;
+            margin-bottom: 3rem;
+        }
+
+        .start-button {
+            padding: 1rem 3rem;
+            font-size: 1.1rem;
+            font-weight: 500;
+            background: transparent;
+            color: #ffffff;
+            border: 2px solid #ffffff;
+            border-radius: 980px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            animation: pulseGlow 2s ease-in-out infinite 4s;
+        }
+
+        .start-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+        }
+
+        .start-button:active {
+            transform: scale(0.98);
+        }
+
+        /* 苹果按钮样式 */
+        .apple-btn {
+            display: inline-block;
+            padding: 12px 28px;
+            border-radius: 980px;
+            font-size: 17px;
+            font-weight: 400;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .apple-btn-dark {
+            background-color: #000000;
+            color: #ffffff;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .apple-btn-dark::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+            z-index: -1;
+        }
+
+        .apple-btn-dark:hover::before {
+            left: 100%;
+        }
+
+        .apple-btn-dark:hover {
+            background-color: #333333;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .apple-btn-light {
+            background-color: #f5f5f7;
+            color: #000000;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .apple-btn-light::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0,0,0,0.1), transparent);
+            transition: left 0.5s;
+            z-index: -1;
+        }
+
+        .apple-btn-light:hover::before {
+            left: 100%;
+        }
+
+        .apple-btn-light:hover {
+            background-color: #e8e8ed;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .apple-link {
+            color: #0071e3;
+            text-decoration: none;
+            font-size: 17px;
+            position: relative;
+            display: inline-block;
+        }
+
+        .apple-link::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: #0071e3;
+            transition: width 0.3s ease;
+        }
+
+        .apple-link:hover::after {
+            width: 100%;
+        }
+
+        .section-title {
+            font-size: clamp(32px, 5vw, 56px);
+            font-weight: 700;
+            letter-spacing: -0.015em;
+        }
+
+        .section-subtitle {
+            font-size: clamp(16px, 2vw, 21px);
+            color: #6e6e73;
+            font-weight: 400;
+            line-height: 1.5;
+        }
+
+        .card-hover {
+            transition: transform 0.6s cubic-bezier(0.25, 0.1, 0.25, 1), box-shadow 0.6s cubic-bezier(0.25, 0.1, 0.25, 1);
+            position: relative;
+        }
+
+        .card-hover::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: inherit;
+            background: linear-gradient(135deg, rgba(0,113,227,0.05) 0%, transparent 50%, rgba(0,113,227,0.05) 100%);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        .card-hover:hover::before {
+            opacity: 1;
+        }
+
+        .card-hover:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+        }
+
+        .hover-lift {
+            transition: transform 0.4s cubic-bezier(0.25, 0.1, 0.25, 1), box-shadow 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
+            position: relative;
+        }
+
+        .hover-lift::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: radial-gradient(circle at center, rgba(0,113,227,0.03) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        .hover-lift:hover::before {
+            opacity: 1;
+        }
+
+        .hover-lift:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+        }
+
+        .animation-hidden {
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(20px);
+        }
+        
+        .animate-slide-up,
+        .animate-scale-in,
+        .animate-fade-in {
+            visibility: visible;
+            animation: fadeIn 1s ease-out forwards;
+        }
+
+        .backdrop-blur-custom {
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+
+        .scroll-indicator {
+            position: relative;
+            width: 30px;
+            height: 50px;
+            border: 2px solid #000000;
+            border-radius: 25px;
+        }
+
+        .scroll-indicator::before {
+            content: '';
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: #000000;
+            border-radius: 50%;
+            left: 50%;
+            transform: translateX(-50%);
+            top: 8px;
+            animation: scrollDot 2s ease-in-out infinite;
+        }
+
+        @keyframes scrollDot {
+            0%, 100% { top: 8px; opacity: 1; }
+            50% { top: 30px; opacity: 0.3; }
+        }
+        
+        @keyframes verticalFadeIn {
+            0% { 
+                opacity: 0; 
+                transform: scale(0.5);
+            }
+            50% {
+                opacity: 1;
+            }
+            100% { 
+                opacity: 1; 
+                transform: scale(1);
+            }
+        }
+        
+        @keyframes leftSlideIn {
+            0% { 
+                opacity: 0; 
+                transform: translateY(-100px) scale(0.8);
+            }
+            60% {
+                opacity: 1;
+                transform: translateY(10px) scale(1.05);
+            }
+            80% {
+                transform: translateY(-5px) scale(0.98);
+            }
+            100% { 
+                opacity: 1; 
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        @keyframes leftSlideInSimple {
+            0% { 
+                opacity: 0; 
+                transform: translateY(-100px) scale(0.8);
+            }
+            100% { 
+                opacity: 1; 
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        @keyframes rightSlideInSimple {
+            0% { 
+                opacity: 0; 
+                transform: translateY(100px) scale(0.8);
+            }
+            100% { 
+                opacity: 1; 
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        @keyframes logoPulse {
+            0% { 
+                transform: translateY(0) scale(1);
+            }
+            50% {
+                transform: translateY(0) scale(1.08);
+            }
+            100% { 
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        @keyframes fadeIn {
+            0% { 
+                opacity: 0; 
+                transform: translateY(20px);
+            }
+            100% { 
+                opacity: 1; 
+                transform: translateY(0);
+            }
+        }
+        
+        .glow-animation {
+            animation: glowPulse 4s ease-in-out infinite;
+        }
+        
+        .glow-animation-delay {
+            animation: glowPulse 4s ease-in-out infinite 1s;
+        }
+        
+        @keyframes glowPulse {
+            0%, 100% { 
+                opacity: 0.6; 
+                transform: scale(1);
+            }
+            25% { 
+                opacity: 0.9; 
+                transform: scale(1.05);
+            }
+            50% { 
+                opacity: 0.7; 
+                transform: scale(0.98);
+            }
+            75% { 
+                opacity: 1; 
+                transform: scale(1.03);
+            }
+        }
+        
+        @keyframes lineExpandLeft {
+            0% {
+                width: 0;
+                right: 50%;
+            }
+            100% {
+                width: 40px;
+                right: 50%;
+            }
+        }
+        
+        @keyframes lineExpandRight {
+            0% {
+                width: 0;
+                left: 50%;
+            }
+            100% {
+                width: 40px;
+                left: 50%;
+            }
+        }
+        
+        .line-container {
+            position: relative;
+            width: 80px;
+            height: 4px;
+            margin: 0 auto;
+        }
+        
+        .line-left {
+            position: absolute;
+            top: 0;
+            right: 50%;
+            height: 100%;
+            background: black;
+            border-radius: 2px 0 0 2px;
+            animation: lineExpandLeft 1s ease-out forwards;
+        }
+        
+        .line-right {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            height: 100%;
+            background: black;
+            border-radius: 0 2px 2px 0;
+            animation: lineExpandRight 1s ease-out forwards;
+        }
+        
+        .group:hover .glow-animation {
+            opacity: 1;
+            transform: scale(1.3);
+        }
+        
+        .group:hover .glow-animation-delay {
+            opacity: 0.9;
+            transform: scale(1.25);
+        }
+        
+        /* 移动端优化 */
+        @media (max-width: 768px) {
+            /* 移动端 Logo 颜色改为纯黑色 */
+            #navLogo {
+                color: #000000 !important;
+            }
+            
+            .section-title {
+                font-size: 2rem !important;
+            }
+            
+            .section-subtitle {
+                font-size: 1rem !important;
+            }
+            
+            /* 首页优化 */
+            #home .grid {
+                gap: 2rem !important;
+            }
+            
+            #home img {
+                width: 70% !important;
+            }
+            
+            /* 粉丝板块优化 */
+            #about .py-24 {
+                padding-top: 4rem !important;
+                padding-bottom: 4rem !important;
+            }
+            
+            /* 作品板块优化 */
+            #work .py-24 {
+                padding-top: 4rem !important;
+                padding-bottom: 4rem !important;
+            }
+            
+            #work img {
+                height: 12rem !important;
+            }
+            
+            #work .p-6 {
+                padding: 1rem !important;
+            }
+            
+            /* 合作板块优化 */
+            #cooperation .py-20 {
+                padding-top: 3rem !important;
+                padding-bottom: 3rem !important;
+            }
+            
+            #cooperation .gap-16 {
+                gap: 2rem !important;
+            }
+            
+            /* 滚动指示器位置优化 */
+            .absolute.bottom-12 {
+                bottom: 3rem !important;
+            }
+            
+            /* 按钮优化 */
+            .apple-btn {
+                padding: 0.75rem 1.5rem !important;
+                font-size: 0.9rem !important;
+            }
+            
+            /* 表单优化 */
+            form .p-6 {
+                padding: 1.5rem !important;
+            }
+            
+            form .mb-6 {
+                margin-bottom: 1rem !important;
+            }
+            
+            /* 卡片优化 */
+            .space-y-8 > * + * {
+                margin-top: 1rem !important;
+            }
+            
+            .p-4 {
+                padding: 0.75rem !important;
+            }
+            
+            .w-12 {
+                width: 2.5rem !important;
+                height: 2.5rem !important;
+            }
+            
+            /* 滚动指示器大小 */
+            .text-xl {
+                font-size: 1.25rem !important;
+            }
+        }
+        
+        /* 小屏幕移动端优化 */
+        @media (max-width: 480px) {
+            .section-title {
+                font-size: 1.75rem !important;
+            }
+            
+            #home img {
+                width: 80% !important;
+            }
+            
+            .px-6 {
+                padding-left: 1rem !important;
+                padding-right: 1rem !important;
+            }
+        }
+        
+        /* 移动端特殊处理 - 移除定位和滚动指示器 */
+        @media (max-width: 768px) {
+            /* 移除所有滚动指示器 */
+            .absolute.bottom-12 {
+                display: none !important;
+            }
+            
+            /* 允许自由滚动 */
+            body {
+                overflow-y: auto !important;
+            }
+            
+            html {
+                overscroll-behavior-y: auto !important;
+            }
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <!-- 探索页面 -->
+    <div id="explorePage" class="explore-page">
+        <div class="explore-page-content">
+            <div class="splash-logo-container">
+                <div class="splash-vertical">丨</div>
+                <div class="splash-left">KDX</div>
+                <div class="splash-right">ZHX</div>
+            </div>
+            <div class="splash-text">
+                <p id="splashWelcome" class="splash-welcome"></p>
+                <p class="splash-subtitle">&nbsp;</p>
+                <button id="startButton" class="start-button">点击开始探索</button>
+                <p id="countdownHint" class="text-white text-sm mt-4 opacity-0 transition-opacity duration-500">3 秒后将自动进入首页</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 导航栏（苹果风格固定导航，滚动渐变） -->
+    <nav id="navbar" class="fixed top-0 left-0 w-full z-50 transition-all duration-700 py-4 px-6 md:px-12">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <!-- Logo -->
+            <a id="navLogo" href="#" class="text-2xl font-bold tracking-tight hover:text-gray-600 transition-colors">KDX丨ZHX</a>
+            
+            <!-- 移动端实时预览显示 -->
+            <div class="md:hidden flex items-center space-x-3">
+                <span id="currentPagePreview" class="text-sm font-medium">首页</span>
+                <button id="mobileMenuBtn" class="text-xl">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+            
+            <!-- 桌面端导航 -->
+            <div class="hidden md:flex space-x-8">
+                <a href="#home" class="text-sm font-medium hover:text-gray-600 transition-colors">首页</a>
+                <a href="#about" class="text-sm font-medium hover:text-gray-600 transition-colors">粉丝</a>
+                <a href="#work" class="text-sm font-medium hover:text-gray-600 transition-colors">作品</a>
+                <a href="#cooperation" class="text-sm font-medium hover:text-gray-600 transition-colors">合作</a>
+            </div>
+            
+            <!-- 移动端菜单按钮（备用） -->
+            <button id="menuBtn" class="md:hidden text-xl hidden">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+        
+        <!-- 移动端菜单（默认隐藏） -->
+        <div id="mobileMenu" class="md:hidden hidden absolute top-full left-0 w-full bg-white/95 backdrop-blur-custom border-t border-gray-100 py-4 px-6">
+            <div class="flex flex-col space-y-4">
+                <a href="#home" class="text-sm font-medium hover:text-gray-600 transition-colors">首页</a>
+                <a href="#about" class="text-sm font-medium hover:text-gray-600 transition-colors">粉丝</a>
+                <a href="#work" class="text-sm font-medium hover:text-gray-600 transition-colors">作品</a>
+                <a href="#cooperation" class="text-sm font-medium hover:text-gray-600 transition-colors">合作</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 滚动进度指示器 -->
+    <div id="scrollProgress" class="fixed top-0 left-0 w-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 z-50 transition-all duration-150"></div>
+
+    <!-- 英雄区（Hero Section） -->
+    <section id="home" class="h-screen flex items-center justify-center px-6 md:px-12 relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-br from-gray-50 to-white -z-10"></div>
+        <div class="max-w-7xl mx-auto w-full relative z-10">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                <!-- 文字内容 -->
+                <div class="animation-hidden" data-animation="slide-up">
+                    <h1 class="section-title mb-6">
+                        以帧为序<br><span style="background: linear-gradient(135deg, #000000 0%, #333333 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">镌刻日常的璀璨</span>
+                    </h1>
+                    <p class="section-subtitle mb-8 max-w-lg">
+                        10后短视频博主      捕捉校园叙事，定格成长轨迹
+                    </p>
+                    <div class="flex flex-wrap gap-4">
+                        <a href="https://v.douyin.com/PEvpiWb0zXQ/" target="_blank" class="apple-btn apple-btn-dark hover-lift">
+                            <i class="fab fa-tiktok mr-2"></i>查看作品
+                        </a>
+                        <a href="#cooperation" class="apple-btn apple-btn-light hover-lift">合作</a>
+                    </div>
+                </div>
+                
+                <!-- 图片 -->
+                <div class="animation-hidden" data-animation="scale-in">
+                    <div class="relative group">
+                        <div class="absolute -inset-4 bg-gradient-to-r from-blue-500/25 via-purple-500/25 to-pink-500/25 rounded-3xl blur-2xl -z-10 glow-animation transition-all duration-500 ease-out"></div>
+                        <div class="absolute -inset-8 bg-gradient-to-r from-pink-500/15 via-blue-500/15 to-purple-500/15 rounded-3xl blur-3xl -z-20 glow-animation-delay transition-all duration-500 ease-out"></div>
+                        <img id="homeImage" src="A4E1F449-7562-4692-B52A-5D642E21EAC0_1_105_c.jpg" alt="KDX丨ZHX" class="w-4/5 h-auto mx-auto rounded-3xl shadow-2xl object-cover card-hover cursor-pointer transition-all duration-500 ease-out group-hover:scale-105">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 苹果风格滚动指示器 -->
+        <div class="absolute bottom-12 left-1/2 transform -translate-x-1/2 flex flex-col items-center space-y-4 animation-hidden" data-animation="fade-in">
+            <div class="scroll-indicator"></div>
+            <span class="text-sm text-gray-500 scroll-text">向下滚动</span>
+            <a href="#about" class="text-gray-900" style="animation: bounceArrow 2s ease-in-out infinite;">
+                <i class="fas fa-chevron-down text-xl scroll-arrow"></i>
+            </a>
+        </div>
+    </section>
+
+    <!-- 关于我（About Section） -->
+    <section id="about" class="py-24 bg-neutral px-6 md:px-12 relative">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-4 animation-hidden" data-animation="slide-up">
+                <h2 class="section-title mb-4 animation-hidden" data-animation="slide-up">全平台粉丝数据</h2>
+                <div class="animation-hidden line-expand-element" data-animation="slide-up" data-delay="0.7">
+                    <div class="line-container">
+                        <div class="line-left"></div>
+                        <div class="line-right"></div>
+                    </div>
+                </div>
+                <p class="section-subtitle mt-6 max-w-2xl mx-auto animation-hidden" data-animation="fade-in" data-delay="0.2">
+                    万粉计划
+                </p>
+                <p class="text-lg text-gray-600 mt-2 max-w-2xl mx-auto animation-hidden" data-animation="fade-in" data-delay="0.3">
+                    1万粉抽iPhone 18
+                </p>
+            </div>
+            
+            <!-- 日期和总粉丝数 -->
+            <div class="text-center mb-2 animation-hidden" data-animation="slide-up">
+                <div class="flex flex-col items-center">
+                    <p class="text-sm text-gray-500 mb-2 hidden" id="current-date">2026年3月7日</p>
+                </div>
+            </div>
+            
+            <!-- 粉丝数据图表 -->
+            <div class="bg-white rounded-3xl shadow-2xl p-4 animation-hidden" data-animation="slide-up">
+                <div class="text-center mb-2">
+                    <span class="text-5xl font-bold" id="total-followers">0</span>
+                </div>
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-2">
+                        <span class="text-lg font-bold">总粉丝数</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs text-gray-500 flex items-center">
+                            <span class="w-2 h-2 bg-red-500 rounded-full mr-1"></span>
+                            实际粉丝
+                        </span>
+                        <span class="text-xs text-gray-500 flex items-center">
+                            <span class="w-2 h-2 bg-blue-500 rounded-full mr-1"></span>
+                            预测增长
+                        </span>
+                    </div>
+                </div>
+                <div class="h-40">
+                    <canvas id="followersChart"></canvas>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-4">
+                    <div onclick="openPlatformModal('douyin')" class="text-center block hover:bg-gray-50 rounded-xl p-3 transition-colors cursor-pointer">
+                        <p class="text-xs text-gray-500">抖音</p>
+                        <p class="text-xl font-bold" id="chart-tiktok">0</p>
+                        <p class="text-xs text-green-500 flex items-center justify-center mt-1">
+                            <i class="fas fa-arrow-up mr-1"></i>12.5%
+                        </p>
+                    </div>
+                    <div onclick="openPlatformModal('kuaishou')" class="text-center block hover:bg-gray-50 rounded-xl p-3 transition-colors cursor-pointer">
+                        <p class="text-xs text-gray-500">快手</p>
+                        <p class="text-xl font-bold" id="chart-kuaishou">0</p>
+                        <p class="text-xs text-green-500 flex items-center justify-center mt-1">
+                            <i class="fas fa-arrow-up mr-1"></i>8.3%
+                        </p>
+                    </div>
+                    <div onclick="openPlatformModal('weibo')" class="text-center block hover:bg-gray-50 rounded-xl p-3 transition-colors cursor-pointer">
+                        <p class="text-xs text-gray-500">微博</p>
+                        <p class="text-xl font-bold" id="chart-weibo">0</p>
+                        <p class="text-xs text-green-500 flex items-center justify-center mt-1">
+                            <i class="fas fa-arrow-up mr-1"></i>15.7%
+                        </p>
+                    </div>
+                    <div onclick="openPlatformModal('xianyu')" class="text-center block hover:bg-gray-50 rounded-xl p-3 transition-colors cursor-pointer">
+                        <p class="text-xs text-gray-500">闲鱼</p>
+                        <p class="text-xl font-bold" id="chart-xianyu">0</p>
+                        <p class="text-xs text-green-500 flex items-center justify-center mt-1">
+                            <i class="fas fa-arrow-up mr-1"></i>5.2%
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 苹果风格滚动指示器 -->
+        <div class="absolute bottom-12 left-1/2 transform -translate-x-1/2 flex flex-col items-center space-y-4 animation-hidden" data-animation="fade-in">
+            <a href="#work" class="text-gray-900" style="animation: bounceArrow 2s ease-in-out infinite;">
+                <i class="fas fa-chevron-down text-xl scroll-arrow"></i>
+            </a>
+        </div>
+    </section>
+    
+    <!-- 平台弹窗 -->
+    <div id="platform-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center" onclick="closePlatformModal(event)">
+        <div class="bg-white rounded-3xl p-8 max-w-md w-full mx-4" onclick="event.stopPropagation()">
+            <div class="text-center mb-6">
+                <h3 id="modal-title" class="text-2xl font-bold mb-4">抖音</h3>
+                <p class="text-gray-600 mb-2">由于链接容易过期，我们更建议您打开 APP 后</p>
+                <p class="text-gray-600">搜索对应<span id="modal-platform-name">抖音</span>号进行搜索查询</p>
+                <div class="mt-6 flex items-center justify-center gap-2">
+                    <span class="text-gray-800 font-semibold"><span id="modal-platform-name2">抖音</span>：</span>
+                    <span id="modal-username" class="text-blue-600 font-bold cursor-pointer hover:text-blue-800" onclick="copyUsername(this)">HJ_Signal</span>
+                </div>
+                <div id="mall-content" class="hidden">
+                    <br><br>
+                </div>
+            </div>
+            <button id="default-button" onclick="openOldLink()" class="w-full apple-btn apple-btn-dark py-3">
+                旧链接跳转
+            </button>
+            <div id="mall-buttons" class="hidden space-y-3">
+                <button onclick="buyFromXianyu()" class="w-full apple-btn apple-btn-dark py-3">
+                    闲鱼购买
+                </button>
+                <button onclick="buyFromMall()" class="w-full apple-btn apple-btn-dark py-3">
+                    支付宝购买
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 复制提示弹窗 -->
+    <div id="copy-toast" class="fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-black text-white px-6 py-3 rounded-full text-sm hidden z-50">
+        已复制到剪贴板
+    </div>
+    
+    <script>
+        const platformData = {
+            douyin: {
+                name: '抖音',
+                username: 'HJ_Signal',
+                link: 'https://v.douyin.com/DiTG_TvRqmI/'
+            },
+            kuaishou: {
+                name: '快手',
+                username: '快手',
+                link: ''
+            },
+            weibo: {
+                name: '微博',
+                username: 'KDXZHX',
+                link: 'https://weibo.com/u/7908451248'
+            },
+            xianyu: {
+                name: '闲鱼',
+                username: 'KDXZHX',
+                link: 'https://m.tb.cn/h.i28k1pG?tk=D2kpUu8pj6b'
+            },
+            mall: {
+                name: '官方商城',
+                username: 'KDXZHX',
+                link: 'https://ur.alipay.com/_6bK3NSFNUO4fI2g3pZyX7b'
+            }
+        };
+        
+        function openPlatformModal(platform) {
+            const data = platformData[platform];
+            document.getElementById('modal-title').textContent = data.name;
+            document.getElementById('modal-platform-name').textContent = data.name;
+            document.getElementById('modal-platform-name2').textContent = data.name;
+            document.getElementById('modal-username').textContent = data.username;
+            
+            // 显示默认内容，隐藏商城内容
+            document.getElementById('mall-content').classList.add('hidden');
+            document.getElementById('default-button').classList.remove('hidden');
+            document.getElementById('mall-buttons').classList.add('hidden');
+            
+            document.getElementById('platform-modal').classList.remove('hidden');
+            document.getElementById('platform-modal').classList.add('flex');
+            window.currentPlatform = platform;
+        }
+        
+        function openMallModal() {
+            const data = platformData.mall;
+            document.getElementById('modal-title').textContent = '官方商城';
+            document.getElementById('modal-platform-name').textContent = '闲鱼';
+            document.getElementById('modal-platform-name2').textContent = '闲鱼';
+            document.getElementById('modal-username').textContent = data.username;
+            
+            // 显示商城内容，隐藏默认内容
+            document.getElementById('mall-content').classList.remove('hidden');
+            document.getElementById('default-button').classList.add('hidden');
+            document.getElementById('mall-buttons').classList.remove('hidden');
+            
+            document.getElementById('platform-modal').classList.remove('hidden');
+            document.getElementById('platform-modal').classList.add('flex');
+            window.currentPlatform = 'mall';
+        }
+        
+        function closePlatformModal(event) {
+            if (event && event.target !== event.currentTarget) return;
+            document.getElementById('platform-modal').classList.add('hidden');
+            document.getElementById('platform-modal').classList.remove('flex');
+        }
+        
+        function openOldLink() {
+            const platform = window.currentPlatform;
+            const data = platformData[platform];
+            if (data.link) {
+                window.open(data.link, '_blank');
+            }
+        }
+        
+        function buyFromMall() {
+            const data = platformData.mall;
+            if (data.link) {
+                window.open(data.link, '_blank');
+            }
+        }
+        
+        function buyFromXianyu() {
+            window.open('https://m.tb.cn/h.iW9IH4v?tk=ygnxUuxnJwu', '_blank');
+        }
+        
+        function copyUsername(element) {
+            const username = element.textContent;
+            navigator.clipboard.writeText(username).then(function() {
+                showToast();
+            }, function(err) {
+                console.error('无法复制: ', err);
+            });
+        }
+        
+        function showToast() {
+            const toast = document.getElementById('copy-toast');
+            toast.classList.remove('hidden');
+            setTimeout(function() {
+                toast.classList.add('hidden');
+            }, 2000);
+        }
+    </script>
+
+
+
+    <!-- 作品展示（Work Section） -->
+    <section id="work" class="py-24 px-6 md:px-12 relative">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-12 animation-hidden" data-animation="fade-in">
+                <h2 class="section-title mb-4 animation-hidden" data-animation="slide-up">我的作品</h2>
+                <div class="animation-hidden line-expand-element" data-animation="slide-up" data-delay="0.7">
+                    <div class="line-container">
+                        <div class="line-left"></div>
+                        <div class="line-right"></div>
+                    </div>
+                </div>
+                <p class="section-subtitle mt-6 max-w-2xl mx-auto animation-hidden" data-animation="fade-in" data-delay="0.2">
+                    精选的设计与开发项目，每一个都代表着对极简美学的追求
+                </p>
+            </div>
+            
+            <!-- 作品卡片网格 -->
+            <div id="workGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- 官方商城 -->
+                <div class="animation-hidden" data-animation="scale-in">
+                    <div class="group bg-white rounded-3xl shadow-lg overflow-hidden card-hover cursor-pointer h-full flex flex-col" onclick="openMallModal()">
+                        <div class="relative overflow-hidden">
+                            <img src="5FAE7DE0-C209-48F8-AD97-8A8DAE8F7A23_1_105_c.jpg" alt="官方商城" class="w-full h-56 object-contain bg-white group-hover:scale-105 transition-transform duration-700">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-5">
+                                <span class="text-white font-medium">查看详情</span>
+                            </div>
+                        </div>
+                        <div class="p-6 flex-grow">
+                            <h3 class="text-lg font-bold mb-2">官方商城</h3>
+                            <p class="text-gray-600 mb-4">KDX丨ZHX推出的相关产品 周边<br>全店享受包邮发货</p>
+                            <a href="#" class="apple-link inline-flex items-center text-sm">
+                                查看详情 <i class="fas fa-arrow-right ml-2 text-xs"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 产品官网 -->
+                <div class="animation-hidden" data-animation="scale-in" data-delay="0.15">
+                    <div class="group bg-white rounded-3xl shadow-lg overflow-hidden card-hover h-full flex flex-col">
+                        <div class="relative overflow-hidden">
+                            <img src="5FAE7DE0-C209-48F8-AD97-8A8DAE8F7A23_1_105_c.jpg" alt="产品官网" class="w-full h-56 object-contain bg-white group-hover:scale-105 transition-transform duration-700">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-5">
+                                <span class="text-white font-medium">查看详情</span>
+                            </div>
+                        </div>
+                        <div class="p-6 flex-grow">
+                            <h3 class="text-lg font-bold mb-2">产品官网</h3>
+                            <p class="text-gray-600 mb-4">小天才6点数据线产品官方网站</p>
+                            <a href="https://ndpysnythv-blip.github.io/KDXZHX/" target="_blank" class="apple-link inline-flex items-center text-sm">
+                                查看详情 <i class="fas fa-arrow-right ml-2 text-xs"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 敬请期待 -->
+                <div class="animation-hidden" data-animation="scale-in" data-delay="0.3">
+                    <div class="group bg-white rounded-3xl shadow-lg overflow-hidden card-hover h-full flex flex-col">
+                        <div class="relative overflow-hidden">
+                            <img src="5FAE7DE0-C209-48F8-AD97-8A8DAE8F7A23_1_105_c.jpg" alt="敬请期待" class="w-full h-56 object-contain bg-white group-hover:scale-105 transition-transform duration-700">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-5">
+                                <span class="text-white font-medium">敬请期待</span>
+                            </div>
+                        </div>
+                        <div class="p-6 flex-grow">
+                            <h3 class="text-lg font-bold mb-2">敬请期待</h3>
+                            <p class="text-gray-600 mb-4">更多精彩内容即将上线，敬请期待！</p>
+                            <a href="#" class="apple-link inline-flex items-center text-sm">
+                                敬请期待 <i class="fas fa-arrow-right ml-2 text-xs"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 苹果风格滚动指示器 -->
+        <div class="absolute bottom-12 left-1/2 transform -translate-x-1/2 flex flex-col items-center space-y-4 animation-hidden" data-animation="fade-in">
+            <a href="#cooperation" class="text-gray-900" style="animation: bounceArrow 2s ease-in-out infinite;">
+                <i class="fas fa-chevron-down text-xl scroll-arrow"></i>
+            </a>
+        </div>
+    </section>
+    
+    <!-- 合作方式（Cooperation Section） -->
+    <section id="cooperation" class="py-20 bg-neutral px-6 md:px-12 relative">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-12 animation-hidden" data-animation="fade-in">
+                <h2 class="section-title mb-4 animation-hidden" data-animation="slide-up">合作</h2>
+                <div class="animation-hidden line-expand-element" data-animation="slide-up" data-delay="0.7">
+                    <div class="line-container">
+                        <div class="line-left"></div>
+                        <div class="line-right"></div>
+                    </div>
+                </div>
+                <p class="section-subtitle mt-6 max-w-2xl mx-auto animation-hidden" data-animation="fade-in" data-delay="0.2">
+                    无论你是有合作意向，还是想交流设计理念，都欢迎随时合作
+                </p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-16 items-center justify-items-center">
+                <!-- 合作信息 -->
+                <div class="w-full max-w-md animation-hidden" data-animation="slide-right">
+                    <div class="space-y-8">
+                        <div onclick="window.open('https://v.douyin.com/DiTG_TvRqmI/', '_blank')" class="flex items-start space-x-4 p-4 bg-white rounded-2xl shadow-sm hover-lift cursor-pointer">
+                            <div class="w-12 h-12 rounded-xl bg-black flex items-center justify-center text-white flex-shrink-0">
+                                <i class="fab fa-tiktok"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold mb-2">抖音</h3>
+                                <p class="text-gray-700">HJ_Signal</p>
+                            </div>
+                        </div>
+                        
+                        <div onclick="openPlatformModal('xianyu')" class="flex items-start space-x-4 p-4 bg-white rounded-2xl shadow-sm hover-lift cursor-pointer">
+                            <div class="w-12 h-12 rounded-xl bg-black flex items-center justify-center text-white flex-shrink-0">
+                                <i class="fas fa-store"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold mb-2">闲鱼</h3>
+                                <p class="text-gray-700">KDXZHX</p>
+                            </div>
+                        </div>
+                        
+                        <div onclick="window.location.href='mailto:kdxzhx@icloud.com'" class="flex items-start space-x-4 p-4 bg-white rounded-2xl shadow-sm hover-lift cursor-pointer">
+                            <div class="w-12 h-12 rounded-xl bg-black flex items-center justify-center text-white flex-shrink-0">
+                                <i class="fas fa-envelope"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold mb-2">邮箱</h3>
+                                <p class="text-gray-700">kdxzhx@icloud.com</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 合作表单 -->
+                <div class="w-full max-w-md animation-hidden" data-animation="slide-up">
+                    <form action="https://formsubmit.co/3548806030@qq.com" method="POST" class="bg-white p-6 rounded-3xl shadow-lg w-full">
+                        <input type="hidden" name="_subject" value="KDX丨ZHX 官网合作消息">
+                        <input type="hidden" name="_captcha" value="false">
+                        <input type="hidden" name="_next" value="#cooperation">
+                        
+                        <div class="mb-6">
+                            <label for="name" class="block text-sm font-medium mb-2 text-gray-700">姓名</label>
+                            <input type="text" id="name" name="name" required class="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300">
+                        </div>
+                        
+                        <div class="mb-6">
+                            <label for="email" class="block text-sm font-medium mb-2 text-gray-700">邮箱</label>
+                            <input type="email" id="email" name="email" required class="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300">
+                        </div>
+                        
+                        <div class="mb-6">
+                            <label for="message" class="block text-sm font-medium mb-2 text-gray-700">留言</label>
+                            <textarea id="message" name="message" rows="4" required class="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300 resize-none"></textarea>
+                        </div>
+                        
+                        <button type="submit" class="w-full apple-btn apple-btn-dark hover-lift py-3">发送消息</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 苹果风格滚动指示器 -->
+        <div class="absolute bottom-12 left-1/2 transform -translate-x-1/2 flex flex-col items-center space-y-4 animation-hidden" data-animation="fade-in">
+            <a href="#home" class="text-gray-900" style="animation: bounceArrow 2s ease-in-out infinite;">
+                <i class="fas fa-chevron-up text-xl scroll-arrow-top"></i>
+            </a>
+        </div>
+    </section>
+    
+    <!-- 密码输入弹窗 -->
+    <div id="passwordModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[999998] hidden items-center justify-center">
+        <div class="bg-white rounded-3xl p-8 max-w-md w-full mx-4">
+            <div class="text-center mb-6">
+                <h3 class="text-2xl font-bold mb-2">管理后台</h3>
+                <p class="text-gray-600">请输入密码以访问管理页面</p>
+            </div>
+            <div class="mb-6">
+                <input type="password" id="adminPassword" placeholder="请输入密码" class="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300">
+            </div>
+            <div class="flex gap-4">
+                <button id="cancelPasswordBtn" class="flex-1 apple-btn apple-btn-light py-3">取消</button>
+                <button id="submitPasswordBtn" class="flex-1 apple-btn apple-btn-dark py-3">确认</button>
+            </div>
+            <p id="passwordError" class="text-red-500 text-sm mt-4 text-center hidden">密码错误，请重试</p>
+        </div>
+    </div>
+
+    <!-- 管理页面 -->
+    <div id="adminPage" class="fixed inset-0 bg-white z-[999999] hidden overflow-y-auto">
+        <div class="max-w-7xl mx-auto px-6 py-12">
+            <div class="flex justify-between items-center mb-8">
+                <h1 class="text-3xl font-bold">管理后台</h1>
+                <button id="closeAdminBtn" class="apple-btn apple-btn-light">
+                    <i class="fas fa-times mr-2"></i>关闭
+                </button>
+            </div>
+            
+            <!-- 统计数据卡片 -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                <div class="bg-neutral rounded-3xl p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500 text-sm mb-1">今日访问</p>
+                            <p class="text-3xl font-bold" id="todayVisits">0</p>
+                        </div>
+                        <div class="w-12 h-12 bg-black rounded-2xl flex items-center justify-center text-white">
+                            <i class="fas fa-eye text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-neutral rounded-3xl p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500 text-sm mb-1">总点击数</p>
+                            <p class="text-3xl font-bold" id="totalClicks">0</p>
+                        </div>
+                        <div class="w-12 h-12 bg-black rounded-2xl flex items-center justify-center text-white">
+                            <i class="fas fa-mouse-pointer text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-neutral rounded-3xl p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500 text-sm mb-1">合作消息</p>
+                            <p class="text-3xl font-bold" id="totalMessages">0</p>
+                        </div>
+                        <div class="w-12 h-12 bg-black rounded-2xl flex items-center justify-center text-white">
+                            <i class="fas fa-envelope text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 访问统计图表 -->
+            <div class="bg-white rounded-3xl shadow-lg p-6 mb-12">
+                <h2 class="text-xl font-bold mb-4">访问统计（近7天）</h2>
+                <div class="h-64">
+                    <canvas id="adminStatsChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- 合作消息列表 -->
+            <div class="bg-white rounded-3xl shadow-lg p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold">合作消息</h2>
+                    <button id="clearMessagesBtn" class="apple-btn apple-btn-light text-sm py-2 px-4">
+                        <i class="fas fa-trash mr-2"></i>清空消息
+                    </button>
+                </div>
+                <div id="messagesList" class="space-y-4">
+                    <p class="text-gray-500 text-center py-8">暂无合作消息</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="py-12 bg-black text-white px-6 md:px-12">
+        <div class="max-w-7xl mx-auto">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-6 md:mb-0">
+                    <h2 class="text-2xl font-bold">KDX丨ZHX</h2>
+                    <p class="text-gray-400 mt-2">© 2026 版权所有</p>
+                </div>
+                
+                <div class="flex space-x-8">
+                    <a href="#home" class="text-gray-400 hover:text-white transition-colors">首页</a>
+                    <a href="#about" class="text-gray-400 hover:text-white transition-colors">粉丝</a>
+                    <a href="#work" class="text-gray-400 hover:text-white transition-colors">作品</a>
+                    <a href="#cooperation" class="text-gray-400 hover:text-white transition-colors">合作</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        // ========== 管理后台相关功能 ==========
+        const ADMIN_PASSWORD = 'KZ0718';
+        let logoClickCount = 0;
+        let logoClickTimer = null;
+
+        // 打开密码弹窗
+        function openPasswordModal() {
+            const modal = document.getElementById('passwordModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.getElementById('adminPassword').value = '';
+            document.getElementById('passwordError').classList.add('hidden');
+        }
+
+        // 关闭密码弹窗
+        function closePasswordModal() {
+            const modal = document.getElementById('passwordModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        // 打开管理页面
+        function openAdminPage() {
+            document.getElementById('adminPage').classList.remove('hidden');
+            loadAdminData();
+        }
+
+        // 关闭管理页面
+        function closeAdminPage() {
+            document.getElementById('adminPage').classList.add('hidden');
+        }
+
+        // ========== 统计功能 ==========
+        function getTodayKey() {
+            const today = new Date();
+            return `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
+        }
+
+        // 记录访问
+        function recordVisit() {
+            const todayKey = getTodayKey();
+            let visitData = JSON.parse(localStorage.getItem('visitData') || '{}');
+            
+            if (!visitData[todayKey]) {
+                visitData[todayKey] = 0;
+            }
+            visitData[todayKey]++;
+            
+            localStorage.setItem('visitData', JSON.stringify(visitData));
+        }
+
+        // 记录点击
+        function recordClick() {
+            let totalClicks = parseInt(localStorage.getItem('totalClicks') || '0');
+            totalClicks++;
+            localStorage.setItem('totalClicks', totalClicks.toString());
+        }
+
+        // 全局点击监听
+        document.addEventListener('click', recordClick);
+
+        // 页面加载时记录访问
+        recordVisit();
+
+        // ========== 合作消息保存 ==========
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化探索页面变量
+            window.explorePage = document.getElementById('explorePage');
+            window.startButton = document.getElementById('startButton');
+            
+            // 根据设备类型设置不同的欢迎文字
+            const isMobileDevice = window.innerWidth < 768;
+            const splashWelcome = document.getElementById('splashWelcome');
+            if (splashWelcome) {
+                if (isMobileDevice) {
+                    splashWelcome.textContent = '使用电脑端打开体验感更佳';
+                } else {
+                    splashWelcome.textContent = '欢迎来到 KDX丨ZHX 官网';
+                }
+            }
+            
+            // 开始自动跳转
+            startAutoNavigate();
+            
+            // 探索页面点击事件
+            const explorePage = window.explorePage;
+            const startButton = window.startButton;
+            let exploreClickCount = 0;
+            let exploreClickTimer;
+            
+            function resetExploreClickCount() {
+                exploreClickCount = 0;
+                clearTimeout(exploreClickTimer);
+            }
+            
+            if (explorePage) {
+                explorePage.addEventListener('click', (e) => {
+                    // 如果点击的是开始按钮，不计数
+                    if (e.target === startButton || e.target.closest('.start-button')) {
+                        return;
+                    }
+                    
+                    // 增加点击计数
+                    exploreClickCount++;
+                    
+                    // 3秒内点击3次以上，自动跳转到首页
+                    if (exploreClickCount >= 3) {
+                        clearTimeout(autoNavigateTimeout);
+                        clearInterval(countdownInterval);
+                        
+                        // 开始过渡：背景从黑色渐变到白色，同时文字淡出
+                        explorePage.classList.add('transitioning');
+                        
+                        // 等待1.5秒让过渡完全完成
+                        setTimeout(() => {
+                            // 隐藏探索页面
+                            explorePage.style.display = 'none';
+                            
+                            // 立即初始化滚动动画
+                            animateOnScroll();
+                        }, 1500);
+                        
+                        // 重置计数器
+                        resetExploreClickCount();
+                    } else {
+                        // 3秒后重置计数器
+                        clearTimeout(exploreClickTimer);
+                        exploreClickTimer = setTimeout(resetExploreClickCount, 3000);
+                    }
+                });
+            }
+            
+            if (startButton) {
+                startButton.addEventListener('click', () => {
+                    clearTimeout(autoNavigateTimeout);
+                    clearInterval(countdownInterval);
+                    
+                    // 开始过渡：背景从黑色渐变到白色，同时文字淡出
+                    explorePage.classList.add('transitioning');
+                    
+                    // 等待1.5秒让过渡完全完成
+                    setTimeout(() => {
+                        // 隐藏探索页面
+                        explorePage.style.display = 'none';
+                        
+                        // 立即初始化滚动动画，而不是等16秒
+                        animateOnScroll();
+                        
+                        // 首页动画会通过scroll动画自动触发
+                    }, 1500); // 等待1.5秒让背景完全变成白色
+                });
+            }
+
+            // Logo 点击事件（只触发赞助彩蛋）
+            const navLogo = document.getElementById('navLogo');
+            if (navLogo) {
+                navLogo.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    triggerEasterEgg('logo');
+                });
+            }
+            
+            // 首页链接点击计数（连续多次点击触发密码输入）
+            const homeLinks = document.querySelectorAll('a[href="#home"]');
+            let homeClickCount = 0;
+            let homeClickTimer = null;
+            
+            homeLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    // 正常的锚点跳转已经在其他地方处理
+                    // 这里只处理连续点击逻辑
+                    homeClickCount++;
+                    
+                    if (homeClickTimer) {
+                        clearTimeout(homeClickTimer);
+                    }
+                    
+                    if (homeClickCount >= 5) {
+                        // 连续点击 5 次，打开密码输入框
+                        openPasswordModal();
+                        homeClickCount = 0;
+                    } else {
+                        homeClickTimer = setTimeout(() => {
+                            homeClickCount = 0;
+                        }, 1000);
+                    }
+                });
+            });
+
+            // 密码验证
+            const submitPasswordBtn = document.getElementById('submitPasswordBtn');
+            if (submitPasswordBtn) {
+                submitPasswordBtn.addEventListener('click', () => {
+                    const inputPassword = document.getElementById('adminPassword').value.trim();
+                    const errorEl = document.getElementById('passwordError');
+                    
+                    console.log('输入密码:', inputPassword);
+                    console.log('正确密码:', ADMIN_PASSWORD);
+                    console.log('是否匹配:', inputPassword === ADMIN_PASSWORD);
+                    
+                    if (inputPassword === ADMIN_PASSWORD) {
+                        closePasswordModal();
+                        openAdminPage();
+                    } else {
+                        errorEl.classList.remove('hidden');
+                    }
+                });
+            }
+
+            const cancelPasswordBtn = document.getElementById('cancelPasswordBtn');
+            if (cancelPasswordBtn) {
+                cancelPasswordBtn.addEventListener('click', closePasswordModal);
+            }
+
+            const closeAdminBtn = document.getElementById('closeAdminBtn');
+            if (closeAdminBtn) {
+                closeAdminBtn.addEventListener('click', closeAdminPage);
+            }
+
+            const clearMessagesBtn = document.getElementById('clearMessagesBtn');
+            if (clearMessagesBtn) {
+                clearMessagesBtn.addEventListener('click', () => {
+                    if (confirm('确定要清空所有合作消息吗？')) {
+                        localStorage.removeItem('cooperationMessages');
+                        loadAdminData();
+                    }
+                });
+            }
+
+            const form = document.querySelector('form[action*="formsubmit.co"]');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    const name = document.getElementById('name').value;
+                    const email = document.getElementById('email').value;
+                    const message = document.getElementById('message').value;
+                    
+                    saveCooperationMessage({
+                        name,
+                        email,
+                        message,
+                        timestamp: new Date().toISOString()
+                    });
+                });
+            }
+        });
+
+        function saveCooperationMessage(msg) {
+            let messages = JSON.parse(localStorage.getItem('cooperationMessages') || '[]');
+            messages.unshift(msg);
+            localStorage.setItem('cooperationMessages', JSON.stringify(messages));
+        }
+
+        // ========== 管理页面数据加载 ==========
+        let adminStatsChart = null;
+
+        function loadAdminData() {
+            const todayKey = getTodayKey();
+            const visitData = JSON.parse(localStorage.getItem('visitData') || '{}');
+            const totalClicks = parseInt(localStorage.getItem('totalClicks') || '0');
+            const messages = JSON.parse(localStorage.getItem('cooperationMessages') || '[]');
+
+            document.getElementById('todayVisits').textContent = visitData[todayKey] || 0;
+            document.getElementById('totalClicks').textContent = totalClicks;
+            document.getElementById('totalMessages').textContent = messages.length;
+
+            renderAdminStatsChart(visitData);
+            renderMessagesList(messages);
+        }
+
+        function renderAdminStatsChart(visitData) {
+            const ctx = document.getElementById('adminStatsChart');
+            if (!ctx) return;
+
+            const labels = [];
+            const data = [];
+            const today = new Date();
+
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(today.getDate() - i);
+                const key = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+                labels.push(`${date.getMonth() + 1}/${date.getDate()}`);
+                data.push(visitData[key] || 0);
+            }
+
+            if (adminStatsChart) {
+                adminStatsChart.destroy();
+            }
+
+            adminStatsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '访问次数',
+                        data: data,
+                        backgroundColor: 'rgba(0, 113, 227, 0.8)',
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        function renderMessagesList(messages) {
+            const container = document.getElementById('messagesList');
+            if (messages.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-8">暂无合作消息</p>';
+                return;
+            }
+
+            container.innerHTML = messages.map((msg, index) => {
+                const date = new Date(msg.timestamp);
+                const dateStr = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+                
+                return `
+                    <div class="bg-neutral rounded-2xl p-6">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="font-bold text-lg">${msg.name}</h3>
+                                <p class="text-gray-500 text-sm">${msg.email}</p>
+                            </div>
+                            <p class="text-gray-400 text-sm">${dateStr}</p>
+                        </div>
+                        <p class="text-gray-700">${msg.message}</p>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        document.getElementById('clearMessagesBtn').addEventListener('click', () => {
+            if (confirm('确定要清空所有合作消息吗？')) {
+                localStorage.removeItem('cooperationMessages');
+                loadAdminData();
+            }
+        });
+
+        // 1. 探索页面
+        let autoNavigateTimeout;
+        let countdownInterval;
+        let explorePage;
+        let startButton;
+        
+        function startAutoNavigate() {
+            const randomTime = 10000 + Math.random() * 5000; // 10-15秒
+            const hintTime = randomTime - 5000; // 5秒前显示提示
+            
+            // 显示倒计时
+            const countdownTimeout = setTimeout(() => {
+                const countdownHint = document.getElementById('countdownHint');
+                if (countdownHint) {
+                    countdownHint.style.opacity = '1';
+                    let count = 5;
+                    countdownHint.textContent = `${count}秒后将自动进入首页`;
+                    
+                    countdownInterval = setInterval(() => {
+                        count--;
+                        if (count > 0) {
+                            countdownHint.textContent = `${count}秒后将自动进入首页`;
+                        } else {
+                            clearInterval(countdownInterval);
+                        }
+                    }, 1000);
+                }
+            }, hintTime);
+            
+            // 自动进入
+            autoNavigateTimeout = setTimeout(() => {
+                const explorePage = window.explorePage;
+                if (explorePage && !explorePage.classList.contains('transitioning')) {
+                    // 开始过渡：背景从黑色渐变到白色，同时文字淡出
+                    explorePage.classList.add('transitioning');
+                    
+                    // 等待1.5秒让过渡完全完成
+                    setTimeout(() => {
+                        // 隐藏探索页面
+                        explorePage.style.display = 'none';
+                        
+                        // 立即初始化滚动动画，而不是等16秒
+                        animateOnScroll();
+                        
+                        // 首页动画会通过scroll动画自动触发
+                    }, 1500); // 等待1.5秒让背景完全变成白色
+                }
+            }, randomTime);
+        }
+
+
+        
+        // 2. 导航栏滚动效果
+        const navbar = document.getElementById('navbar');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                navbar.classList.add('bg-white/90', 'backdrop-blur-custom', 'shadow-lg');
+            } else {
+                navbar.classList.remove('bg-white/90', 'backdrop-blur-custom', 'shadow-lg');
+            }
+        });
+
+        // 3. 移动端菜单切换
+        const menuBtn = document.getElementById('menuBtn');
+        const mobileMenu = document.getElementById('mobileMenu');
+        menuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+            const icon = menuBtn.querySelector('i');
+            if (icon.classList.contains('fa-bars')) {
+                icon.classList.replace('fa-bars', 'fa-times');
+            } else {
+                icon.classList.replace('fa-times', 'fa-bars');
+            }
+        });
+
+        // 4. 滚动触发动画
+        const animateOnScroll = () => {
+            const animatedElements = document.querySelectorAll('[data-animation]');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const element = entry.target;
+                        
+                        // 检查是否已经触发过动画
+                        if (element.dataset.animationTriggered === 'true') {
+                            return;
+                        }
+                        
+                        const animation = element.getAttribute('data-animation');
+                        const delay = element.getAttribute('data-delay') || 0;
+                        setTimeout(() => {
+                            element.classList.remove('animation-hidden');
+                            // 为横线元素应用特殊动画
+                            if (element.classList.contains('line-expand-element')) {
+                                // 重新创建 line-container 及其子元素以重置动画
+                                const lineContainer = document.createElement('div');
+                                lineContainer.className = 'line-container';
+                                
+                                const lineLeft = document.createElement('div');
+                                lineLeft.className = 'line-left';
+                                
+                                const lineRight = document.createElement('div');
+                                lineRight.className = 'line-right';
+                                
+                                lineContainer.appendChild(lineLeft);
+                                lineContainer.appendChild(lineRight);
+                                
+                                // 清空并重新添加内容
+                                element.innerHTML = '';
+                                element.appendChild(lineContainer);
+                                
+                                // 标记横线动画已触发
+                                element.dataset.animationTriggered = 'true';
+                            } else {
+                                element.classList.add(`animate-${animation}`);
+                                // 标记动画已触发
+                                element.dataset.animationTriggered = 'true';
+                            }
+                        }, delay * 1000);
+                        observer.unobserve(element);
+                    }
+                });
+            }, {
+                threshold: 0.05,
+                rootMargin: '0px 0px -50px 0px'
+            });
+            animatedElements.forEach(el => {
+                observer.observe(el);
+            });
+        };
+
+        // 5. 平滑滚动到锚点
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                // 如果是 navLogo，不处理锚点跳转
+                if (this.id === 'navLogo') {
+                    return;
+                }
+                
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                const targetElement = document.querySelector(targetId);
+                if (targetElement) {
+                    // 先隐藏目标板块的所有动画元素
+                    const elements = document.querySelectorAll(`${targetId} [data-animation]`);
+                    elements.forEach(element => {
+                        element.classList.add('animation-hidden');
+                        element.classList.remove('animate-slide-up', 'animate-scale-in', 'animate-fade-in');
+                        // 重置动画触发标记，允许动画重新触发
+                        element.dataset.animationTriggered = 'false';
+                        // 如果是横线元素，重置其内容
+                        if (element.classList.contains('line-expand-element')) {
+                            element.innerHTML = '';
+                        }
+                    });
+                    
+                    let targetPosition;
+                    
+                    // 合作页面居中显示，其他页面定位到底部
+                    if (targetId === '#cooperation') {
+                        // 合作页面居中：定位到板块的中间位置
+                        targetPosition = targetElement.offsetTop + (targetElement.offsetHeight / 2) - (window.innerHeight / 2);
+                    } else {
+                        // 其他页面定位到底部
+                        targetPosition = targetElement.offsetTop + targetElement.offsetHeight - window.innerHeight;
+                    }
+                    
+                    window.scrollTo({
+                        top: targetPosition,
+                        behavior: 'smooth'
+                    });
+                    
+                    // 滚动后关闭移动端菜单
+                    const mobileMenu = document.getElementById('mobileMenu');
+                    const menuBtn = document.getElementById('menuBtn');
+                    const icon = menuBtn.querySelector('i');
+                    if (!mobileMenu.classList.contains('hidden')) {
+                        mobileMenu.classList.add('hidden');
+                        icon.classList.replace('fa-times', 'fa-bars');
+                    }
+                    
+                    // 等待滚动完成后再触发动画
+                    setTimeout(() => {
+                        elements.forEach(element => {
+                            // 强制重排
+                            element.offsetHeight;
+                            
+                            const animation = element.getAttribute('data-animation');
+                            const delay = element.getAttribute('data-delay') || 0;
+                            setTimeout(() => {
+                                element.classList.remove('animation-hidden');
+                                // 为横线元素应用特殊动画
+                                if (element.classList.contains('line-expand-element')) {
+                                    // 重新创建line-container及其子元素以重置动画
+                                    const lineContainer = document.createElement('div');
+                                    lineContainer.className = 'line-container';
+                                    
+                                    const lineLeft = document.createElement('div');
+                                    lineLeft.className = 'line-left';
+                                    
+                                    const lineRight = document.createElement('div');
+                                    lineRight.className = 'line-right';
+                                    
+                                    lineContainer.appendChild(lineLeft);
+                                    lineContainer.appendChild(lineRight);
+                                    
+                                    // 清空并重新添加内容
+                                    element.innerHTML = '';
+                                    element.appendChild(lineContainer);
+                                } else {
+                                    element.classList.add(`animate-${animation}`);
+                                }
+                            }, delay * 1000);
+                        });
+                    }, 800);
+                }
+            });
+        });
+
+        // 添加bounceArrow动画
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes bounceArrow {
+                0%, 100% { transform: translateY(0); }
+                50% { transform: translateY(10px); }
+            }
+            @keyframes float {
+                0%, 100% { transform: translateY(0px); }
+                50% { transform: translateY(-20px); }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // 隐藏彩蛋功能
+        // 1. 科乐美代码彩蛋
+        const konamiCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'KeyB', 'KeyA'];
+        let konamiIndex = 0;
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.code === konamiCode[konamiIndex]) {
+                konamiIndex++;
+                if (konamiIndex === konamiCode.length) {
+                    triggerEasterEgg('konami');
+                    konamiIndex = 0;
+                }
+            } else {
+                konamiIndex = 0;
+            }
+        });
+        
+
+        
+        // 3. 首页图片彩蛋
+        const homeImage = document.getElementById('homeImage');
+        if (homeImage) {
+            homeImage.addEventListener('click', () => {
+                triggerEasterEgg('image');
+            });
+        }
+        
+        // 4. 彩蛋触发函数
+        function triggerEasterEgg(type) {
+            if (type === 'konami') {
+                document.body.style.animation = 'rainbow 3s ease infinite';
+                alert('🎉 恭喜发现科乐美彩蛋！页面彩虹模式已激活！');
+                setTimeout(() => {
+                    document.body.style.animation = '';
+                }, 3000);
+            } else if (type === 'logo') {
+                showSponsorEasterEgg();
+            } else if (type === 'image') {
+                showBlessingEasterEgg();
+            }
+        }
+        
+        // 显示赞助彩蛋
+        function showSponsorEasterEgg() {
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.6);
+                backdrop-filter: blur(5px);
+                z-index: 999998;
+            `;
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%) scale(0);
+                background: rgba(0, 0, 0, 0.95);
+                color: white;
+                padding: 50px 60px;
+                border-radius: 20px;
+                z-index: 999999;
+                text-align: center;
+                animation: popIn 0.5s ease-out forwards;
+                box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+                min-width: 400px;
+                max-width: 90%;
+            `;
+            
+            messageDiv.innerHTML = `
+                <h2 style="font-size: 2rem; margin-bottom: 20px; color: #ffd700;">🎉</h2>
+                <p style="font-size: 1.5rem; margin-bottom: 30px;">恭喜您获得赞助主播的机会一次</p>
+                <button id="sponsorBtn" style="
+                    padding: 15px 40px;
+                    background: linear-gradient(135deg, #ff6b6b, #ffd93d);
+                    color: white;
+                    border: none;
+                    border-radius: 30px;
+                    cursor: pointer;
+                    font-size: 1.1rem;
+                    font-weight: bold;
+                    transition: all 0.3s ease;
+                ">点击赞助</button>
+            `;
+            
+            document.body.appendChild(overlay);
+            document.body.appendChild(messageDiv);
+            
+            // 点击弹窗外关闭
+            overlay.addEventListener('click', () => {
+                closeEasterEgg();
+            });
+            
+            // 点击弹窗内容不关闭
+            messageDiv.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+            
+            const sponsorBtn = document.getElementById('sponsorBtn');
+            sponsorBtn.addEventListener('click', () => {
+                window.open('https://afdian.com/a/KDXZHX', '_blank');
+                closeEasterEgg();
+            });
+            
+            function closeEasterEgg() {
+                messageDiv.style.animation = 'popOut 0.3s ease-in forwards';
+                overlay.style.animation = 'fadeOut 0.3s ease-in forwards';
+                setTimeout(() => {
+                    messageDiv.remove();
+                    overlay.remove();
+                }, 300);
+            }
+            
+            sponsorBtn.addEventListener('mouseenter', () => {
+                sponsorBtn.style.transform = 'scale(1.05)';
+                sponsorBtn.style.boxShadow = '0 10px 30px rgba(255, 107, 107, 0.4)';
+            });
+            sponsorBtn.addEventListener('mouseleave', () => {
+                sponsorBtn.style.transform = 'scale(1)';
+                sponsorBtn.style.boxShadow = 'none';
+            });
+        }
+        
+        // 显示祝福彩蛋
+        let currentBlessingContainer = null;
+        function showBlessingEasterEgg() {
+            // 如果彩蛋已经在显示，关闭它
+            if (currentBlessingContainer) {
+                currentBlessingContainer.remove();
+                currentBlessingContainer = null;
+                return;
+            }
+            
+            const blessingContainer = document.createElement('div');
+            blessingContainer.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                pointer-events: none;
+                z-index: 999998;
+                overflow: hidden;
+            `;
+            
+            const blessings = [
+                '祝福您天天开心！', 'KDXZHX', '万事如意！', 'KDXZHX',
+                '心想事成！', 'KDXZHX', '身体健康！', 'KDXZHX',
+                '工作顺利！', 'KDXZHX', '幸福美满！', 'KDXZHX'
+            ];
+            
+            const colors = ['#d4af37', '#f4e4bc', '#e6d5a8', '#c9a962', '#d4b866', '#f0e68c', '#daa520', '#b8860b'];
+            
+            const positions = [];
+            const textDelay = 200; // 加快文字出现速度
+            
+            blessings.forEach((blessing, index) => {
+                setTimeout(() => {
+                    createBlessingText(blessing, colors[index % colors.length]);
+                }, index * textDelay);
+            });
+            
+            function createBlessingText(text, color) {
+                const textEl = document.createElement('div');
+                textEl.textContent = text;
+                
+                let posX, posY;
+                let attempts = 0;
+                const maxAttempts = 50;
+                
+                do {
+                    posX = Math.random() * 100;
+                    posY = Math.random() * 100;
+                    attempts++;
+                } while (isOverlapping(posX, posY) && attempts < maxAttempts);
+                
+                positions.push({ x: posX, y: posY });
+                
+                const fontSize = 0.8 + Math.random() * 1.2;
+                const duration = 6 + Math.random() * 4; // 加快文字移动速度
+                
+                textEl.style.cssText = `
+                    position: absolute;
+                    font-size: ${fontSize}rem;
+                    font-weight: 300;
+                    color: ${color};
+                    white-space: nowrap;
+                    text-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+                    user-select: none;
+                    left: ${posX}%;
+                    top: ${posY}%;
+                    opacity: 0;
+                    animation: moveBlessing ${duration}s ease-in-out forwards;
+                    letter-spacing: 0.05em;
+                `;
+                blessingContainer.appendChild(textEl);
+                
+                setTimeout(() => {
+                    const idx = positions.findIndex(p => p.x === posX && p.y === posY);
+                    if (idx > -1) positions.splice(idx, 1);
+                    textEl.remove();
+                    if (blessingContainer.children.length === 0) {
+                        blessingContainer.remove();
+                        if (currentBlessingContainer === blessingContainer) {
+                            currentBlessingContainer = null;
+                        }
+                    }
+                }, duration * 1000);
+            }
+            
+            function isOverlapping(x, y) {
+                const minDistance = 15;
+                for (const pos of positions) {
+                    const distance = Math.sqrt(Math.pow(x - pos.x, 2) + Math.pow(y - pos.y, 2));
+                    if (distance < minDistance) return true;
+                }
+                return false;
+            }
+            
+            document.body.appendChild(blessingContainer);
+            currentBlessingContainer = blessingContainer;
+        }
+        
+        // 添加彩蛋动画样式
+        const easterEggAnimStyle = document.createElement('style');
+        easterEggAnimStyle.textContent = `
+            @keyframes popIn {
+                0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+                50% { transform: translate(-50%, -50%) scale(1.1); }
+                100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            }
+            @keyframes popOut {
+                0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+                100% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+            }
+            @keyframes fadeOut {
+                0% { opacity: 1; }
+                100% { opacity: 0; }
+            }
+            @keyframes moveBlessing {
+                0% { 
+                    transform: translateX(-50px) translateY(-50px);
+                    opacity: 0;
+                }
+                5% { opacity: 1; }
+                95% { opacity: 1; }
+                100% { 
+                    transform: translateX(100px) translateY(100px);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(easterEggAnimStyle);
+        
+        // 滚动进度指示器
+        const scrollProgress = document.getElementById('scrollProgress');
+        
+        function updateScrollProgress() {
+            const scrollTop = window.pageYOffset;
+            const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+            const progress = (scrollTop / docHeight) * 100;
+            scrollProgress.style.width = `${progress}%`;
+        }
+        
+        window.addEventListener('scroll', updateScrollProgress);
+        
+        // 添加彩虹动画
+        const easterEggStyle = document.createElement('style');
+        easterEggStyle.textContent = `
+            @keyframes rainbow {
+                0% { filter: hue-rotate(0deg); }
+                100% { filter: hue-rotate(360deg); }
+            }
+        `;
+        document.head.appendChild(easterEggStyle);
+        
+        // 表单提交处理
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('form[action*="formsubmit.co"]');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    // 显示提交中状态
+                    const submitButton = form.querySelector('button[type="submit"]');
+                    const originalText = submitButton.textContent;
+                    submitButton.textContent = '发送中...';
+                    submitButton.disabled = true;
+                    
+                    // 模拟表单提交延迟
+                    setTimeout(function() {
+                        // 表单会自动提交到FormSubmit.co
+                        // 这里只是为了用户体验
+                    }, 1000);
+                });
+                
+                // 检查URL参数，显示成功消息
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.get('success')) {
+                    showSuccessMessage();
+                }
+            }
+            
+            // 根据设备类型调整滚动提示
+            adjustScrollIndicators();
+        });
+        
+        // 根据设备类型调整滚动指示器
+        function adjustScrollIndicators() {
+            const isMobile = window.innerWidth < 768;
+            const scrollTexts = document.querySelectorAll('.scroll-text');
+            const scrollArrows = document.querySelectorAll('.scroll-arrow');
+            const scrollTextsTop = document.querySelectorAll('.scroll-text-top');
+            const scrollArrowsTop = document.querySelectorAll('.scroll-arrow-top');
+            
+            if (isMobile) {
+                // 移动设备显示上滑提示
+                scrollTexts.forEach(text => {
+                    text.textContent = '上滑';
+                });
+                scrollArrows.forEach(arrow => {
+                    arrow.classList.remove('fa-chevron-down');
+                    arrow.classList.add('fa-chevron-up');
+                });
+                // 合作板块的提示文字
+                scrollTextsTop.forEach(text => {
+                    text.textContent = '上滑回到顶部';
+                });
+            } else {
+                // 桌面设备恢复默认
+                scrollTexts.forEach(text => {
+                    text.textContent = '向下滚动';
+                });
+                scrollArrows.forEach(arrow => {
+                    arrow.classList.remove('fa-chevron-up');
+                    arrow.classList.add('fa-chevron-down');
+                });
+                scrollTextsTop.forEach(text => {
+                    text.textContent = '回到顶部';
+                });
+            }
+        }
+        
+        // 窗口大小变化时重新调整
+        window.addEventListener('resize', adjustScrollIndicators);
+        
+        // 实时预览功能
+        function updateCurrentPagePreview() {
+            const sections = [
+                { id: 'home', name: '首页' },
+                { id: 'about', name: '粉丝' },
+                { id: 'work', name: '作品' },
+                { id: 'cooperation', name: '合作' }
+            ];
+            
+            let currentPage = '首页';
+            sections.forEach(section => {
+                const element = document.getElementById(section.id);
+                if (element) {
+                    const rect = element.getBoundingClientRect();
+                    if (rect.top <= 100 && rect.bottom >= 100) {
+                        currentPage = section.name;
+                    }
+                }
+            });
+            
+            const previewElement = document.getElementById('currentPagePreview');
+            if (previewElement) {
+                previewElement.textContent = currentPage;
+            }
+        }
+        
+        // 监听滚动事件更新实时预览
+        window.addEventListener('scroll', updateCurrentPagePreview);
+        
+        // 初始化实时预览
+        updateCurrentPagePreview();
+        
+        // 检查是否为移动端
+        function isMobile() {
+            return window.innerWidth < 768;
+        }
+        
+        // 桌面端滚动处理 - 完全重写
+        if (!isMobile()) {
+            let isScrolling = false;
+            let touchStartY = 0;
+            let touchEndY = 0;
+            let lastScrollTime = 0;
+            
+            function handleScroll(direction) {
+                const now = Date.now();
+                
+                if (isScrolling || now - lastScrollTime < 800) {
+                    return;
+                }
+                
+                const sections = ['home', 'about', 'work', 'cooperation'];
+                let currentSection = 'home';
+                
+                sections.forEach(sectionId => {
+                    const section = document.getElementById(sectionId);
+                    if (section) {
+                        const rect = section.getBoundingClientRect();
+                        if (rect.top <= window.innerHeight / 2 && rect.bottom >= window.innerHeight / 2) {
+                            currentSection = sectionId;
+                        }
+                    }
+                });
+                
+                isScrolling = true;
+                lastScrollTime = now;
+                
+                if (direction === 'down') {
+                    if (currentSection === 'home') {
+                        document.querySelector('a[href="#about"]').click();
+                    } else if (currentSection === 'about') {
+                        document.querySelector('a[href="#work"]').click();
+                    } else if (currentSection === 'work') {
+                        document.querySelector('a[href="#cooperation"]').click();
+                    }
+                } else {
+                    if (currentSection === 'cooperation') {
+                        document.querySelector('nav a[href="#work"]').click();
+                    } else if (currentSection === 'work') {
+                        document.querySelector('nav a[href="#about"]').click();
+                    } else if (currentSection === 'about') {
+                        document.querySelector('nav a[href="#home"]').click();
+                    }
+                }
+                
+                setTimeout(() => {
+                    isScrolling = false;
+                }, 800);
+            }
+            
+            window.addEventListener('wheel', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const scrollDirection = e.deltaY > 0 ? 'down' : 'up';
+                handleScroll(scrollDirection);
+            }, { passive: false, capture: true });
+            
+            document.addEventListener('touchmove', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }, { passive: false, capture: true });
+            
+            document.addEventListener('touchstart', function(e) {
+                touchStartY = e.touches[0].clientY;
+            }, { passive: true, capture: true });
+            
+            document.addEventListener('touchend', function(e) {
+                if (isScrolling) return;
+                
+                touchEndY = e.changedTouches[0].clientY;
+                const swipeDistance = touchStartY - touchEndY;
+                
+                if (Math.abs(swipeDistance) > 50) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const swipeDirection = swipeDistance > 0 ? 'down' : 'up';
+                    handleScroll(swipeDirection);
+                }
+            }, { passive: false, capture: true });
+        }
+        
+        // 移动端菜单按钮事件
+        document.getElementById('mobileMenuBtn').addEventListener('click', function() {
+            const mobileMenu = document.getElementById('mobileMenu');
+            mobileMenu.classList.toggle('hidden');
+        });
+        
+        function showSuccessMessage() {
+            const form = document.querySelector('form[action*="formsubmit.co"]');
+            if (form) {
+                const successDiv = document.createElement('div');
+                successDiv.className = 'bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-2xl mb-6 text-center';
+                successDiv.innerHTML = `
+                    <div class="flex items-center justify-center">
+                        <i class="fas fa-check-circle text-2xl mr-2"></i>
+                        <span>消息发送成功！我们会尽快与您联系。</span>
+                    </div>
+                `;
+                form.parentNode.insertBefore(successDiv, form);
+                
+                // 5秒后自动隐藏成功消息
+                setTimeout(function() {
+                    successDiv.style.animation = 'fadeOut 0.5s ease-in forwards';
+                    setTimeout(function() {
+                        successDiv.remove();
+                    }, 500);
+                }, 5000);
+            }
+        }
+
+        // 粉丝数据管理
+        const defaultData = {
+            tiktok: 2250,
+            weibo: 3539,
+            kuaishou: 600,
+            xianyu: 1244
+        };
+        
+        // 从localStorage加载数据
+        function loadData() {
+            const saved = localStorage.getItem('followerData');
+            if (saved) {
+                return { ...defaultData, ...JSON.parse(saved) };
+            }
+            return { ...defaultData };
+        }
+        
+        // 保存数据到localStorage
+        function saveData(data) {
+            localStorage.setItem('followerData', JSON.stringify(data));
+        }
+        
+        let followerData = loadData();
+        let followersChart = null;
+        
+        // 数字滚动动画函数
+        function animateNumber(element, start, end, duration = 1000) {
+            const startTime = performance.now();
+            const diff = end - start;
+            
+            function update(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const current = Math.floor(start + diff * easeOutQuart(progress));
+                element.textContent = formatNumber(current);
+                
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                }
+            }
+            
+            requestAnimationFrame(update);
+        }
+        
+        // 缓动函数
+        function easeOutQuart(x) {
+            return 1 - Math.pow(1 - x, 4);
+        }
+        
+        // 格式化数字（添加千分位）
+        function formatNumber(num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        }
+        
+        // 生成30天的日期标签
+        function generateDateLabels() {
+            const labels = [];
+            const today = new Date();
+            for (let i = 29; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(today.getDate() - i);
+                labels.push(date.getMonth() + 1 + '/' + date.getDate());
+            }
+            return labels;
+        }
+        
+        // 生成模拟的历史数据
+        function generateHistoricalData(currentValue, days = 30) {
+            const data = [];
+            const startValue = currentValue * 0.8; // 从80%开始
+            const increment = (currentValue - startValue) / days;
+            
+            for (let i = 0; i < days; i++) {
+                // 添加一些随机波动
+                const randomFactor = 0.95 + Math.random() * 0.1;
+                data.push(Math.floor((startValue + increment * i) * randomFactor));
+            }
+            
+            return data;
+        }
+        
+        // 生成预测数据（未来7天）
+        function generatePredictedData(currentValue, days = 7) {
+            const data = [];
+            const growthRate = 1.02; // 每天2%的增长率
+            
+            for (let i = 1; i <= days; i++) {
+                data.push(Math.floor(currentValue * Math.pow(growthRate, i)));
+            }
+            
+            return data;
+        }
+        
+        // 绘制粉丝趋势图表
+        function drawFollowersChart() {
+            const ctx = document.getElementById('followersChart');
+            if (!ctx) return;
+            
+            const dateLabels = generateDateLabels();
+            const tiktokData = generateHistoricalData(followerData.tiktok);
+            const weiboData = generateHistoricalData(followerData.weibo);
+            const kuaishouData = generateHistoricalData(followerData.kuaishou);
+            const xianyuData = generateHistoricalData(followerData.xianyu);
+            
+            // 合并数据为总粉丝数
+            const totalData = tiktokData.map((_, index) => 
+                tiktokData[index] + weiboData[index] + kuaishouData[index] + xianyuData[index]
+            );
+            
+            // 生成预测数据
+            const lastTotal = totalData[totalData.length - 1];
+            const predictedData = generatePredictedData(lastTotal);
+            
+            // 合并实际数据和预测数据
+            const combinedLabels = [...dateLabels, ...Array(7).fill('')];
+            const combinedData = [...totalData, ...predictedData];
+            
+            // 销毁旧图表
+            if (followersChart) {
+                followersChart.destroy();
+            }
+            
+            // 创建新图表
+            followersChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: combinedLabels,
+                    datasets: [
+                        {
+                            label: '实际粉丝',
+                            data: [...totalData, ...Array(7).fill(null)],
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4
+                        },
+                        {
+                            label: '预测增长',
+                            data: [...Array(30).fill(null), ...predictedData],
+                            borderColor: '#3b82f6',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            fill: false,
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                display: false
+                            }
+                        },
+                        y: {
+                            beginAtZero: false,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        }
+                    },
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
+                    }
+                }
+            });
+            
+            // 移除图表上方的总粉丝数显示
+            // 现在总粉丝数显示在白色卡片框的顶部
+            
+            // 自动触发今天数据点的tooltip
+            setTimeout(() => {
+                const chart = followersChart;
+                const xAxis = chart.scales.x;
+                const yAxis = chart.scales.y;
+                
+                // 今天的位置是第29个索引
+                const todayIndex = 29;
+                const x = xAxis.getPixelForValue(todayIndex);
+                const y = yAxis.getPixelForValue(chart.data.datasets[0].data[todayIndex]);
+                
+                // 模拟点击事件
+                const event = new MouseEvent('mousemove', {
+                    clientX: x + canvas.offsetLeft,
+                    clientY: y + canvas.offsetTop,
+                    bubbles: true,
+                    cancelable: true,
+                    view: window
+                });
+                
+                // 触发tooltip
+                chart.tooltip._active = [{
+                    element: chart.getDatasetMeta(0).data[todayIndex],
+                    datasetIndex: 0,
+                    index: todayIndex
+                }];
+                chart.tooltip.update();
+                chart.draw();
+            }, 1000);
+        }
+        
+        // 更新当前日期
+        function updateCurrentDate() {
+            const now = new Date();
+            const dateString = now.getFullYear() + '年' + (now.getMonth() + 1) + '月' + now.getDate() + '日';
+            document.getElementById('current-date').textContent = dateString;
+        }
+        
+        // 更新粉丝数显示
+        function updateFollowerDisplay(animate = true) {
+            const total = followerData.tiktok + followerData.weibo + followerData.kuaishou + followerData.xianyu;
+            
+            const totalEl = document.getElementById('total-followers');
+            const chartTiktokEl = document.getElementById('chart-tiktok');
+            const chartWeiboEl = document.getElementById('chart-weibo');
+            const chartKuaishouEl = document.getElementById('chart-kuaishou');
+            const chartXianyuEl = document.getElementById('chart-xianyu');
+            
+            if (animate) {
+                animateNumber(totalEl, parseInt(totalEl.textContent.replace(/,/g, '')) || 0, total);
+                animateNumber(chartTiktokEl, parseInt(chartTiktokEl.textContent.replace(/,/g, '')) || 0, followerData.tiktok);
+                animateNumber(chartWeiboEl, parseInt(chartWeiboEl.textContent.replace(/,/g, '')) || 0, followerData.weibo);
+                animateNumber(chartKuaishouEl, parseInt(chartKuaishouEl.textContent.replace(/,/g, '')) || 0, followerData.kuaishou);
+                animateNumber(chartXianyuEl, parseInt(chartXianyuEl.textContent.replace(/,/g, '')) || 0, followerData.xianyu);
+            } else {
+                totalEl.textContent = formatNumber(total);
+                chartTiktokEl.textContent = formatNumber(followerData.tiktok);
+                chartWeiboEl.textContent = formatNumber(followerData.weibo);
+                chartKuaishouEl.textContent = formatNumber(followerData.kuaishou);
+                chartXianyuEl.textContent = formatNumber(followerData.xianyu);
+            }
+            
+            // 更新图表
+            drawFollowersChart();
+        }
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            // 先隐藏所有板块的动画元素
+            const allAnimatedElements = document.querySelectorAll('[data-animation]');
+            allAnimatedElements.forEach(element => {
+                element.classList.add('animation-hidden');
+            });
+            
+            // 更新当前日期
+            updateCurrentDate();
+            
+            // 初始化粉丝数据显示（先设置初始值为0，然后动画到实际值
+            document.getElementById('total-followers').textContent = '0';
+            document.getElementById('chart-tiktok').textContent = '0';
+            document.getElementById('chart-weibo').textContent = '0';
+            document.getElementById('chart-kuaishou').textContent = '0';
+            document.getElementById('chart-xianyu').textContent = '0';
+            
+            // 等待一小会再开始动画
+            setTimeout(() => {
+                updateFollowerDisplay(true);
+            }, 500);
+            
+            // 等待开场动画结束后再初始化滚动动画
+            setTimeout(() => {
+                animateOnScroll();
+            }, 16000); // 等待16秒，确保开场动画完全结束
+            
+            updateScrollProgress();
+        });
+    </script>
+</body>
+</html>

@@ -593,6 +593,10 @@ app.get('/manual-payment', (req, res) => {
   res.sendFile(path.join(__dirname, 'manual-payment.html'));
 });
 
+app.get('/dy', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dy.html'));
+});
+
 // 商品API
 app.get('/api/products', (req, res) => {
   res.json(db.getProducts());
