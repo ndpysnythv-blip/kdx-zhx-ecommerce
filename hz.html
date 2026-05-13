@@ -137,8 +137,11 @@
                     </div>
                     
                     <div class="mb-6">
-                        <label for="message" class="block text-sm font-medium mb-2 text-gray-700">留言 <span id="messageCount" class="text-gray-400 font-normal">(0/30)</span></label>
-                        <textarea id="message" name="message" rows="4" placeholder="请输入您的合作意向或留言（至少30个字）..." class="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300 resize-none"></textarea>
+                        <label for="message" class="block text-sm font-medium mb-2 text-gray-700">留言</label>
+                        <div class="relative">
+                            <textarea id="message" name="message" rows="4" placeholder="请输入您的合作意向或留言..." class="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300 resize-none"></textarea>
+                            <span id="messageCount" class="absolute bottom-3 right-3 text-xs text-gray-400">0</span>
+                        </div>
                         <p id="messageError" class="text-red-500 text-sm mt-2 hidden"></p>
                     </div>
                     
@@ -162,17 +165,8 @@
                     document.getElementById('message').addEventListener('input', function(e) {
                         const count = e.target.value.length;
                         const countEl = document.getElementById('messageCount');
-                        const button = document.querySelector('button[type="button"]');
                         
-                        if (count >= 30) {
-                            countEl.textContent = `(${count}/30)`;
-                            countEl.classList.remove('text-red-500');
-                            countEl.classList.add('text-green-500');
-                        } else {
-                            countEl.textContent = `(${count}/30)`;
-                            countEl.classList.remove('text-green-500');
-                            countEl.classList.add('text-red-500');
-                        }
+                        countEl.textContent = count;
                     });
                     
                     // 验证并提交表单
@@ -186,7 +180,7 @@
                         
                         // 验证字数
                         if (message.length < 30) {
-                            errorEl.textContent = `留言内容不足30个字（当前${message.length}字），请补充详细内容。`;
+                            errorEl.textContent = '字数要求30字以上';
                             errorEl.classList.remove('hidden');
                             return;
                         }
