@@ -605,6 +605,7 @@
                 if (content) {
                     const textDiv = document.createElement('div');
                     textDiv.style.marginTop = '8px';
+                    textDiv.style.whiteSpace = 'pre-line';
                     textDiv.textContent = content;
                     bubbleDiv.appendChild(textDiv);
                 }
@@ -633,6 +634,7 @@
                 chatMessages.scrollTop = chatMessages.scrollHeight;
                 return;
             } else {
+                bubbleDiv.style.whiteSpace = 'pre-line';
                 bubbleDiv.textContent = content;
             }
             
@@ -656,12 +658,15 @@
             
             const indicatorDiv = document.createElement('div');
             indicatorDiv.className = 'message-bubble assistant';
-            indicatorDiv.innerHTML = '<div style="display:flex;flex-direction:column;gap:10px;"><div class="typing-logo"><i class="fas fa-robot text-white text-2xl"></i></div><div class="typing-text">KDX丨ZHX<div class="typing-dots"><span></span><span></span><span></span></div></div></div>';
+            indicatorDiv.innerHTML = '<div style="display:flex;flex-direction:column;gap:8px;"><div class="typing-logo"><i class="fas fa-robot text-white text-2xl"></i></div><div class="typing-text">小K正在思考<div class="typing-dots"><span></span><span></span><span></span></div></div></div>';
             
             typingDiv.appendChild(avatarDiv);
             typingDiv.appendChild(indicatorDiv);
             chatMessages.appendChild(typingDiv);
             chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            // 更新聊天状态
+            document.getElementById('statusText').textContent = '思考中...';
         }
 
         function removeTypingIndicator() {
@@ -669,6 +674,8 @@
             if (typingIndicator) {
                 typingIndicator.remove();
             }
+            // 恢复聊天状态
+            document.getElementById('statusText').textContent = '在线';
         }
 
         function updateQueueIndicator() {

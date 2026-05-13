@@ -1981,40 +1981,45 @@ app.get('/api/github/callback', async (req, res) => {
   }
 });
 
-// AI API端点
-app.post('/api/ai', (req, res) => {
+// ========== 智能购物客服AI接口 ==========
+app.post('/api/ai', async (req, res) => {
   try {
     const { messages } = req.body;
     
-    const responses = [
-      "您好！我是KDX丨ZHX的智能客服，很高兴为您服务！",
-      "请问有什么可以帮助您的？",
-      "我们的商品都是经过严格质检的，请放心购买！",
-      "如有任何问题，请随时联系我们！",
-      "感谢您的支持！祝您购物愉快！"
-    ];
+    // 模拟思考延迟（1.5-3秒），让用户感觉AI在思考
+    const thinkingTime = 1500 + Math.random() * 1500;
+    await new Promise(resolve => setTimeout(resolve, thinkingTime));
     
-    const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+    // 获取最新的用户消息
+    const lastUserMsg = messages?.filter(m => m.role === 'user').pop()?.content || '';
+    const lowerMsg = lastUserMsg.toLowerCase();
+    
+    // 获取数据库数据
+    const products = db.getProducts();
+    const orders = db.getOrders();
+    
+    // 智能回复生成
+    let response = generateSmartResponse(lastUserMsg, products, orders);
     
     res.json({
       id: 'msg-' + Date.now(),
       object: 'chat.completion',
       created: Date.now(),
-      model: 'kdgpt-turbo',
+      model: 'kdgpt-smart',
       choices: [
         {
           index: 0,
           message: {
             role: 'assistant',
-            content: randomResponse
+            content: response
           },
           finish_reason: 'stop'
         }
       ],
       usage: {
-        prompt_tokens: 10,
-        completion_tokens: 20,
-        total_tokens: 30
+        prompt_tokens: lastUserMsg.length,
+        completion_tokens: response.length,
+        total_tokens: lastUserMsg.length + response.length
       }
     });
   } catch (error) {
@@ -2022,6 +2027,102 @@ app.post('/api/ai', (req, res) => {
     res.status(500).json({ error: 'AI服务暂时不可用' });
   }
 });
+
+// 智能回复生成函数
+function generateSmartResponse(userMessage, products, orders) {
+  const msg = userMessage.toLowerCase();
+  
+  // === 商品相关问题 ===
+  if (msg.includes('商品') || msg.includes('有什么') || msg.includes('卖什么') || msg.includes('推荐')) {
+    if (products.length > 0) {
+      const featured = products.slice(0, 3);
+      return `当然可以！我们目前有 ${products.length} 款商品在售。为您推荐几款热门商品：\n\n${featured.map((p, i) => `${i + 1}. ${p.name || '商品'} - ¥${(p.price || 0).toFixed(2)}${p.stock > 0 ? ` (库存: ${p.stock})` : ' (已售罄)'}`).join('\n')}\n\n您可以点击\"商城首页\"浏览全部商品哦！`;
+    }
+    return '我们正在积极筹备商品上架，敬请期待！';
+  }
+  
+  // === 价格相关 ===
+  if (msg.includes('多少') && (msg.includes('钱') || msg.includes('贵') || msg.includes('便宜'))) {
+    if (products.length > 0) {
+      const prices = products.map(p => p.price || 0).filter(p => p > 0);
+      const min = Math.min(...prices);
+      const max = Math.max(...prices);
+      const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
+      return `我们的商品价格区间是 ¥${min.toFixed(2)} - ¥${max.toFixed(2)}，平均价格 ¥${avg.toFixed(2)}。您可以告诉我您想了解哪款商品的详情哦！`;
+    }
+    return '我们的商品性价比很高，具体价格请以页面展示为准。';
+  }
+  
+  // === 库存相关 ===
+  if (msg.includes('库存') || msg.includes('有货') || msg.includes('没货')) {
+    const inStock = products.filter(p => p.stock > 0);
+    const outOfStock = products.filter(p => p.stock <= 0);
+    return `目前库存情况：\n• 有货商品：${inStock.length} 件\n• 已售罄：${outOfStock.length} 件\n${outOfStock.length > 0 ? '\n如果您想购买的商品暂时缺货，可以先收藏关注，补货后我们会及时更新的！' : ''}`;
+  }
+  
+  // === 订单相关 ===
+  if (msg.includes('订单') || msg.includes('下单') || msg.includes('购买')) {
+    const orderCount = orders.length;
+    return `您可以直接在商城页面挑选商品，加入购物车后点击\"去结算\"就能下单啦！${orderCount > 0 ? '我们平台已经有 ' + orderCount + ' 笔订单记录了，大家都很信赖我们呢！' : ''}\n\n下单后会有订单号和状态跟踪，您可以在\"我的订单\"里查看进度。`;
+  }
+  
+  // === 支付相关 ===
+  if (msg.includes('支付') || msg.includes('付款') || msg.includes('怎么付') || msg.includes('支付宝') || msg.includes('微信')) {
+    return '关于支付方式：\n• 我们支持支付宝和微信支付\n• 订单提交后请在30分钟内完成支付\n• 支付成功后系统会即时更新订单状态\n• 如有支付问题，可以联系人工客服协助处理';
+  }
+  
+  // === 退换货/售后 ===
+  if (msg.includes('退') || msg.includes('换') || msg.includes('售后') || msg.includes('质量')) {
+    return '关于售后问题：\n• 收到商品如有质量问题，7天内可申请退换\n• 请保存好商品和包装完好\n• 可以先联系客服说明情况\n• 我们会尽快为您处理的，请放心！';
+  }
+  
+  // === 物流/快递 ===
+  if (msg.includes('快递') || msg.includes('物流') || msg.includes('发货') || msg.includes('几天')) {
+    return '关于发货和物流：\n• 一般情况下1-3个工作日内发货\n• 发货后会上传物流单号\n• 您可以在订单详情页查看物流进度\n• 偏远地区可能需要稍长一点时间，请耐心等待';
+  }
+  
+  // === 联系客服/人工 ===
+  if (msg.includes('联系') || msg.includes('客服') || msg.includes('人工')) {
+    return '如果您需要人工客服，可以输入"确定转人工"来转接哦！\n人工客服在线时间：9:00-21:00\n其他时间可以给我留言，我会尽量帮您解答的。';
+  }
+  
+  // === 打招呼/问候 ===
+  if (msg.includes('你好') || msg.includes('您好') || msg.includes('嗨') || msg.includes('hi') || msg.includes('hello')) {
+    const greetings = [
+      '您好！我是小K，您的购物助手 🛒',
+      '您好呀！有什么我可以帮您的吗？',
+      'Hi！欢迎光临！有什么想了解的？',
+      '您好！很高兴为您服务！请问有什么可以帮您的？'
+    ];
+    return greetings[Math.floor(Math.random() * greetings.length)];
+  }
+  
+  // === 感谢 ===
+  if (msg.includes('谢谢') || msg.includes('感谢') || msg.includes('thanks')) {
+    const thanks = [
+      '不客气！祝您购物愉快！😊',
+      '不用谢！有问题随时找我哦！',
+      '感谢您的支持！有任何需要随时联系我。',
+      '应该的！如果还有其他问题，随时问我。'
+    ];
+    return thanks[Math.floor(Math.random() * thanks.length)];
+  }
+  
+  // === 咨询功能 ===
+  if (msg.includes('能做什么') || msg.includes('功能') || msg.includes('帮助')) {
+    return '我可以帮您：\n• 了解商品信息和库存\n• 查询订单和物流\n• 解答支付和售后问题\n• 推荐热门商品\n• 还有更多购物相关的问题都可以问我！\n\n如果需要更详细的帮助，可以随时转人工客服哦！';
+  }
+  
+  // === 默认智能回复（不是预设的随机）===
+  const defaultResponses = [
+    '好的，我理解您的意思了！' + (products.length > 0 ? '\n您可以先看看我们的热门商品，有喜欢的可以直接下单哦！' : ''),
+    '这个问题我记下了！' + (orders.length > 0 ? '\n有什么其他购物相关的问题，也可以一起告诉我。' : ''),
+    '明白了！您是想了解更多购物相关的信息吗？\n我可以帮您查商品、问订单、解答售后问题呢。',
+    '收到！如果您有具体的商品想问，或者订单想查，随时告诉我哦！'
+  ];
+  
+  return defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
+}
 
 // ========== AI 智能助手接口 ==========
 app.post('/api/ai/chat', async (req, res) => {
