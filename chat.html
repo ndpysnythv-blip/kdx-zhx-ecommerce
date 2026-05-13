@@ -696,29 +696,24 @@
                 chatMessages.scrollTop = chatMessages.scrollHeight;
             } else {
                 console.log('Showing AppLoader with message: 小K正在思考中...');
+                // 直接操作 DOM 元素，确保一定能显示
                 const loader = document.getElementById('appLoader');
-                const status = document.getElementById('loaderStatus');
-                
                 if (loader) {
-                    // 先设置状态文本
+                    console.log('Found appLoader element, removing hidden class and setting styles');
+                    loader.classList.remove('hidden');
+                    // 直接设置样式，确保可见
+                    loader.style.opacity = '1';
+                    loader.style.visibility = 'visible';
+                    loader.style.display = 'flex';
+                    
+                    const status = document.getElementById('loaderStatus');
                     if (status) {
                         status.textContent = '小K正在思考中...';
                     }
-                    
-                    // 优化：使用 requestAnimationFrame 确保流畅的动画启动
-                    requestAnimationFrame(() => {
-                        // 直接设置样式，确保可见
-                        loader.style.display = 'flex';
-                        loader.style.opacity = '1';
-                        loader.style.visibility = 'visible';
-                        // 移除 hidden 类，触发过渡动画
-                        loader.classList.remove('hidden');
-                    });
                 } else {
                     console.error('appLoader element not found!');
                 }
-                
-                // 调用 AppLoader 的方法
+                // 同时调用 AppLoader 的方法
                 AppLoader.show('小K正在思考中...');
             }
             
@@ -729,18 +724,10 @@
         function removeTypingIndicator() {
             // 隐藏通用加载动画
             if (window.AppLoader) {
+                // 直接操作 DOM 元素，确保一定能隐藏
                 const loader = document.getElementById('appLoader');
                 if (loader) {
-                    // 优化：使用 requestAnimationFrame 确保流畅的过渡
-                    requestAnimationFrame(() => {
-                        loader.classList.add('hidden');
-                        // 等待过渡完成后再隐藏
-                        setTimeout(() => {
-                            if (loader.classList.contains('hidden')) {
-                                loader.style.display = 'none';
-                            }
-                        }, 400); // 与 CSS 中的 transition 时间匹配
-                    });
+                    loader.classList.add('hidden');
                 }
                 // 同时调用 AppLoader 的方法
                 AppLoader.hide();
