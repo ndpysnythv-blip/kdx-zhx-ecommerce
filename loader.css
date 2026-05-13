@@ -102,53 +102,6 @@
     100% { background-position: 0% 0%; }
 }
 
-/* 四个角落的装饰光点 */
-.loader-overlay .loader-box .corner-glow {
-    position: absolute;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    box-shadow: 0 0 20px rgba(102, 126, 234, 0.8), 0 0 40px rgba(118, 75, 162, 0.4);
-    animation: cornerGlowPulse 2s ease-in-out infinite;
-    pointer-events: none;
-}
-
-.loader-overlay .loader-box .corner-glow:nth-child(1) {
-    top: -8px;
-    left: -8px;
-    animation-delay: 0s;
-}
-
-.loader-overlay .loader-box .corner-glow:nth-child(2) {
-    top: -8px;
-    right: -8px;
-    animation-delay: 0.5s;
-}
-
-.loader-overlay .loader-box .corner-glow:nth-child(3) {
-    bottom: -8px;
-    right: -8px;
-    animation-delay: 1s;
-}
-
-.loader-overlay .loader-box .corner-glow:nth-child(4) {
-    bottom: -8px;
-    left: -8px;
-    animation-delay: 1.5s;
-}
-
-@keyframes cornerGlowPulse {
-    0%, 100% {
-        transform: scale(0.8);
-        opacity: 0.6;
-    }
-    50% {
-        transform: scale(1.2);
-        opacity: 1;
-    }
-}
-
 .loader-overlay .logo-wrapper {
     display: flex;
     flex-direction: column;
@@ -218,21 +171,21 @@
     display: inline-block;
     opacity: 0;
     transform: translateX(-20px);
-    animation: loaderLetterRevealLoop 4s ease-in-out infinite;
+    animation: loaderLetterRevealLoop 3s ease-in-out infinite;
 }
 
-.loader-overlay .logo-text span:nth-child(1) { animation-delay: 0.1s; }
-.loader-overlay .logo-text span:nth-child(2) { animation-delay: 0.2s; }
+.loader-overlay .logo-text span:nth-child(1) { animation-delay: 0s; }
+.loader-overlay .logo-text span:nth-child(2) { animation-delay: 0.15s; }
 .loader-overlay .logo-text span:nth-child(3) { animation-delay: 0.3s; }
-.loader-overlay .logo-text span:nth-child(4) { animation-delay: 0.4s; }
-.loader-overlay .logo-text span:nth-child(5) { animation-delay: 0.5s; }
-.loader-overlay .logo-text span:nth-child(6) { animation-delay: 0.6s; }
-.loader-overlay .logo-text span:nth-child(7) { animation-delay: 0.7s; }
+.loader-overlay .logo-text span:nth-child(4) { animation-delay: 0.45s; }
+.loader-overlay .logo-text span:nth-child(5) { animation-delay: 0.6s; }
+.loader-overlay .logo-text span:nth-child(6) { animation-delay: 0.75s; }
+.loader-overlay .logo-text span:nth-child(7) { animation-delay: 0.9s; }
 
 @keyframes loaderLetterRevealLoop {
-    0%, 10% { opacity: 0; transform: translateX(-20px); filter: blur(4px); }
-    15%, 75% { opacity: 1; transform: translateX(0); filter: blur(0); }
-    85%, 100% { opacity: 0; transform: translateX(20px); filter: blur(4px); }
+    0%, 5% { opacity: 0; transform: translateX(-20px); filter: blur(4px); }
+    20%, 80% { opacity: 1; transform: translateX(0); filter: blur(0); }
+    90%, 100% { opacity: 0; transform: translateX(20px); filter: blur(4px); }
 }
 
 .loader-overlay .loader-bar {
@@ -254,7 +207,7 @@
 
 @keyframes loaderProgressFillLoop {
     0% { width: 0%; }
-    80% { width: 85%; }
+    80% { width: 100%; }
     100% { width: 100%; }
 }
 
