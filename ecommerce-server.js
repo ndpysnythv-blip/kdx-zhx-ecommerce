@@ -1654,6 +1654,7 @@ app.post('/api/login', loginLimiter, async (req, res) => {
     }
     
     currentUser = user;
+    console.log('[登录成功] 设置 currentUser:', { id: user.id, phone: user.phone, role: user.role, isAdmin: user.isAdmin });
     res.json({ 
         user: { ...user, password: undefined }, 
         token: 'demo-token',
@@ -1698,26 +1699,29 @@ app.post('/api/auto-login', (req, res) => {
 
 // 后台权限验证中间件
 function requireAdmin(req, res, next) {
-    // 如果已经有currentUser，检查是否是管理员
-    if (currentUser && (currentUser.role === 'admin' || currentUser.isAdmin)) {
-        return next();
-    }
+    console.log('[权限检查] currentUser:', currentUser ? { id: currentUser.id, phone: currentUser.phone, role: currentUser.role, isAdmin: currentUser.isAdmin } : null);
     
-    // 检查数据库中的管理员用户
-    const users = db.getUsers();
-    const adminUsers = users.filter(u => u.role === 'admin' || u.isAdmin);
-    
-    // 检查当前用户是否在管理员列表中
+    // 检查是否是管理员
     if (currentUser) {
-        const isAdminUser = adminUsers.some(u => u.id === currentUser.id || u.phone === currentUser.phone || u.email === currentUser.email);
-        if (isAdminUser) {
+        const isAdmin = currentUser.role === 'admin' || currentUser.isAdmin === true;
+        console.log('[权限检查] 是否是管理员:', isAdmin);
+        if (isAdmin) {
             return next();
         }
     }
     
     // 如果没有登录或不是管理员，返回403
+    console.log('[权限检查] 权限不足，拒绝访问');
     res.status(403).json({ error: '需要管理员权限' });
 }
+
+// 临时调试API - 获取当前登录用户信息
+app.get('/api/current-user', (req, res) => {
+    res.json({ 
+        loggedIn: !!currentUser,
+        user: currentUser ? { ...currentUser, password: undefined } : null
+    });
+});
 
 // 检查是否已登录的中间件
 function requireAuth(req, res, next) {
