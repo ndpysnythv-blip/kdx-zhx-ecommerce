@@ -60,19 +60,25 @@
         <section class="py-12">
             <div class="container-wide max-w-4xl">
                 <div class="flex items-center gap-2 mb-8 overflow-x-auto pb-2">
-                    <button onclick="filterOrders('all')" class="order-filter px-6 py-2 rounded-full font-medium bg-black text-white transition whitespace-nowrap">
-                        全部订单
-                    </button>
-                    <button onclick="filterOrders('pending')" class="order-filter px-6 py-2 rounded-full font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition whitespace-nowrap">
-                        待付款
-                    </button>
-                    <button onclick="filterOrders('shipped')" class="order-filter px-6 py-2 rounded-full font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition whitespace-nowrap">
-                        待收货
-                    </button>
-                    <button onclick="filterOrders('refund')" class="order-filter px-6 py-2 rounded-full font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition whitespace-nowrap">
-                        退款/售后
-                    </button>
-                </div>
+            <button onclick="filterOrders('all')" class="order-filter px-6 py-2 rounded-full font-medium bg-black text-white transition whitespace-nowrap">
+                全部订单
+            </button>
+            <button onclick="filterOrders('pending')" class="order-filter px-6 py-2 rounded-full font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition whitespace-nowrap">
+                待付款
+            </button>
+            <button onclick="filterOrders('payment_pending')" class="order-filter px-6 py-2 rounded-full font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition whitespace-nowrap">
+                待审核
+            </button>
+            <button onclick="filterOrders('paid')" class="order-filter px-6 py-2 rounded-full font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition whitespace-nowrap">
+                已付款
+            </button>
+            <button onclick="filterOrders('shipped')" class="order-filter px-6 py-2 rounded-full font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition whitespace-nowrap">
+                待收货
+            </button>
+            <button onclick="filterOrders('refund')" class="order-filter px-6 py-2 rounded-full font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition whitespace-nowrap">
+                退款/售后
+            </button>
+        </div>
 
                 <div id="ordersList" class="space-y-6">
                 </div>
@@ -87,6 +93,7 @@
         function getStatusBadge(status) {
             const statusMap = {
                 'pending': { color: 'bg-yellow-100 text-yellow-700', text: '待付款' },
+                'payment_pending': { color: 'bg-orange-100 text-orange-700', text: '待审核' },
                 'paid': { color: 'bg-blue-100 text-blue-700', text: '已付款' },
                 'shipped': { color: 'bg-purple-100 text-purple-700', text: '已发货' },
                 'delivered': { color: 'bg-green-100 text-green-700', text: '已收货' },
@@ -116,6 +123,7 @@
         }
 
         function renderOrders() {
+            const isAdmin = checkIsAdmin();
             let filteredOrders = allOrders;
             
             if (currentFilter !== 'all') {
@@ -130,12 +138,15 @@
             const container = document.getElementById('ordersList');
             container.innerHTML = filteredOrders.map(order => {
                 const badge = getStatusBadge(order.status);
+                const paymentMethodText = order.paymentMethod === 'alipay' ? '支付宝' : 
+                                          order.paymentMethod === 'wechat' ? '微信支付' : '';
                 return `
                     <div class="glass-card rounded-xl p-6">
                         <div class="flex items-center justify-between mb-4 pb-4 border-b border-gray-200">
-                            <div class="flex items-center gap-4">
+                            <div class="flex items-center gap-4 flex-wrap">
                                 <span class="text-gray-500 text-sm">订单号: ${order.orderNo || order.id}</span>
                                 <span class="text-gray-400 text-sm">${new Date(order.createdAt || Date.now()).toLocaleString()}</span>
+                                ${order.paymentMethod ? `<span class="text-gray-400 text-sm">支付方式: ${paymentMethodText}</span>` : ''}
                             </div>
                             <span class="${badge.color} px-3 py-1 rounded-full text-sm font-medium">${badge.text}</span>
                         </div>
@@ -153,12 +164,26 @@
                             ${(order.items || []).length > 2 ? `<div class="flex items-center justify-center w-16 h-16 bg-gray-100 rounded-xl text-gray-500 text-sm">+${order.items.length - 2}</div>` : ''}
                         </div>
 
-                        <div class="flex items-center justify-between">
+                        ${order.transactionNo ? `
+                            <div class="mb-4 p-3 bg-gray-50 rounded-xl">
+                                <p class="text-gray-600 text-sm">
+                                    <span class="font-medium">交易号:</span> ${order.transactionNo}
+                                </p>
+                                ${order.paymentScreenshot ? `
+                                    <div class="mt-2">
+                                        <p class="text-gray-500 text-sm mb-1">支付截图:</p>
+                                        <img src="${order.paymentScreenshot}" alt="支付截图" class="max-h-40 rounded-lg" onclick="window.open('${order.paymentScreenshot}', '_blank')" style="cursor: pointer;" />
+                                    </div>
+                                ` : ''}
+                            </div>
+                        ` : ''}
+
+                        <div class="flex items-center justify-between flex-wrap gap-4">
                             <div class="text-black">
                                 <span class="text-gray-500">实付款:</span>
                                 <span class="text-xl font-bold text-black ml-2">¥${(order.total || 0).toFixed(2)}</span>
                             </div>
-                            <div class="flex gap-3">
+                            <div class="flex gap-3 flex-wrap">
                                 <button onclick="viewOrder('${order.id}')" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
                                     查看详情
                                 </button>
@@ -167,7 +192,12 @@
                                         确认收货
                                     </button>
                                 ` : ''}
-                                ${order.status === 'paid' || order.status === 'pending' ? `
+                                ${order.status === 'pending' ? `
+                                    <button onclick="goToPayment('${order.id}')" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
+                                        去支付
+                                    </button>
+                                ` : ''}
+                                ${order.status === 'pending' ? `
                                     <button onclick="cancelOrder('${order.id}')" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
                                         取消订单
                                     </button>
@@ -177,11 +207,74 @@
                                         申请售后
                                     </button>
                                 ` : ''}
+                                ${isAdmin && order.status === 'payment_pending' ? `
+                                    <button onclick="verifyPayment('${order.id}', true)" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition">
+                                        确认支付
+                                    </button>
+                                    <button onclick="verifyPayment('${order.id}', false)" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition">
+                                        驳回支付
+                                    </button>
+                                ` : ''}
+                                ${isAdmin && order.status === 'paid' ? `
+                                    <button onclick="shipOrder('${order.id}')" class="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition">
+                                        发货
+                                    </button>
+                                ` : ''}
                             </div>
                         </div>
                     </div>
                 `;
             }).join('');
+        }
+
+        function goToPayment(orderId) {
+            const order = allOrders.find(o => o.id === orderId);
+            if (order) {
+                const method = order.paymentMethod || 'alipay';
+                window.location.href = `/manual-payment?orderId=${orderId}&amount=${order.total}&method=${method}`;
+            }
+        }
+
+        async function verifyPayment(orderId, verified) {
+            const note = verified ? '' : prompt('请输入驳回原因：');
+            if (!verified && note === null) return;
+            
+            try {
+                const response = await fetch(`/api/orders/${orderId}/verify-payment`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ verified, note })
+                });
+                if (response.ok) {
+                    showToast(verified ? '支付确认成功' : '已驳回支付');
+                    loadOrders();
+                }
+            } catch (error) {
+                console.error('Error verifying payment:', error);
+                showToast('操作失败', true);
+            }
+        }
+
+        async function shipOrder(orderId) {
+            const trackingNo = prompt('请输入快递单号：');
+            if (trackingNo === null) return;
+            
+            const shippingCompany = prompt('请输入快递公司（可选）：');
+            
+            try {
+                const response = await fetch(`/api/orders/${orderId}/ship`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ trackingNo, shippingCompany })
+                });
+                if (response.ok) {
+                    showToast('发货成功');
+                    loadOrders();
+                }
+            } catch (error) {
+                console.error('Error shipping order:', error);
+                showToast('操作失败', true);
+            }
         }
 
         function renderEmptyState() {
@@ -204,6 +297,8 @@
             buttons.forEach(btn => {
                 const isActive = (status === 'all' && btn.textContent.trim() === '全部订单') || 
                                  (status === 'pending' && btn.textContent.trim() === '待付款') ||
+                                 (status === 'payment_pending' && btn.textContent.trim() === '待审核') ||
+                                 (status === 'paid' && btn.textContent.trim() === '已付款') ||
                                  (status === 'shipped' && btn.textContent.trim() === '待收货') ||
                                  (status === 'refund' && btn.textContent.trim() === '退款/售后');
                 
@@ -214,6 +309,17 @@
                 }
             });
             renderOrders();
+        }
+
+        let currentUser = null;
+        
+        function checkIsAdmin() {
+            const userStr = localStorage.getItem('user');
+            if (userStr) {
+                currentUser = JSON.parse(userStr);
+                return currentUser.isAdmin;
+            }
+            return false;
         }
 
         function viewOrder(orderId) {

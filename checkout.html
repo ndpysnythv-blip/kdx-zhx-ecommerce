@@ -98,6 +98,104 @@
                             </h2>
                             <textarea id="note" rows="3" class="input-premium w-full" placeholder="如有特殊要求，请在此备注"></textarea>
                         </div>
+
+                        <div class="glass-card rounded-xl p-6">
+                            <h2 class="text-lg font-bold text-black mb-4">
+                                <i class="fas fa-credit-card mr-2"></i>
+                                支付方式
+                            </h2>
+                            <div class="space-y-4">
+                                <!-- 支付宝选项 -->
+                                <div class="border-2 border-gray-200 rounded-xl overflow-hidden transition" id="payment-alipay-wrapper">
+                                    <div class="p-4 cursor-pointer hover:bg-gray-50 transition" onclick="togglePaymentMethod('alipay')">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center">
+                                                <i class="fab fa-alipay text-white text-2xl"></i>
+                                            </div>
+                                            <div class="flex-1">
+                                                <h3 class="font-bold text-black">支付宝</h3>
+                                            </div>
+                                            <div>
+                                                <i class="fas fa-chevron-down text-gray-400 transition" id="chevron-alipay"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- 支付宝子选项 -->
+                                    <div class="hidden border-t border-gray-200" id="alipay-options">
+                                        <div class="border-2 border-blue-500 bg-blue-50 m-2 p-3 rounded-lg cursor-pointer transition" 
+                                             onclick="selectPaymentType('alipay', 'manual')" id="payment-alipay-manual">
+                                            <div class="flex items-center gap-3">
+                                                <div class="text-blue-500">
+                                                    <i class="fas fa-check-circle text-xl" id="check-alipay-manual"></i>
+                                                </div>
+                                                <div class="flex-1">
+                                                    <h4 class="font-medium text-black">手动支付</h4>
+                                                    <p class="text-sm text-gray-500">跳转到支付宝支付后，手动输入订单号确认</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="border-2 border-gray-200 bg-gray-100 m-2 p-3 rounded-lg cursor-not-allowed opacity-70" 
+                                             id="payment-alipay-normal">
+                                            <div class="flex items-center gap-3">
+                                                <div class="text-gray-400">
+                                                    <i class="fas fa-times-circle text-xl"></i>
+                                                </div>
+                                                <div class="flex-1">
+                                                    <h4 class="font-medium text-gray-500">普通支付</h4>
+                                                    <p class="text-sm text-gray-400">内测中，敬请期待</p>
+                                                </div>
+                                                <span class="px-2 py-1 bg-gray-300 text-gray-600 text-xs rounded-full">内测</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 微信支付选项 -->
+                                <div class="border-2 border-gray-200 rounded-xl overflow-hidden transition" id="payment-wechat-wrapper">
+                                    <div class="p-4 cursor-pointer hover:bg-gray-50 transition" onclick="togglePaymentMethod('wechat')">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center">
+                                                <i class="fab fa-weixin text-white text-2xl"></i>
+                                            </div>
+                                            <div class="flex-1">
+                                                <h3 class="font-bold text-black">微信支付</h3>
+                                            </div>
+                                            <div>
+                                                <i class="fas fa-chevron-down text-gray-400 transition" id="chevron-wechat"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- 微信支付子选项 -->
+                                    <div class="hidden border-t border-gray-200" id="wechat-options">
+                                        <div class="border-2 border-gray-200 m-2 p-3 rounded-lg cursor-pointer transition" 
+                                             onclick="selectPaymentType('wechat', 'manual')" id="payment-wechat-manual">
+                                            <div class="flex items-center gap-3">
+                                                <div class="text-green-500">
+                                                    <i class="fas fa-check-circle text-xl hidden" id="check-wechat-manual"></i>
+                                                </div>
+                                                <div class="flex-1">
+                                                    <h4 class="font-medium text-black">手动支付</h4>
+                                                    <p class="text-sm text-gray-500">扫码支付后，手动输入订单号确认</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="border-2 border-gray-200 bg-gray-100 m-2 p-3 rounded-lg cursor-not-allowed opacity-70" 
+                                             id="payment-wechat-normal">
+                                            <div class="flex items-center gap-3">
+                                                <div class="text-gray-400">
+                                                    <i class="fas fa-times-circle text-xl"></i>
+                                                </div>
+                                                <div class="flex-1">
+                                                    <h4 class="font-medium text-gray-500">普通支付</h4>
+                                                    <p class="text-sm text-gray-400">内测中，敬请期待</p>
+                                                </div>
+                                                <span class="px-2 py-1 bg-gray-300 text-gray-600 text-xs rounded-full">内测</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="lg:col-span-1">
@@ -135,6 +233,73 @@
     <script>
         let cart = [];
         let orderId = null;
+        let selectedPayment = { method: 'alipay', type: 'manual' };
+        let expandedMethod = 'alipay'; // 默认展开支付宝
+
+        function togglePaymentMethod(method) {
+            expandedMethod = expandedMethod === method ? null : method;
+            
+            // 更新所有展开状态
+            ['alipay', 'wechat'].forEach(m => {
+                const optionsEl = document.getElementById(`${m}-options`);
+                const chevronEl = document.getElementById(`chevron-${m}`);
+                const wrapperEl = document.getElementById(`payment-${m}-wrapper`);
+                
+                if (m === expandedMethod) {
+                    optionsEl.classList.remove('hidden');
+                    chevronEl.style.transform = 'rotate(180deg)';
+                    wrapperEl.classList.add(method === 'alipay' ? 'border-blue-500' : 'border-green-500');
+                    wrapperEl.classList.remove('border-gray-200');
+                } else {
+                    optionsEl.classList.add('hidden');
+                    chevronEl.style.transform = 'rotate(0deg)';
+                    if (selectedPayment.method !== m) {
+                        wrapperEl.classList.remove('border-blue-500', 'border-green-500');
+                        wrapperEl.classList.add('border-gray-200');
+                    }
+                }
+            });
+        }
+
+        function selectPaymentType(method, type) {
+            selectedPayment = { method, type };
+            
+            // 重置所有选择状态
+            ['alipay', 'wechat'].forEach(m => {
+                // 重置选项样式
+                const manualOption = document.getElementById(`payment-${m}-manual`);
+                const checkIcon = document.getElementById(`check-${m}-manual`);
+                const wrapper = document.getElementById(`payment-${m}-wrapper`);
+                
+                if (m === method) {
+                    // 选中的选项
+                    if (m === 'alipay') {
+                        manualOption.classList.add('border-blue-500', 'bg-blue-50');
+                        wrapper.classList.add('border-blue-500');
+                    } else {
+                        manualOption.classList.add('border-green-500', 'bg-green-50');
+                        wrapper.classList.add('border-green-500');
+                    }
+                    manualOption.classList.remove('border-gray-200', 'bg-white');
+                    checkIcon.classList.remove('hidden');
+                    wrapper.classList.remove('border-gray-200');
+                } else {
+                    // 未选中的选项
+                    if (m === 'alipay') {
+                        manualOption.classList.remove('border-blue-500', 'bg-blue-50');
+                        wrapper.classList.remove('border-blue-500');
+                    } else {
+                        manualOption.classList.remove('border-green-500', 'bg-green-50');
+                        wrapper.classList.remove('border-green-500');
+                    }
+                    manualOption.classList.add('border-gray-200', 'bg-white');
+                    checkIcon.classList.add('hidden');
+                    if (expandedMethod !== m) {
+                        wrapper.classList.add('border-gray-200');
+                    }
+                }
+            });
+        }
 
         function loadCart() {
             const savedCart = localStorage.getItem('cart');
@@ -249,7 +414,9 @@
                         shippingInfo: { name, phone, address, note },
                         total: subtotal,
                         userId: user?.id,
-                        userPhone: user?.phone
+                        userPhone: user?.phone,
+                        paymentMethod: selectedPayment.method,
+                        paymentType: selectedPayment.type
                     })
                 });
 
@@ -257,45 +424,15 @@
                 currentOrder = order;
                 orderId = order.id;
 
-                // 2. 创建支付订单
-                showToast('正在创建支付订单...');
+                // 2. 跳转到手动支付页面
+                showToast('订单创建成功，正在跳转到支付页面...');
+                cart = [];
+                localStorage.setItem('cart', JSON.stringify(cart));
                 
-                const subject = cart.length > 1 
-                    ? `${cart[0].name}等${cart.length}件商品` 
-                    : cart[0].name;
-                
-                const payResponse = await fetch('/api/alipay/create', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        orderId: order.id,
-                        totalAmount: subtotal,
-                        subject: subject,
-                        body: `订单 ${order.id} 支付`
-                    })
-                });
-
-                const payData = await payResponse.json();
-
-                if (payData.success && payData.payUrl) {
-                    // 真实支付宝支付：payUrl 是HTML表单，直接写入页面并自动提交
-                    showToast('正在跳转到支付宝...');
-                    cart = [];
-                    localStorage.setItem('cart', JSON.stringify(cart));
-                    
-                    // 将支付宝表单写入页面并自动提交
-                    setTimeout(() => {
-                        document.write(payData.payUrl);
-                        // 自动提交表单
-                        if (document.forms.length > 0) {
-                            document.forms[0].submit();
-                        }
-                    }, 500);
-                } else {
-                    const errorMsg = payData.details || payData.error || '创建支付订单失败';
-                    showToast(errorMsg, true);
-                    console.error('[支付] 创建支付订单失败:', payData);
-                }
+                // 跳转到手动支付页面
+                setTimeout(() => {
+                    window.location.href = `/manual-payment?orderId=${order.id}&amount=${subtotal.toFixed(2)}&method=${selectedPayment.method}`;
+                }, 500);
                 
             } catch (error) {
                 console.error('Error placing order:', error);
@@ -335,6 +472,12 @@
         document.addEventListener('DOMContentLoaded', function() {
             loadCart(); // 先加载购物车
             checkLoginStatus();
+            
+            // 初始化支付方式 - 默认展开支付宝并选中手动支付
+            setTimeout(() => {
+                togglePaymentMethod('alipay');
+                selectPaymentType('alipay', 'manual');
+            }, 100);
             
             // 如果是管理员，自动填充收货地址
             const userStr = localStorage.getItem('user');

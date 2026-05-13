@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>手动支付 - KDX丨ZHX</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/styles-premium.css">
+    <link rel="stylesheet" href="/mobile.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <header class="bg-white shadow-sm fixed top-0 left-0 right-0 z-50">
+        <div class="container-wide py-4">
+            <div class="flex items-center justify-between">
+                <a href="/shop" class="flex items-center gap-3">
+                    <h1 class="text-xl font-bold text-black">KDX丨ZHX</h1>
+                </a>
+
+                <nav class="flex items-center gap-8">
+                    <button class="tab-button px-4 py-4 font-medium text-gray-600 hover:text-black transition" onclick="window.location.href='/shop'">首页</button>
+                    <button class="tab-button px-4 py-4 font-medium text-gray-600 hover:text-black transition" onclick="window.location.href='/orders'">订单</button>
+                </nav>
+
+                <div class="flex items-center gap-4">
+                    <button onclick="window.location.href='chat'" class="text-gray-600 hover:text-black transition">
+                        <i class="fas fa-headset text-xl"></i>
+                    </button>
+                    <div id="userSection">
+                        <button id="loginBtn" onclick="window.location.href='/auth'" class="bg-black text-white px-6 py-2 rounded-lg font-medium hover:bg-gray-800 transition">
+                            登录
+                        </button>
+                        <div id="userInfo" class="hidden items-center gap-3 bg-gray-100 rounded-lg px-4 py-2">
+                            <span id="userName" class="font-medium text-gray-800"></span>
+                            <button onclick="handleLogout()" class="text-gray-500 hover:text-red-600 transition">
+                                <i class="fas fa-sign-out-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主内容区域 -->
+    <main class="pt-20 pb-24">
+        <section class="py-12">
+            <div class="container-wide max-w-2xl">
+                <div class="glass-card rounded-xl p-8">
+                    <!-- 订单信息 -->
+                    <div class="text-center mb-8">
+                        <h2 class="text-2xl font-bold text-black mb-2">请完成支付</h2>
+                        <p class="text-gray-500">订单号: <span id="orderIdDisplay"></span></p>
+                    </div>
+
+                    <!-- 支付金额 -->
+                    <div class="bg-gray-50 rounded-xl p-6 mb-8">
+                        <div class="text-center">
+                            <p class="text-gray-500 mb-2">支付金额</p>
+                            <p class="text-4xl font-bold text-black" id="amountDisplay">¥0.00</p>
+                        </div>
+                    </div>
+
+                    <!-- 支付方式图标 -->
+                    <div class="flex justify-center mb-8">
+                        <div id="paymentIcon" class="w-24 h-24 rounded-full flex items-center justify-center">
+                            <i class="fab fa-alipay text-white text-5xl"></i>
+                        </div>
+                    </div>
+
+                    <!-- 支付方式说明 -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-8" id="paymentInstructions">
+                        <div class="flex items-start gap-3">
+                            <i class="fas fa-info-circle text-blue-500 text-xl mt-1"></i>
+                            <div>
+                                <h3 class="font-bold text-blue-800 mb-1" id="instructionTitle">支付宝支付</h3>
+                                <p class="text-blue-600 text-sm">请点击下方按钮跳转到支付宝完成支付，支付完成后返回此页面输入支付宝交易号。</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 支付链接/二维码输入（管理员可配置） -->
+                    <div class="mb-8">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">支付链接/二维码（可选）</label>
+                        <div class="border-2 border-gray-200 rounded-xl p-4 text-center">
+                            <p class="text-gray-500 text-sm mb-2">如需上传支付二维码，请联系管理员配置</p>
+                            <div id="qrCodeArea" class="hidden">
+                                <img id="qrCodeImg" src="" alt="支付二维码" class="mx-auto max-w-xs rounded-xl" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 去支付按钮 -->
+                    <button onclick="goToPayment()" class="w-full btn-premium btn-lg mb-6" id="payButton">
+                        <i class="fas fa-external-link-alt mr-2"></i>
+                        立即支付
+                    </button>
+
+                    <div class="divider-premium my-6"></div>
+
+                    <!-- 输入交易号区域 -->
+                    <div>
+                        <h3 class="font-bold text-black mb-4">
+                            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                            已完成支付？请输入交易号
+                        </h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" id="transactionLabel">支付宝交易号</label>
+                                <input type="text" id="transactionNo" class="input-premium w-full" placeholder="请输入支付宝交易号" />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">支付截图（可选）</label>
+                                <div class="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center cursor-pointer hover:border-gray-400 transition" onclick="document.getElementById('screenshotInput').click()">
+                                    <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-2"></i>
+                                    <p class="text-gray-500 text-sm">点击上传支付截图</p>
+                                    <input type="file" id="screenshotInput" accept="image/*" class="hidden" onchange="handleScreenshotUpload(event)" />
+                                </div>
+                                <div id="screenshotPreview" class="mt-4 hidden">
+                                    <img id="screenshotImg" src="" alt="支付截图预览" class="max-w-full rounded-xl" />
+                                </div>
+                            </div>
+                            <button onclick="submitPaymentConfirmation()" class="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-medium transition">
+                                <i class="fas fa-check mr-2"></i>
+                                确认支付
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 操作提示 -->
+                    <div class="mt-8 bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                        <div class="flex items-start gap-3">
+                            <i class="fas fa-lightbulb text-yellow-500 text-xl mt-1"></i>
+                            <div>
+                                <h3 class="font-bold text-yellow-800 mb-1">温馨提示</h3>
+                                <p class="text-yellow-600 text-sm">提交交易号后，管理员会在确认收到款项后为您发货。如有疑问，请联系客服。</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 取消订单按钮 -->
+                    <div class="mt-6 text-center">
+                        <button onclick="cancelOrder()" class="text-gray-500 hover:text-gray-700 transition">
+                            <i class="fas fa-times mr-1"></i>
+                            取消订单
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        let orderId = null;
+        let paymentMethod = 'alipay';
+        let amount = 0;
+        let screenshotBase64 = null;
+
+        function getUrlParams() {
+            const params = new URLSearchParams(window.location.search);
+            orderId = params.get('orderId');
+            amount = params.get('amount') || 0;
+            paymentMethod = params.get('method') || 'alipay';
+        }
+
+        function initPage() {
+            getUrlParams();
+            
+            if (!orderId) {
+                showToast('订单信息不存在', true);
+                setTimeout(() => window.location.href = '/shop', 2000);
+                return;
+            }
+
+            document.getElementById('orderIdDisplay').textContent = orderId;
+            document.getElementById('amountDisplay').textContent = `¥${parseFloat(amount).toFixed(2)}`;
+
+            updatePaymentMethodUI();
+            checkLoginStatus();
+        }
+
+        function updatePaymentMethodUI() {
+            const iconEl = document.getElementById('paymentIcon');
+            const instructionsEl = document.getElementById('paymentInstructions');
+            const titleEl = document.getElementById('instructionTitle');
+            const labelEl = document.getElementById('transactionLabel');
+            const payButton = document.getElementById('payButton');
+
+            if (paymentMethod === 'wechat') {
+                iconEl.className = 'w-24 h-24 rounded-full flex items-center justify-center bg-green-500';
+                iconEl.innerHTML = '<i class="fab fa-weixin text-white text-5xl"></i>';
+                instructionsEl.className = 'bg-green-50 border border-green-200 rounded-xl p-4 mb-8';
+                titleEl.className = 'font-bold text-green-800 mb-1';
+                titleEl.textContent = '微信支付';
+                instructionsEl.querySelector('p').textContent = '请使用微信扫描二维码或点击下方按钮完成支付，支付完成后返回此页面输入微信交易号。';
+                labelEl.textContent = '微信交易号';
+                payButton.innerHTML = '<i class="fab fa-weixin mr-2"></i>立即支付';
+                payButton.style.background = 'linear-gradient(135deg, #07c160, #06ad56)';
+            } else {
+                iconEl.className = 'w-24 h-24 rounded-full flex items-center justify-center bg-blue-500';
+                iconEl.innerHTML = '<i class="fab fa-alipay text-white text-5xl"></i>';
+                instructionsEl.className = 'bg-blue-50 border border-blue-200 rounded-xl p-4 mb-8';
+                titleEl.className = 'font-bold text-blue-800 mb-1';
+                titleEl.textContent = '支付宝支付';
+                instructionsEl.querySelector('p').textContent = '请点击下方按钮跳转到支付宝完成支付，支付完成后返回此页面输入支付宝交易号。';
+                labelEl.textContent = '支付宝交易号';
+                payButton.innerHTML = '<i class="fab fa-alipay mr-2"></i>立即支付';
+                payButton.style.background = 'linear-gradient(135deg, #1677ff, #0f66e0)';
+            }
+        }
+
+        function goToPayment() {
+            if (paymentMethod === 'alipay') {
+                window.open('https://www.alipay.com', '_blank');
+            } else if (paymentMethod === 'wechat') {
+                window.open('https://pay.weixin.qq.com', '_blank');
+            }
+            showToast('已打开支付页面，请完成支付后返回');
+        }
+
+        function handleScreenshotUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    screenshotBase64 = e.target.result;
+                    document.getElementById('screenshotImg').src = screenshotBase64;
+                    document.getElementById('screenshotPreview').classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        async function submitPaymentConfirmation() {
+            const transactionNo = document.getElementById('transactionNo').value.trim();
+            
+            if (!transactionNo) {
+                showToast('请输入交易号！', true);
+                return;
+            }
+
+            try {
+                showToast('正在提交...');
+                
+                const response = await fetch(`/api/orders/${orderId}/confirm-payment`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        transactionNo,
+                        paymentMethod,
+                        screenshot: screenshotBase64
+                    })
+                });
+
+                if (response.ok) {
+                    showToast('支付确认已提交，等待管理员审核！');
+                    setTimeout(() => {
+                        window.location.href = '/orders';
+                    }, 2000);
+                } else {
+                    const error = await response.json();
+                    showToast(error.message || '提交失败，请重试', true);
+                }
+            } catch (error) {
+                console.error('Error submitting payment:', error);
+                showToast('提交失败，请重试', true);
+            }
+        }
+
+        async function cancelOrder() {
+            if (!confirm('确定要取消订单吗？')) return;
+            
+            try {
+                const response = await fetch(`/api/orders/${orderId}/cancel`, { method: 'POST' });
+                if (response.ok) {
+                    showToast('订单已取消');
+                    setTimeout(() => window.location.href = '/shop', 1500);
+                }
+            } catch (error) {
+                console.error('Error cancelling order:', error);
+                showToast('操作失败，请重试', true);
+            }
+        }
+
+        function checkLoginStatus() {
+            const user = localStorage.getItem('user');
+            if (user) {
+                const currentUser = JSON.parse(user);
+                document.getElementById('loginBtn').classList.add('hidden');
+                document.getElementById('userInfo').classList.remove('hidden');
+                document.getElementById('userInfo').classList.add('flex');
+                document.getElementById('userName').textContent = currentUser.username;
+            } else {
+                document.getElementById('loginBtn').classList.remove('hidden');
+                document.getElementById('userInfo').classList.add('hidden');
+                document.getElementById('userInfo').classList.remove('flex');
+            }
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+            checkLoginStatus();
+        }
+
+        function showToast(message, isError = false) {
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-24 left-1/2 -translate-x-1/2 px-6 py-3 rounded-lg z-50 animate-fade-in-up ${isError ? 'bg-red-500 text-white' : 'bg-black text-white'}`;
+            toast.innerHTML = `<i class="fas ${isError ? 'fa-exclamation-circle' : 'fa-check-circle'} mr-2"></i>${message}`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        document.addEventListener('DOMContentLoaded', initPage);
+    </script>
+    <script src="/ai-assistant.js"></script>
+</body>
+</html>
