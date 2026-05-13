@@ -41,15 +41,131 @@
         }
 
         .loader-box {
-            background: #ffffff;
-            border-radius: 24px;
-            padding: 60px 80px;
-            box-shadow: 0 25px 80px -20px rgba(0, 0, 0, 0.4),
-                        0 0 0 1px rgba(255, 255, 255, 0.1) inset;
-            position: relative;
-            overflow: hidden;
-            animation: boxAppear 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
+    background: #ffffff;
+    border-radius: 24px;
+    padding: 60px 80px;
+    box-shadow: 0 25px 80px -20px rgba(0, 0, 0, 0.4),
+                0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+    position: relative;
+    overflow: visible;
+    animation: boxAppear 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Apple Intelligence 风格边框走马灯呼吸灯效果 */
+.loader-box::before {
+    content: '';
+    position: absolute;
+    top: -3px;
+    left: -3px;
+    right: -3px;
+    bottom: -3px;
+    border-radius: 27px;
+    background: linear-gradient(
+        45deg,
+        #667eea,
+        #764ba2,
+        #f093fb,
+        #f5576c,
+        #4facfe,
+        #00f2fe,
+        #667eea
+    );
+    background-size: 400% 400%;
+    z-index: -1;
+    animation: borderGlowRotate 3s linear infinite, borderGlowPulse 2s ease-in-out infinite;
+    filter: blur(8px);
+    opacity: 0.7;
+}
+
+@keyframes borderGlowRotate {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+@keyframes borderGlowPulse {
+    0%, 100% {
+        filter: blur(8px);
+        opacity: 0.6;
+    }
+    50% {
+        filter: blur(12px);
+        opacity: 1;
+    }
+}
+
+/* 内层细边框效果 */
+.loader-box::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 24px;
+    background: linear-gradient(
+        45deg,
+        transparent 30%,
+        rgba(102, 126, 234, 0.15) 50%,
+        transparent 70%
+    );
+    background-size: 300% 300%;
+    animation: innerGlowRotate 4s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes innerGlowRotate {
+    0% { background-position: 0% 0%; }
+    50% { background-position: 100% 100%; }
+    100% { background-position: 0% 0%; }
+}
+
+/* 四个角落的装饰光点 */
+.loader-box .corner-glow {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    box-shadow: 0 0 20px rgba(102, 126, 234, 0.8), 0 0 40px rgba(118, 75, 162, 0.4);
+    animation: cornerGlowPulse 2s ease-in-out infinite;
+    pointer-events: none;
+}
+
+.loader-box .corner-glow:nth-child(1) {
+    top: -8px;
+    left: -8px;
+    animation-delay: 0s;
+}
+
+.loader-box .corner-glow:nth-child(2) {
+    top: -8px;
+    right: -8px;
+    animation-delay: 0.5s;
+}
+
+.loader-box .corner-glow:nth-child(3) {
+    bottom: -8px;
+    right: -8px;
+    animation-delay: 1s;
+}
+
+.loader-box .corner-glow:nth-child(4) {
+    bottom: -8px;
+    left: -8px;
+    animation-delay: 1.5s;
+}
+
+@keyframes cornerGlowPulse {
+    0%, 100% {
+        transform: scale(0.8);
+        opacity: 0.6;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+}
 
         @keyframes boxAppear {
             0% {
@@ -379,6 +495,12 @@
         </div>
         
         <div class="loader-box">
+            <!-- 四个角落的装饰光点 -->
+            <div class="corner-glow"></div>
+            <div class="corner-glow"></div>
+            <div class="corner-glow"></div>
+            <div class="corner-glow"></div>
+            
             <div class="logo-wrapper">
                 <div class="logo-icon"></div>
                 <div class="logo-text">
