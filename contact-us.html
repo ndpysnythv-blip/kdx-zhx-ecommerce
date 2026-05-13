@@ -256,6 +256,30 @@
   </style>
 </head>
 <body>
+  <!-- 通用加载动画 -->
+  <div class="loader-overlay hidden" id="appLoader">
+    <div class="particles">
+      <div class="particle"></div>
+      <div class="particle"></div>
+      <div class="particle"></div>
+      <div class="particle"></div>
+      <div class="particle"></div>
+      <div class="particle"></div>
+    </div>
+    
+    <div class="loader-box">
+      <div class="logo-wrapper">
+        <div class="logo-icon"></div>
+        <div class="logo-text">
+          <span>K</span><span>D</span><span>X</span><span>丨</span><span>Z</span><span>H</span><span>X</span>
+        </div>
+        <div class="loader-bar">
+          <div class="loader-progress"></div>
+        </div>
+        <div class="loader-status" id="loaderStatus">加载中...</div>
+      </div>
+    </div>
+  </div>
   <div class="container">
     <a href="#" class="back-link" onclick="history.back()">
       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">

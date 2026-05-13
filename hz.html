@@ -97,6 +97,30 @@
     </style>
 </head>
 <body>
+    <!-- 通用加载动画 -->
+    <div class="loader-overlay hidden" id="appLoader">
+        <div class="particles">
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+        </div>
+        
+        <div class="loader-box">
+            <div class="logo-wrapper">
+                <div class="logo-icon"></div>
+                <div class="logo-text">
+                    <span>K</span><span>D</span><span>X</span><span>丨</span><span>Z</span><span>H</span><span>X</span>
+                </div>
+                <div class="loader-bar">
+                    <div class="loader-progress"></div>
+                </div>
+                <div class="loader-status" id="loaderStatus">加载中...</div>
+            </div>
+        </div>
+    </div>
     <!-- 导航栏 -->
     <nav class="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-md z-50 shadow-sm">
         <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
