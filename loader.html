@@ -117,9 +117,12 @@
             }
         }
 
-        .logo-icon svg {
-            width: 45px;
-            height: 55px;
+        .logo-icon::before {
+            content: 'K';
+            font-size: 40px;
+            font-weight: 900;
+            color: #ffffff;
+            letter-spacing: -2px;
         }
 
         .logo-icon::after {
@@ -377,11 +380,7 @@
         
         <div class="loader-box">
             <div class="logo-wrapper">
-                <div class="logo-icon">
-                    <svg viewBox="0 0 100 120" fill="white">
-                        <path d="M25 40 L45 40 L45 50 L25 50 L25 100 L45 100 L45 60 L75 30 L95 30 L55 65 L55 85 L75 105 L55 105 L45 90 L45 60 L25 60 Z"/>
-                    </svg>
-                </div>
+                <div class="logo-icon"></div>
                 <div class="logo-text">
                     <span>K</span><span>D</span><span>X</span><span>丨</span><span>Z</span><span>H</span><span>X</span>
                 </div>
