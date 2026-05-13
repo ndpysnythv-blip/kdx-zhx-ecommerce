@@ -234,8 +234,11 @@
         let expandedMethod = 'alipay'; // 默认展开支付宝
 
         function togglePaymentMethod(method) {
-            expandedMethod = expandedMethod === method ? null : method;
+            expandedMethod = method;
             
+            // 自动选择手动支付
+            selectPaymentType(method, 'manual');
+
             // 更新所有展开状态
             ['alipay', 'wechat'].forEach(m => {
                 const optionsEl = document.getElementById(`${m}-options`);
@@ -245,15 +248,13 @@
                 if (m === expandedMethod) {
                     optionsEl.classList.remove('hidden');
                     chevronEl.style.transform = 'rotate(180deg)';
-                    wrapperEl.classList.add(method === 'alipay' ? 'border-blue-500' : 'border-green-500');
+                    wrapperEl.classList.add(m === 'alipay' ? 'border-blue-500' : 'border-green-500');
                     wrapperEl.classList.remove('border-gray-200');
                 } else {
                     optionsEl.classList.add('hidden');
                     chevronEl.style.transform = 'rotate(0deg)';
-                    if (selectedPayment.method !== m) {
-                        wrapperEl.classList.remove('border-blue-500', 'border-green-500');
-                        wrapperEl.classList.add('border-gray-200');
-                    }
+                    wrapperEl.classList.remove('border-blue-500', 'border-green-500');
+                    wrapperEl.classList.add('border-gray-200');
                 }
             });
         }
@@ -263,7 +264,6 @@
             
             // 重置所有选择状态
             ['alipay', 'wechat'].forEach(m => {
-                // 重置选项样式
                 const manualOption = document.getElementById(`payment-${m}-manual`);
                 const checkIcon = document.getElementById(`check-${m}-manual`);
                 const wrapper = document.getElementById(`payment-${m}-wrapper`);
@@ -281,7 +281,7 @@
                     checkIcon.classList.remove('hidden');
                     wrapper.classList.remove('border-gray-200');
                 } else {
-                    // 未选中的选项
+                    // 未选中的选项 - 重置为默认状态
                     if (m === 'alipay') {
                         manualOption.classList.remove('border-blue-500', 'bg-blue-50');
                         wrapper.classList.remove('border-blue-500');
@@ -291,9 +291,7 @@
                     }
                     manualOption.classList.add('border-gray-200', 'bg-white');
                     checkIcon.classList.add('hidden');
-                    if (expandedMethod !== m) {
-                        wrapper.classList.add('border-gray-200');
-                    }
+                    wrapper.classList.add('border-gray-200');
                 }
             });
         }

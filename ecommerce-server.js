@@ -656,8 +656,17 @@ app.get('/api/orders/:id', (req, res) => {
 
 app.post('/api/orders', async (req, res) => {
   try {
+    // 生成订单号（KZ + 年份后两位 + 月份 + 日期 + 随机数）
+    const now = new Date();
+    const year = now.getFullYear().toString().slice(-2);
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const random = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
+    const outTradeNo = `KZ${year}${month}${day}${random}`;
+    
     const order = {
       id: uuidv4(),
+      outTradeNo: outTradeNo,
       ...req.body,
       createdAt: new Date().toISOString(),
       status: 'pending'
@@ -957,7 +966,12 @@ app.post('/api/alipay/create', async (req, res) => {
     }
     
     // 生成订单号（使用时间戳+随机数，以KZ开头）
-    const outTradeNo = `KZ${Date.now()}${Math.floor(Math.random() * 1000)}`;
+    const now = new Date();
+    const year = now.getFullYear().toString().slice(-2);
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const random = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
+    const outTradeNo = `KZ${year}${month}${day}${random}`;
     
     // 安全地初始化支付宝SDK
     if (!alipaySdk) {
