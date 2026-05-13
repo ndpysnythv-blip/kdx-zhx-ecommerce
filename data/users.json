@@ -1,13 +1,13 @@
 [
   {
-    "id": "admin-15778001901",
-    "username": "admin157",
-    "phone": "15778001901",
+    "id": "admin-15721514713",
+    "username": "admin",
+    "phone": "15721514713",
     "email": "admin@kdxzhx.com",
-    "password": "$2a$12$WRKBYiooLX8LUWD3tn6G/eFlxerC1X1myxFOn9XGpGZmJAglj.ZKa",
+    "password": "HGYgAz0UcvVo",
     "role": "admin",
     "isAdmin": true,
-    "createdAt": "2024-05-10T00:00:00.000Z",
+    "createdAt": "2026-05-13T00:00:00.000Z",
     "autoLoginEnabled": true,
     "lastLoginAt": null,
     "lastLoginIp": null
