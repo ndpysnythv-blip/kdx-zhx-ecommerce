@@ -1,18 +1,5 @@
 [
   {
-    "id": "admin-kdx",
-    "username": "kdx",
-    "phone": "13900000000",
-    "email": "kdx@kdxzhx.com",
-    "password": "$2a$12$WRKBYiooLX8LUWD3tn6G/eFlxerC1X1myxFOn9XGpGZmJAglj.ZKa",
-    "role": "admin",
-    "isAdmin": true,
-    "createdAt": "2024-01-01T00:00:00.000Z",
-    "autoLoginEnabled": true,
-    "lastLoginAt": "2024-01-01T00:00:00.000Z",
-    "lastLoginIp": "127.0.0.1"
-  },
-  {
     "id": "admin-15778001901",
     "username": "admin157",
     "phone": "15778001901",
