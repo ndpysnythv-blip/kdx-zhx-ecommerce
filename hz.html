@@ -142,12 +142,72 @@
                     </div>
                     
                     <div class="mb-6">
-                        <label for="message" class="block text-sm font-medium mb-2 text-gray-700">留言</label>
-                        <textarea id="message" name="message" rows="4" required placeholder="请输入您的合作意向或留言..." class="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300 resize-none"></textarea>
+                        <label for="message" class="block text-sm font-medium mb-2 text-gray-700">留言 <span id="messageCount" class="text-gray-400 font-normal">(0/30)</span></label>
+                        <textarea id="message" name="message" rows="4" placeholder="请输入您的合作意向或留言（至少30个字）..." class="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300 resize-none"></textarea>
+                        <p id="messageError" class="text-red-500 text-sm mt-2 hidden"></p>
                     </div>
                     
-                    <button type="submit" class="w-full apple-btn apple-btn-dark hover-lift py-3">发送消息</button>
+                    <button type="button" onclick="validateAndSubmit()" class="w-full apple-btn apple-btn-dark hover-lift py-3">发送消息</button>
                 </form>
+                
+                <script>
+                    // 违禁词列表
+                    const forbiddenWords = [
+                        '色情', '赌博', '毒品', '诈骗', '传销', '枪支', '弹药', '暴力',
+                        '恐怖', '反动', '邪教', '谣言', '诽谤', '辱骂', '侮辱', '威胁',
+                        '黑客', '病毒', '木马', '钓鱼', '色情', '成人', '性用品', '保健品',
+                        '壮阳', '减肥', '增高', '丰胸', '美白', '祛斑', '祛痘', '脱发',
+                        '癌症', '特效药', '偏方', '祖传', '秘方', '神药', '无副作用',
+                        '国家级', '最高级', '第一', '唯一', '绝对', '保证', '无效退款',
+                        '秒杀', '限时', '抢购', '爆款', '网红', '种草', '微商', '返利',
+                        '刷单', '优惠券', '红包', '抽奖', '中奖', '免费', '包邮', '买一送一'
+                    ];
+                    
+                    // 留言字数计数
+                    document.getElementById('message').addEventListener('input', function(e) {
+                        const count = e.target.value.length;
+                        const countEl = document.getElementById('messageCount');
+                        const button = document.querySelector('button[type="button"]');
+                        
+                        if (count >= 30) {
+                            countEl.textContent = `(${count}/30)`;
+                            countEl.classList.remove('text-red-500');
+                            countEl.classList.add('text-green-500');
+                        } else {
+                            countEl.textContent = `(${count}/30)`;
+                            countEl.classList.remove('text-green-500');
+                            countEl.classList.add('text-red-500');
+                        }
+                    });
+                    
+                    // 验证并提交表单
+                    function validateAndSubmit() {
+                        const message = document.getElementById('message').value.trim();
+                        const errorEl = document.getElementById('messageError');
+                        
+                        // 清空之前的错误提示
+                        errorEl.classList.add('hidden');
+                        errorEl.textContent = '';
+                        
+                        // 验证字数
+                        if (message.length < 30) {
+                            errorEl.textContent = `留言内容不足30个字（当前${message.length}字），请补充详细内容。`;
+                            errorEl.classList.remove('hidden');
+                            return;
+                        }
+                        
+                        // 检测违禁词
+                        const foundWords = forbiddenWords.filter(word => message.includes(word));
+                        if (foundWords.length > 0) {
+                            errorEl.textContent = `留言内容包含违禁词，禁止发送。`;
+                            errorEl.classList.remove('hidden');
+                            return;
+                        }
+                        
+                        // 验证通过，提交表单
+                        document.querySelector('form').submit();
+                    }
+                </script>
             </div>
             
 
