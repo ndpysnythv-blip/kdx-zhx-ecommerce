@@ -128,12 +128,14 @@
                     
                     <div class="mb-6">
                         <label for="name" class="block text-sm font-medium mb-2 text-gray-700">姓名</label>
-                        <input type="text" id="name" name="name" required placeholder="请输入您的姓名" class="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300">
+                        <input type="text" id="name" name="name" placeholder="请输入您的姓名" class="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300">
+                        <p id="nameError" class="text-red-500 text-sm mt-2 hidden"></p>
                     </div>
                     
                     <div class="mb-6">
                         <label for="email" class="block text-sm font-medium mb-2 text-gray-700">邮箱</label>
-                        <input type="email" id="email" name="email" required placeholder="请输入您的邮箱" class="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300">
+                        <input type="text" id="email" name="email" placeholder="请输入您的邮箱" class="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300">
+                        <p id="emailError" class="text-red-500 text-sm mt-2 hidden"></p>
                     </div>
                     
                     <div class="mb-6">
@@ -169,27 +171,69 @@
                         countEl.textContent = count;
                     });
                     
+                    // 邮箱格式验证
+                    function validateEmail(email) {
+                        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                        return emailRegex.test(email);
+                    }
+                    
                     // 验证并提交表单
                     function validateAndSubmit() {
+                        const name = document.getElementById('name').value.trim();
+                        const email = document.getElementById('email').value.trim();
                         const message = document.getElementById('message').value.trim();
-                        const errorEl = document.getElementById('messageError');
+                        
+                        const nameErrorEl = document.getElementById('nameError');
+                        const emailErrorEl = document.getElementById('emailError');
+                        const messageErrorEl = document.getElementById('messageError');
                         
                         // 清空之前的错误提示
-                        errorEl.classList.add('hidden');
-                        errorEl.textContent = '';
+                        nameErrorEl.classList.add('hidden');
+                        emailErrorEl.classList.add('hidden');
+                        messageErrorEl.classList.add('hidden');
+                        nameErrorEl.textContent = '';
+                        emailErrorEl.textContent = '';
+                        messageErrorEl.textContent = '';
+                        
+                        // 验证姓名
+                        if (!name) {
+                            nameErrorEl.textContent = '请填写姓名';
+                            nameErrorEl.classList.remove('hidden');
+                            return;
+                        }
+                        
+                        // 验证邮箱
+                        if (!email) {
+                            emailErrorEl.textContent = '请填写邮箱';
+                            emailErrorEl.classList.remove('hidden');
+                            return;
+                        }
+                        
+                        if (!validateEmail(email)) {
+                            emailErrorEl.textContent = '请输入有效的邮箱地址';
+                            emailErrorEl.classList.remove('hidden');
+                            return;
+                        }
+                        
+                        // 验证留言
+                        if (!message) {
+                            messageErrorEl.textContent = '请填写留言内容';
+                            messageErrorEl.classList.remove('hidden');
+                            return;
+                        }
                         
                         // 验证字数
                         if (message.length < 30) {
-                            errorEl.textContent = '字数要求30字以上';
-                            errorEl.classList.remove('hidden');
+                            messageErrorEl.textContent = '字数要求30字以上';
+                            messageErrorEl.classList.remove('hidden');
                             return;
                         }
                         
                         // 检测违禁词
                         const foundWords = forbiddenWords.filter(word => message.includes(word));
                         if (foundWords.length > 0) {
-                            errorEl.textContent = `留言内容包含违禁词，禁止发送。`;
-                            errorEl.classList.remove('hidden');
+                            messageErrorEl.textContent = '留言内容包含违禁词，禁止发送';
+                            messageErrorEl.classList.remove('hidden');
                             return;
                         }
                         
