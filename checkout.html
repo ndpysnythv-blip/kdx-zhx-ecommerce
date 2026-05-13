@@ -98,104 +98,6 @@
                             </h2>
                             <textarea id="note" rows="3" class="input-premium w-full" placeholder="如有特殊要求，请在此备注"></textarea>
                         </div>
-
-                        <div class="glass-card rounded-xl p-6">
-                            <h2 class="text-lg font-bold text-black mb-4">
-                                <i class="fas fa-credit-card mr-2"></i>
-                                支付方式
-                            </h2>
-                            <div class="space-y-4">
-                                <!-- 支付宝选项 -->
-                                <div class="border-2 border-gray-200 rounded-xl overflow-hidden transition" id="payment-alipay-wrapper">
-                                    <div class="p-4 cursor-pointer hover:bg-gray-50 transition" onclick="togglePaymentMethod('alipay')">
-                                        <div class="flex items-center gap-3">
-                                            <div class="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center">
-                                                <i class="fab fa-alipay text-white text-2xl"></i>
-                                            </div>
-                                            <div class="flex-1">
-                                                <h3 class="font-bold text-black">支付宝</h3>
-                                            </div>
-                                            <div>
-                                                <i class="fas fa-chevron-down text-gray-400 transition" id="chevron-alipay"></i>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <!-- 支付宝子选项 -->
-                                    <div class="hidden border-t border-gray-200" id="alipay-options">
-                                        <div class="border-2 border-blue-500 bg-blue-50 m-2 p-3 rounded-lg cursor-pointer transition" 
-                                             onclick="selectPaymentType('alipay', 'manual')" id="payment-alipay-manual">
-                                            <div class="flex items-center gap-3">
-                                                <div class="text-blue-500">
-                                                    <i class="fas fa-check-circle text-xl" id="check-alipay-manual"></i>
-                                                </div>
-                                                <div class="flex-1">
-                                                    <h4 class="font-medium text-black">手动支付</h4>
-                                                    <p class="text-sm text-gray-500">跳转到支付宝支付后，手动输入订单号确认</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="border-2 border-gray-200 bg-gray-100 m-2 p-3 rounded-lg cursor-not-allowed opacity-70" 
-                                             id="payment-alipay-normal">
-                                            <div class="flex items-center gap-3">
-                                                <div class="text-gray-400">
-                                                    <i class="fas fa-times-circle text-xl"></i>
-                                                </div>
-                                                <div class="flex-1">
-                                                    <h4 class="font-medium text-gray-500">普通支付</h4>
-                                                    <p class="text-sm text-gray-400">内测中，敬请期待</p>
-                                                </div>
-                                                <span class="px-2 py-1 bg-gray-300 text-gray-600 text-xs rounded-full">内测</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- 微信支付选项 -->
-                                <div class="border-2 border-gray-200 rounded-xl overflow-hidden transition" id="payment-wechat-wrapper">
-                                    <div class="p-4 cursor-pointer hover:bg-gray-50 transition" onclick="togglePaymentMethod('wechat')">
-                                        <div class="flex items-center gap-3">
-                                            <div class="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center">
-                                                <i class="fab fa-weixin text-white text-2xl"></i>
-                                            </div>
-                                            <div class="flex-1">
-                                                <h3 class="font-bold text-black">微信支付</h3>
-                                            </div>
-                                            <div>
-                                                <i class="fas fa-chevron-down text-gray-400 transition" id="chevron-wechat"></i>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <!-- 微信支付子选项 -->
-                                    <div class="hidden border-t border-gray-200" id="wechat-options">
-                                        <div class="border-2 border-gray-200 m-2 p-3 rounded-lg cursor-pointer transition" 
-                                             onclick="selectPaymentType('wechat', 'manual')" id="payment-wechat-manual">
-                                            <div class="flex items-center gap-3">
-                                                <div class="text-green-500">
-                                                    <i class="fas fa-check-circle text-xl hidden" id="check-wechat-manual"></i>
-                                                </div>
-                                                <div class="flex-1">
-                                                    <h4 class="font-medium text-black">手动支付</h4>
-                                                    <p class="text-sm text-gray-500">扫码支付后，手动输入订单号确认</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="border-2 border-gray-200 bg-gray-100 m-2 p-3 rounded-lg cursor-not-allowed opacity-70" 
-                                             id="payment-wechat-normal">
-                                            <div class="flex items-center gap-3">
-                                                <div class="text-gray-400">
-                                                    <i class="fas fa-times-circle text-xl"></i>
-                                                </div>
-                                                <div class="flex-1">
-                                                    <h4 class="font-medium text-gray-500">普通支付</h4>
-                                                    <p class="text-sm text-gray-400">内测中，敬请期待</p>
-                                                </div>
-                                                <span class="px-2 py-1 bg-gray-300 text-gray-600 text-xs rounded-full">内测</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                     </div>
 
                     <div class="lg:col-span-1">
@@ -210,6 +112,101 @@
                             <div class="flex justify-between text-lg font-bold mb-6">
                                 <span class="text-black">实付款</span>
                                 <span id="finalTotal" class="text-black text-xl">¥0.00</span>
+                            </div>
+
+                            <div class="mb-6">
+                                <h4 class="font-bold text-black mb-3">支付方式</h4>
+                                <div class="space-y-3">
+                                    <!-- 支付宝选项 -->
+                                    <div class="border-2 border-gray-200 rounded-xl overflow-hidden transition" id="payment-alipay-wrapper">
+                                        <div class="p-3 cursor-pointer hover:bg-gray-50 transition" onclick="togglePaymentMethod('alipay')">
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                                                    <i class="fab fa-alipay text-white text-lg"></i>
+                                                </div>
+                                                <div class="flex-1">
+                                                    <h5 class="font-medium text-black">支付宝</h5>
+                                                </div>
+                                                <div>
+                                                    <i class="fas fa-chevron-down text-gray-400 transition text-sm" id="chevron-alipay"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <!-- 支付宝子选项 -->
+                                        <div class="hidden border-t border-gray-200" id="alipay-options">
+                                            <div class="border-2 border-blue-500 bg-blue-50 m-2 p-2 rounded-lg cursor-pointer transition" 
+                                                 onclick="selectPaymentType('alipay', 'manual')" id="payment-alipay-manual">
+                                                <div class="flex items-center gap-3">
+                                                    <div class="text-blue-500">
+                                                        <i class="fas fa-check-circle text-lg" id="check-alipay-manual"></i>
+                                                    </div>
+                                                    <div class="flex-1">
+                                                        <h6 class="font-medium text-black">手动支付</h6>
+                                                        <p class="text-xs text-gray-500">跳转到支付宝支付后，手动输入订单号确认</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="border-2 border-gray-200 bg-gray-100 m-2 p-2 rounded-lg cursor-not-allowed opacity-70" 
+                                                 id="payment-alipay-normal">
+                                                <div class="flex items-center gap-3">
+                                                    <div class="text-gray-400">
+                                                        <i class="fas fa-times-circle text-lg"></i>
+                                                    </div>
+                                                    <div class="flex-1">
+                                                        <h6 class="font-medium text-gray-500">普通支付</h6>
+                                                        <p class="text-xs text-gray-400">内测中，敬请期待</p>
+                                                    </div>
+                                                    <span class="px-2 py-1 bg-gray-300 text-gray-600 text-xs rounded-full">内测</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- 微信支付选项 -->
+                                    <div class="border-2 border-gray-200 rounded-xl overflow-hidden transition" id="payment-wechat-wrapper">
+                                        <div class="p-3 cursor-pointer hover:bg-gray-50 transition" onclick="togglePaymentMethod('wechat')">
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
+                                                    <i class="fab fa-weixin text-white text-lg"></i>
+                                                </div>
+                                                <div class="flex-1">
+                                                    <h5 class="font-medium text-black">微信支付</h5>
+                                                </div>
+                                                <div>
+                                                    <i class="fas fa-chevron-down text-gray-400 transition text-sm" id="chevron-wechat"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <!-- 微信支付子选项 -->
+                                        <div class="hidden border-t border-gray-200" id="wechat-options">
+                                            <div class="border-2 border-gray-200 m-2 p-2 rounded-lg cursor-pointer transition" 
+                                                 onclick="selectPaymentType('wechat', 'manual')" id="payment-wechat-manual">
+                                                <div class="flex items-center gap-3">
+                                                    <div class="text-green-500">
+                                                        <i class="fas fa-check-circle text-lg hidden" id="check-wechat-manual"></i>
+                                                    </div>
+                                                    <div class="flex-1">
+                                                        <h6 class="font-medium text-black">手动支付</h6>
+                                                        <p class="text-xs text-gray-500">扫码支付后，手动输入订单号确认</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="border-2 border-gray-200 bg-gray-100 m-2 p-2 rounded-lg cursor-not-allowed opacity-70" 
+                                                 id="payment-wechat-normal">
+                                                <div class="flex items-center gap-3">
+                                                    <div class="text-gray-400">
+                                                        <i class="fas fa-times-circle text-lg"></i>
+                                                    </div>
+                                                    <div class="flex-1">
+                                                        <h6 class="font-medium text-gray-500">普通支付</h6>
+                                                        <p class="text-xs text-gray-400">内测中，敬请期待</p>
+                                                    </div>
+                                                    <span class="px-2 py-1 bg-gray-300 text-gray-600 text-xs rounded-full">内测</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             <button onclick="placeOrder()" class="w-full btn-premium btn-lg">
