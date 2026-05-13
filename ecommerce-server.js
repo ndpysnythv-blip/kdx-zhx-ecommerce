@@ -945,6 +945,101 @@ app.get('/api/alipay/status/:orderId', async (req, res) => {
   }
 });
 
+// ========== 微信支付API ==========
+// 创建微信支付订单
+app.post('/api/wechat/create', async (req, res) => {
+  try {
+    const { orderId, totalAmount, subject, body } = req.body;
+    
+    if (!orderId || !totalAmount || !subject) {
+      return res.status(400).json({ error: '缺少必要参数' });
+    }
+    
+    // 生成订单号（使用时间戳+随机数，以KZ开头）
+    const outTradeNo = `KZ${Date.now()}${Math.floor(Math.random() * 1000)}`;
+    
+    console.log(`[支付] 正在创建微信支付订单: ${outTradeNo}`);
+    
+    // 更新订单信息
+    const orders = db.getOrders();
+    const orderIndex = orders.findIndex(o => o.id === orderId);
+    if (orderIndex !== -1) {
+      orders[orderIndex] = {
+        ...orders[orderIndex],
+        outTradeNo: outTradeNo,
+        paymentStatus: 'pending',
+        paymentMethod: 'wechat'
+      };
+      db.saveOrders(orders);
+    }
+    
+    // 模拟微信支付返回结果
+    const payUrl = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>微信支付</title>
+        <script>
+          setTimeout(function() {
+            window.location.href = '/payment-success?orderId=${orderId}&outTradeNo=${outTradeNo}';
+          }, 1000);
+        </script>
+      </head>
+      <body>
+        <div style="text-align:center;padding:50px;">
+          <div style="font-size:24px;margin-bottom:20px;">正在跳转到微信支付...</div>
+          <div style="width:200px;height:200px;margin:0 auto;background:#07C160;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+            <span style="color:white;font-size:48px;">微信</span>
+          </div>
+          <p style="margin-top:20px;color:#666;">支付金额: ¥${parseFloat(totalAmount).toFixed(2)}</p>
+        </div>
+      </body>
+      </html>
+    `;
+    
+    console.log(`[支付] 微信订单创建成功: ${outTradeNo}`);
+    res.json({
+      success: true,
+      payUrl: payUrl,
+      outTradeNo: outTradeNo
+    });
+    
+  } catch (error) {
+    console.error('[支付] 创建微信支付订单失败:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: '创建支付订单失败，请稍后再试',
+      details: error.message
+    });
+  }
+});
+
+// 查询微信支付状态
+app.get('/api/wechat/status/:orderId', async (req, res) => {
+  try {
+    const orderId = req.params.orderId;
+    const orders = db.getOrders();
+    const order = orders.find(o => o.id === orderId || o.outTradeNo === orderId);
+    
+    if (!order) {
+      return res.status(404).json({ error: '订单不存在' });
+    }
+    
+    res.json({
+      success: true,
+      paymentStatus: order.paymentStatus || 'pending',
+      orderStatus: order.status,
+      paidAt: order.paidAt,
+      outTradeNo: order.outTradeNo
+    });
+    
+  } catch (error) {
+    console.error('[支付] 查询微信支付状态失败:', error);
+    res.status(500).json({ error: '查询失败' });
+  }
+});
+
 // ========== 退款API继续 ==========
 app.put('/api/refunds/:id', async (req, res) => {
   try {
