@@ -78,16 +78,13 @@ window.AppLoader = {
 document.addEventListener('DOMContentLoaded', () => {
   AppLoader.init();
   
-  // 稍微延迟一下执行，确保配置已经设置完成
   setTimeout(() => {
-    // 只有当 autoHideOnLoad 为 true 时才自动隐藏
     if (AppLoader.autoHideOnLoad) {
-      // 页面加载完成后延迟隐藏
+      AppLoader.show();
       setTimeout(() => {
         AppLoader.hide();
       }, 1500);
     } else {
-      // 如果不自动隐藏，则确保初始状态是隐藏的
       AppLoader.hide();
     }
   }, 50);
