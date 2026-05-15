@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="/styles-premium.css">
     <link rel="stylesheet" href="/mobile.css">
+    <link rel="stylesheet" href="/loader.css">
     <style>
         * {
             scrollbar-width: none;
@@ -645,30 +646,73 @@
         }
 
         function addTypingIndicator() {
-            const chatMessages = document.getElementById('chatMessages');
-            const typingDiv = document.createElement('div');
-            typingDiv.className = 'chat-message assistant';
-            typingDiv.id = 'typingIndicator';
+            // 确保 AppLoader 已初始化
+            if (!window.AppLoader) {
+                console.warn('AppLoader not available, using fallback typing indicator');
+                // 备用方案：原有的动画
+                const chatMessages = document.getElementById('chatMessages');
+                const typingDiv = document.createElement('div');
+                typingDiv.className = 'chat-message assistant';
+                typingDiv.id = 'typingIndicator';
+                
+                const avatarDiv = document.createElement('div');
+                avatarDiv.className = 'message-avatar';
+                avatarDiv.innerHTML = '<i class="fas fa-robot text-white text-lg"></i>';
+                
+                const indicatorDiv = document.createElement('div');
+                indicatorDiv.className = 'message-bubble assistant';
+                indicatorDiv.innerHTML = '<div style="display:flex;flex-direction:column;gap:10px;"><div class="typing-logo"><i class="fas fa-robot text-white text-2xl"></i></div><div class="typing-text">KDX丨ZHX<div class="typing-dots"><span></span><span></span><span></span></div></div></div>';
+                
+                typingDiv.appendChild(avatarDiv);
+                typingDiv.appendChild(indicatorDiv);
+                chatMessages.appendChild(typingDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            } else {
+                console.log('Showing AppLoader with message: KDX丨ZHX正在思考中...');
+                // 直接操作 DOM 元素，确保一定能显示
+                const loader = document.getElementById('appLoader');
+                if (loader) {
+                    loader.classList.remove('hidden');
+                    loader.style.opacity = '1';
+                    loader.style.visibility = 'visible';
+                    loader.style.display = 'flex';
+                    
+                    const status = document.getElementById('loaderStatus');
+                    if (status) {
+                        status.textContent = 'KDX丨ZHX正在思考中...';
+                    }
+                } else {
+                    console.error('appLoader element not found!');
+                }
+                // 同时调用 AppLoader 的方法
+                AppLoader.show('KDX丨ZHX正在思考中...');
+            }
             
-            const avatarDiv = document.createElement('div');
-            avatarDiv.className = 'message-avatar';
-            avatarDiv.innerHTML = '<i class="fas fa-robot text-white text-lg"></i>';
-            
-            const indicatorDiv = document.createElement('div');
-            indicatorDiv.className = 'message-bubble assistant';
-            indicatorDiv.innerHTML = '<div style="display:flex;flex-direction:column;gap:10px;"><div class="typing-logo"><i class="fas fa-robot text-white text-2xl"></i></div><div class="typing-text">KDX丨ZHX<div class="typing-dots"><span></span><span></span><span></span></div></div></div>';
-            
-            typingDiv.appendChild(avatarDiv);
-            typingDiv.appendChild(indicatorDiv);
-            chatMessages.appendChild(typingDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+            // 更新聊天状态
+            document.getElementById('statusText').textContent = '思考中...';
         }
 
         function removeTypingIndicator() {
-            const typingIndicator = document.getElementById('typingIndicator');
-            if (typingIndicator) {
-                typingIndicator.remove();
+            // 隐藏通用加载动画
+            if (window.AppLoader) {
+                // 直接操作 DOM 元素，确保一定能隐藏
+                const loader = document.getElementById('appLoader');
+                if (loader) {
+                    loader.classList.add('hidden');
+                    loader.style.opacity = '0';
+                    loader.style.visibility = 'hidden';
+                    loader.style.display = 'none';
+                }
+                // 同时调用 AppLoader 的方法
+                AppLoader.hide();
+            } else {
+                const typingIndicator = document.getElementById('typingIndicator');
+                if (typingIndicator) {
+                    typingIndicator.remove();
+                }
             }
+            // 恢复聊天状态
+            document.getElementById('statusText').textContent = '在线';
         }
 
         function updateQueueIndicator() {
@@ -938,6 +982,8 @@
             
             addTypingIndicator();
             
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
             try {
                 const response = await fetch('/api/ai', {
                     method: 'POST',
@@ -1079,6 +1125,25 @@
             checkLoginStatus();
         }
     </script>
+    <script src="/loader.js"></script>
     <script src="/ai-assistant.js"></script>
+    
+    <!-- 加载动画组件 -->
+    <div id="appLoader" class="hidden">
+        <div class="loader-container">
+            <div class="loader-particles">
+                <div class="particle"></div>
+                <div class="particle"></div>
+                <div class="particle"></div>
+                <div class="particle"></div>
+                <div class="particle"></div>
+            </div>
+            <div class="loader-logo">KDX丨ZHX</div>
+            <div class="loader-progress">
+                <div class="loader-progress-bar"></div>
+            </div>
+            <div class="loader-status" id="loaderStatus">加载中...</div>
+        </div>
+    </div>
 </body>
 </html>
