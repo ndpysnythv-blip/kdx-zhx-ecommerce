@@ -1,15 +1,25 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "api/index.js",
-      "use": "@vercel/node"
+  "functions": {
+    "api/index.js": {
+      "runtime": "@vercel/node@18",
+      "maxDuration": 60
     }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "api/index.js"
-    }
+  },
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "/api/index" },
+    { "source": "/shop", "destination": "/shop.html" },
+    { "source": "/customize", "destination": "/customize.html" },
+    { "source": "/chat", "destination": "/chat.html" },
+    { "source": "/auth", "destination": "/auth.html" },
+    { "source": "/cart", "destination": "/cart.html" },
+    { "source": "/checkout", "destination": "/checkout.html" },
+    { "source": "/my-orders", "destination": "/my-orders.html" },
+    { "source": "/orders", "destination": "/my-orders.html" },
+    { "source": "/payment-success", "destination": "/payment-success.html" },
+    { "source": "/manual-payment", "destination": "/manual-payment.html" },
+    { "source": "/admin", "destination": "/admin-shop.html" },
+    { "source": "/contact-us", "destination": "/contact-us.html" },
+    { "source": "/user-center", "destination": "/user-center.html" },
+    { "source": "/test-payment", "destination": "/test-payment.html" }
   ]
 }

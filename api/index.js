@@ -1,6 +1,5 @@
 const express = require('express');
 const cors = require('cors');
-const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const bodyParser = require('body-parser');
 const serverless = require('serverless-http');
@@ -13,9 +12,8 @@ let alipaySdk = null;
 let AlipaySdk = null;
 let AlipayFormData = null;
 
-let config, db, notificationService, security, appleShortcuts, alipayConfig;
+let db, notificationService, security, appleShortcuts, alipayConfig;
 
-try { config = require('../config'); } catch(e) { config = { server: { port: 9999 } }; }
 try { db = require('../database'); } catch(e) { console.error('database module load failed:', e.message); }
 try { notificationService = require('../notification-service'); } catch(e) { console.error('notification-service load failed:', e.message); }
 try { security = require('../security'); } catch(e) { console.error('security module load failed:', e.message); }
@@ -52,7 +50,6 @@ app.use(cors());
 app.use(bodyParser.json({ limit: '10kb' }));
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
-app.use(express.static(path.join(__dirname, '..')));
 
 if (security) {
   app.use((req, res, next) => {
@@ -61,14 +58,12 @@ if (security) {
       if (suspicious && suspicious.suspicious) {
         return res.status(403).json({ error: '请求被拒绝' });
       }
-      if (security.setSecurityHeaders) security.setSecurityHeaders(res);
     } catch(e) {}
     next();
   });
 }
 
 let smsCodes = new Map();
-let currentUser = null;
 
 function generateSmsCode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -88,22 +83,9 @@ async function sendVerificationCode(phone, code, type, email) {
   throw new Error('验证码发送失败');
 }
 
-app.get('/', (req, res) => { res.redirect('/shop'); });
-app.get('/shop', (req, res) => { res.sendFile(path.join(__dirname, '..', 'shop.html')); });
-app.get('/customize', (req, res) => { res.sendFile(path.join(__dirname, '..', 'customize.html')); });
-app.get('/chat', (req, res) => { res.sendFile(path.join(__dirname, '..', 'chat.html')); });
-app.get('/auth', (req, res) => { res.sendFile(path.join(__dirname, '..', 'auth.html')); });
-app.get('/product/:id', (req, res) => { res.sendFile(path.join(__dirname, '..', 'product-detail.html')); });
-app.get('/cart', (req, res) => { res.sendFile(path.join(__dirname, '..', 'cart.html')); });
-app.get('/checkout', (req, res) => { res.sendFile(path.join(__dirname, '..', 'checkout.html')); });
-app.get('/my-orders', (req, res) => { res.sendFile(path.join(__dirname, '..', 'my-orders.html')); });
-app.get('/orders', (req, res) => { res.sendFile(path.join(__dirname, '..', 'my-orders.html')); });
-app.get('/payment-success', (req, res) => { res.sendFile(path.join(__dirname, '..', 'payment-success.html')); });
-app.get('/manual-payment', (req, res) => { res.sendFile(path.join(__dirname, '..', 'manual-payment.html')); });
-app.get('/admin', (req, res) => { res.sendFile(path.join(__dirname, '..', 'admin-shop.html')); });
-app.get('/contact-us', (req, res) => { res.sendFile(path.join(__dirname, '..', 'contact-us.html')); });
-app.get('/user-center', (req, res) => { res.sendFile(path.join(__dirname, '..', 'user-center.html')); });
-app.get('/test-payment', (req, res) => { res.sendFile(path.join(__dirname, '..', 'test-payment.html')); });
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
 
 if (db) {
   app.get('/api/products', (req, res) => { res.json(db.getProducts()); });
@@ -209,15 +191,6 @@ if (db) {
         paymentSubmittedAt: new Date().toISOString()
       };
       db.saveOrders(orders);
-      if (notificationService) {
-        const users = db.getUsers();
-        const admins = users.filter(u => u.isAdmin);
-        for (const admin of admins) {
-          if (admin.email) {
-            try { await notificationService.sendOrderNotification(orders[orderIndex], 'payment_pending', admin.email, admin.phone); } catch(e) {}
-          }
-        }
-      }
       res.json({ success: true, message: '支付确认已提交，等待审核' });
     } catch (error) {
       console.error('Error confirming payment:', error);
@@ -238,13 +211,6 @@ if (db) {
         orders[orderIndex] = { ...orders[orderIndex], status: 'pending', paymentStatus: 'payment_rejected', paymentVerifiedAt: new Date().toISOString(), paymentVerifiedNote: note };
       }
       db.saveOrders(orders);
-      if (notificationService) {
-        const users = db.getUsers();
-        const user = users.find(u => u.id === orders[orderIndex].userId);
-        if (user && user.email) {
-          try { await notificationService.sendOrderNotification(orders[orderIndex], verified ? 'paid' : 'payment_rejected', user.email, user.phone); } catch(e) {}
-        }
-      }
       res.json({ success: true });
     } catch (error) {
       console.error('Error verifying payment:', error);
@@ -276,13 +242,6 @@ if (db) {
       if (orderIndex === -1) return res.status(404).json({ error: '订单不存在' });
       orders[orderIndex] = { ...orders[orderIndex], status: 'shipped', trackingNo, shippingCompany, shippedAt: new Date().toISOString() };
       db.saveOrders(orders);
-      if (notificationService) {
-        const users = db.getUsers();
-        const user = users.find(u => u.id === orders[orderIndex].userId);
-        if (user && user.email) {
-          try { await notificationService.sendOrderNotification(orders[orderIndex], 'shipped', user.email, user.phone); } catch(e) {}
-        }
-      }
       res.json({ success: true });
     } catch (error) {
       console.error('Error shipping order:', error);
@@ -298,13 +257,6 @@ if (db) {
       const refunds = db.getRefunds();
       refunds.push(refund);
       db.saveRefunds(refunds);
-      if (notificationService) {
-        const users = db.getUsers();
-        const user = users.find(u => u.id === refund.userId || u.phone === refund.userPhone);
-        if (user) {
-          try { await notificationService.sendRefundNotification(refund, user.email, user.phone); } catch(e) {}
-        }
-      }
       res.json(refund);
     } catch (error) {
       console.error('Error creating refund:', error);
@@ -504,7 +456,6 @@ if (db) {
       };
       users.push(newUser);
       db.saveUsers(users);
-      currentUser = newUser;
       res.json({ user: { ...newUser, password: undefined }, token: 'demo-token' });
     } catch (error) {
       console.error('Error registering:', error);
@@ -515,10 +466,9 @@ if (db) {
   function getLoginLocation(req) {
     const ip = req.ip || (req.headers['x-forwarded-for'] || '').split(',')[0] || 'unknown';
     const userAgent = req.headers['user-agent'] || 'unknown';
-    let deviceType = 'unknown';
+    let deviceType = 'desktop';
     if (/mobile|android|iphone|ipad|ipod/i.test(userAgent)) deviceType = 'mobile';
     else if (/tablet/i.test(userAgent)) deviceType = 'tablet';
-    else deviceType = 'desktop';
     return { ip, userAgent: userAgent.substring(0, 200), deviceType, timestamp: new Date().toISOString() };
   }
 
@@ -573,7 +523,6 @@ if (db) {
         allUsers[userIndex].autoLoginEnabled = true;
         db.saveUsers(allUsers);
       }
-      currentUser = user;
       res.json({ user: { ...user, password: undefined }, token: 'demo-token', loginLocation: location });
     } catch (error) {
       console.error('Error logging in:', error);
