@@ -11,6 +11,7 @@ const crypto = require('crypto');
 const notificationService = require('../notification-service');
 const security = require('../security');
 const appleShortcuts = require('../apple-shortcuts');
+const serverless = require('serverless-http');
 
 // 加载环境变量
 require('dotenv').config();
@@ -1326,8 +1327,13 @@ app.post('/api/check-user', (req, res) => {
   }
 });
 
-// Vercel 函数处理
-module.exports = (req, res) => {
-  // 确保 Vercel 可以正确处理请求
-  app(req, res);
-};
+// 本地开发才启动服务器
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = config.server.port || 3000;
+  app.listen(PORT, () => {
+    console.log(`本地开发服务器运行在 http://localhost:${PORT}`);
+  });
+}
+
+// Vercel 生产部署：用 serverless-http 包装
+module.exports = serverless(app);
