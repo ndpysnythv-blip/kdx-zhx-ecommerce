@@ -2,10 +2,12 @@
   "name": "kdx-ecommerce",
   "version": "1.0.0",
   "description": "KDX丨ZHX电商平台",
-  "main": "ecommerce-server.js",
+  "main": "api/index.js",
   "scripts": {
     "start": "node --openssl-legacy-provider ecommerce-server.js",
-    "dev": "nodemon --openssl-legacy-provider ecommerce-server.js"
+    "dev": "nodemon --openssl-legacy-provider ecommerce-server.js",
+    "build": "echo 'Build completed successfully'",
+    "vercel-build": "npm run build"
   },
   "emailjs": {
     "description": "EmailJS配置指南",
