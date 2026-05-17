@@ -44,7 +44,7 @@ class Database {
       }
       return [];
     } catch(e) {
-      console.error(`Error reading ${fileName}:`, e.message);
+      console.error('Error reading ' + fileName + ':', e.message);
       return [];
     }
   }
@@ -55,7 +55,7 @@ class Database {
       fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
       return true;
     } catch(e) {
-      console.error(`Error writing ${fileName}:`, e.message);
+      console.error('Error writing ' + fileName + ':', e.message);
       return false;
     }
   }
@@ -69,7 +69,14 @@ class Database {
   getRefunds() { return this.readJSON('refunds.json'); }
   saveRefunds(refunds) { return this.writeJSON('refunds.json', refunds); }
 
-  findById(data, id) { return data.find(item => item.id === id); }
+  findById(data, id) {
+    for (var i = 0; i < data.length; i++) {
+      if (data[i].id === id) {
+        return data[i];
+      }
+    }
+    return null;
+  }
 
   addItem(fileName, item) {
     const data = this.readJSON(fileName);
@@ -79,9 +86,24 @@ class Database {
 
   updateItem(fileName, id, updatedItem) {
     const data = this.readJSON(fileName);
-    const index = data.findIndex(item => item.id === id);
+    var index = -1;
+    for (var i = 0; i < data.length; i++) {
+      if (data[i].id === id) {
+        index = i;
+        break;
+      }
+    }
     if (index !== -1) {
-      data[index] = { ...data[index], ...updatedItem };
+      var mergedItem = {};
+      for (var key in data[index]) {
+        mergedItem[key] = data[index][key];
+      }
+      for (var key2 in updatedItem) {
+        if (updatedItem.hasOwnProperty(key2)) {
+          mergedItem[key2] = updatedItem[key2];
+        }
+      }
+      data[index] = mergedItem;
       return this.writeJSON(fileName, data);
     }
     return false;
@@ -89,7 +111,12 @@ class Database {
 
   deleteItem(fileName, id) {
     const data = this.readJSON(fileName);
-    const filtered = data.filter(item => item.id !== id);
+    var filtered = [];
+    for (var i = 0; i < data.length; i++) {
+      if (data[i].id !== id) {
+        filtered.push(data[i]);
+      }
+    }
     return this.writeJSON(fileName, filtered);
   }
 }
