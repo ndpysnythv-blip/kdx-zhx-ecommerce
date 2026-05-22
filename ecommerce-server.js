@@ -1911,10 +1911,10 @@ app.get('/api/github/callback', async (req, res) => {
   }
 });
 
-// AI API端点 - 智能客服
-const AI_API_KEY = process.env.DASHSCOPE_API_KEY || process.env.OPENAI_API_KEY || '';
-const AI_API_URL = process.env.AI_API_URL || 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
-const AI_MODEL = process.env.AI_MODEL || 'qwen-turbo';
+// AI API端点 - 智能客服（智谱 ZHIPU GLM）
+const AI_API_KEY = process.env.ZHIPU_API_KEY || process.env.AI_API_KEY || '';
+const AI_API_URL = process.env.AI_API_URL || 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
+const AI_MODEL = process.env.AI_MODEL || 'glm-4';
 
 app.post('/api/ai', async (req, res) => {
   try {
