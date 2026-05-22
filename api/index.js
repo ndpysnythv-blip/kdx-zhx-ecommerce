@@ -741,4 +741,69 @@ if (db) {
   app.post('/api/login', function(req, res) { res.status(503).json({ error: '数据库不可用' }); });
 }
 
+// ==================== 页面路由 ====================
+app.get('/', function(req, res) {
+  res.redirect('/shop');
+});
+
+app.get('/shop', function(req, res) {
+  res.sendFile(path.join(__dirname, '..', 'shop.html'));
+});
+
+app.get('/customize', function(req, res) {
+  res.sendFile(path.join(__dirname, '..', 'customize.html'));
+});
+
+app.get('/chat', function(req, res) {
+  res.sendFile(path.join(__dirname, '..', 'chat.html'));
+});
+
+app.get('/auth', function(req, res) {
+  res.sendFile(path.join(__dirname, '..', 'auth.html'));
+});
+
+app.get('/product/:id', function(req, res) {
+  res.sendFile(path.join(__dirname, '..', 'product-detail.html'));
+});
+
+app.get('/cart', function(req, res) {
+  res.sendFile(path.join(__dirname, '..', 'cart.html'));
+});
+
+app.get('/checkout', function(req, res) {
+  res.sendFile(path.join(__dirname, '..', 'checkout.html'));
+});
+
+app.get('/my-orders', function(req, res) {
+  res.sendFile(path.join(__dirname, '..', 'my-orders.html'));
+});
+
+app.get('/orders', function(req, res) {
+  res.sendFile(path.join(__dirname, '..', 'my-orders.html'));
+});
+
+app.get('/payment-success', function(req, res) {
+  res.sendFile(path.join(__dirname, '..', 'payment-success.html'));
+});
+
+app.get('/manual-payment', function(req, res) {
+  res.sendFile(path.join(__dirname, '..', 'manual-payment.html'));
+});
+
+app.get('/admin', function(req, res) {
+  res.sendFile(path.join(__dirname, '..', 'admin-shop.html'));
+});
+
+app.get('/contact-us', function(req, res) {
+  res.sendFile(path.join(__dirname, '..', 'contact-us.html'));
+});
+
+app.get('/user-center', function(req, res) {
+  res.sendFile(path.join(__dirname, '..', 'user-center.html'));
+});
+
+app.get('/test-payment', function(req, res) {
+  res.sendFile(path.join(__dirname, '..', 'test-payment.html'));
+});
+
 module.exports = serverless(app);
