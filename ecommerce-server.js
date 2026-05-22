@@ -68,11 +68,11 @@ if (alipayConfig.enabled) {
 app.use(helmet.contentSecurityPolicy({
   directives: {
     defaultSrc: ["'self'"],
-    scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdn.jsdelivr.net", "https://cdn.tailwindcss.com", "https://cdnjs.cloudflare.com"],
-    styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"],
+    scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+    styleSrc: ["'self'", "'unsafe-inline'"],
     imgSrc: ["'self'", "data:", "https://*"],
     connectSrc: ["'self'"],
-    fontSrc: ["'self'", "https://cdnjs.cloudflare.com"],
+    fontSrc: ["'self'", "data:"],
     objectSrc: ["'none'"],
     mediaSrc: ["'self'"],
     frameSrc: ["'none'"]
