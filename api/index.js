@@ -806,4 +806,11 @@ app.get('/test-payment', function(req, res) {
   res.sendFile(path.join(__dirname, '..', 'test-payment.html'));
 });
 
+// ==================== 静态字体文件路由 ====================
+app.get('/webfonts/:file', function(req, res) {
+  var file = req.params.file;
+  var filePath = path.join(__dirname, '..', 'webfonts', file);
+  res.sendFile(filePath);
+});
+
 module.exports = serverless(app);
