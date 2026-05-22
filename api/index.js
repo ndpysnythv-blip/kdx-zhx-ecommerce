@@ -77,11 +77,7 @@ app.use(helmet({
       mediaSrc: ["'self'"],
       frameSrc: ["'none'"]
     }
-  },
-  hsts: { maxAge: 31536000, includeSubDomains: true },
-  xssFilter: true,
-  noSniff: true,
-  frameguard: { action: 'deny' }
+  }
 }));
 
 // CORS配置
@@ -1337,10 +1333,5 @@ if (process.env.NODE_ENV !== 'production') {
   });
 }
 
-// Vercel 生产部署：用 serverless-http 包装 Express app
-exports.handler = serverless(app, {
-  provider: 'vercel'
-});
-
-// 同时导出默认handler
-module.exports.default = exports.handler;
+// Vercel 生产部署：直接导出 Express app
+module.exports = app;

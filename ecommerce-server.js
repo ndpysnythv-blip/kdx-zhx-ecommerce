@@ -78,11 +78,7 @@ app.use(helmet({
       mediaSrc: ["'self'"],
       frameSrc: ["'none'"]
     }
-  },
-  hsts: { maxAge: 31536000, includeSubDomains: true },
-  xssFilter: true,
-  noSniff: true,
-  frameguard: { action: 'deny' }
+  }
 }));
 
 // CORS配置
