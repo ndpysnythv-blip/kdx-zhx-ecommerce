@@ -810,6 +810,9 @@ app.get('/test-payment', function(req, res) {
 app.get('/webfonts/:file', function(req, res) {
   var file = req.params.file;
   var filePath = path.join(__dirname, '..', 'webfonts', file);
+  console.log('[webfonts] Request for:', file);
+  console.log('[webfonts] __dirname:', __dirname);
+  console.log('[webfonts] Full path:', filePath);
   res.sendFile(filePath);
 });
 
