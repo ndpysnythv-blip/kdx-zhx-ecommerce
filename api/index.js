@@ -3,7 +3,6 @@ const cors = require('cors');
 const path = require('path');
 const uuid = require('uuid');
 const helmet = require('helmet');
-const serverless = require('serverless-http');
 
 const app = express();
 
@@ -918,5 +917,4 @@ app.post('/api/ai', async function(req, res) {
   }
 });
 
-module.exports = serverless(app);
-// force redeploy Fri May 22 15:35:01 UTC 2026
+module.exports = app;
