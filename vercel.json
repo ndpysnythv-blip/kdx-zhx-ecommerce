@@ -6,6 +6,9 @@
     }
   },
   "rewrites": [
+    { "source": "/tailwind-cdn.js", "destination": "/tailwind-cdn.js" },
+    { "source": "/font-awesome.min.css", "destination": "/font-awesome.min.css" },
+    { "source": "/webfonts/:path*", "destination": "/webfonts/:path*" },
     { "source": "/api/:path*", "destination": "/api/index" },
     { "source": "/shop", "destination": "/shop.html" },
     { "source": "/customize", "destination": "/customize.html" },
