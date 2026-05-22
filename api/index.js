@@ -822,3 +822,4 @@ app.get('/webfonts/:file', function(req, res) {
 });
 
 module.exports = serverless(app);
+// force redeploy Fri May 22 15:35:01 UTC 2026
