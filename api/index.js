@@ -6,7 +6,6 @@ const helmet = require('helmet');
 
 const app = express();
 
-// ==================== 安全中间件 ====================
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -23,14 +22,9 @@ app.use(helmet({
   }
 }));
 
-// CORS配置
 app.use(cors());
-
-// Body解析器限制
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
-
-// 静态文件服务 - 让 Express 能够服务根目录下的所有静态文件
 app.use(express.static(path.join(__dirname, '..')));
 
 let db = null;
@@ -89,7 +83,6 @@ app.get('/api/health', function(req, res) {
   res.json({ status: 'ok', timestamp: new Date().toISOString(), db: !!db });
 });
 
-// 首页重定向到 shop
 app.get('/', function(req, res) {
   res.redirect(302, '/shop');
 });
@@ -745,84 +738,6 @@ if (db) {
   app.post('/api/login', function(req, res) { res.status(503).json({ error: '数据库不可用' }); });
 }
 
-// ==================== 页面路由 ====================
-app.get('/', function(req, res) {
-  res.redirect('/shop');
-});
-
-app.get('/shop', function(req, res) {
-  res.sendFile(path.join(__dirname, '..', 'shop.html'));
-});
-
-app.get('/customize', function(req, res) {
-  res.sendFile(path.join(__dirname, '..', 'customize.html'));
-});
-
-app.get('/chat', function(req, res) {
-  res.sendFile(path.join(__dirname, '..', 'chat.html'));
-});
-
-app.get('/auth', function(req, res) {
-  res.sendFile(path.join(__dirname, '..', 'auth.html'));
-});
-
-app.get('/product/:id', function(req, res) {
-  res.sendFile(path.join(__dirname, '..', 'product-detail.html'));
-});
-
-app.get('/cart', function(req, res) {
-  res.sendFile(path.join(__dirname, '..', 'cart.html'));
-});
-
-app.get('/checkout', function(req, res) {
-  res.sendFile(path.join(__dirname, '..', 'checkout.html'));
-});
-
-app.get('/my-orders', function(req, res) {
-  res.sendFile(path.join(__dirname, '..', 'my-orders.html'));
-});
-
-app.get('/orders', function(req, res) {
-  res.sendFile(path.join(__dirname, '..', 'my-orders.html'));
-});
-
-app.get('/payment-success', function(req, res) {
-  res.sendFile(path.join(__dirname, '..', 'payment-success.html'));
-});
-
-app.get('/manual-payment', function(req, res) {
-  res.sendFile(path.join(__dirname, '..', 'manual-payment.html'));
-});
-
-app.get('/admin', function(req, res) {
-  res.sendFile(path.join(__dirname, '..', 'admin-shop.html'));
-});
-
-app.get('/contact-us', function(req, res) {
-  res.sendFile(path.join(__dirname, '..', 'contact-us.html'));
-});
-
-app.get('/user-center', function(req, res) {
-  res.sendFile(path.join(__dirname, '..', 'user-center.html'));
-});
-
-app.get('/test-payment', function(req, res) {
-  res.sendFile(path.join(__dirname, '..', 'test-payment.html'));
-});
-
-// ==================== 静态字体文件路由 ====================
-app.get('/webfonts/:file', function(req, res) {
-  var file = req.params.file;
-  var filePath = path.join(__dirname, '..', 'webfonts', file);
-  console.log('[webfonts] Request for:', file);
-  console.log('[webfonts] __dirname:', __dirname);
-  console.log('[webfonts] Full path:', filePath);
-  res.sendFile(filePath);
-});
-
-// ==================== AI 智能客服 API ====================
-
-// AI API 配置（智谱 ZHIPU GLM）
 const AI_API_KEY = process.env.ZHIPU_API_KEY || process.env.AI_API_KEY || '';
 const AI_API_URL = process.env.AI_API_URL || 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
 const AI_MODEL = process.env.AI_MODEL || 'glm-4';
@@ -831,12 +746,9 @@ app.post('/api/ai', async function(req, res) {
   try {
     const { messages } = req.body;
 
-    // 构建消息列表，添加简洁的 system prompt
     const systemPrompt = '你是KDX丨ZHX官方商城的智能客服小K。用自然、友好的方式回答用户问题，像真人客服一样对话。回答简洁，可以带emoji。不要说"作为AI"之类的话，就当自己是真正的客服。';
-
     const apiMessages = [{ role: 'system', content: systemPrompt }];
 
-    // 只取最近的消息（避免token过多）
     const recentMessages = messages.slice(-10);
     for (let i = 0; i < recentMessages.length; i++) {
       const msg = recentMessages[i];
@@ -847,7 +759,6 @@ app.post('/api/ai', async function(req, res) {
       }
     }
 
-    // 如果没有配置AI key，返回模拟回复
     if (!AI_API_KEY) {
       const fallbackReplies = [
         '您好！我是小K，很高兴为您服务～有什么可以帮您的吗？😊',
@@ -870,7 +781,6 @@ app.post('/api/ai', async function(req, res) {
       });
     }
 
-    // 调用真正的 AI API
     const response = await fetch(AI_API_URL, {
       method: 'POST',
       headers: {
@@ -891,7 +801,6 @@ app.post('/api/ai', async function(req, res) {
 
     const data = await response.json();
 
-    // 转换响应格式为 OpenAI 兼容格式
     res.json({
       id: data.id || 'msg-' + Date.now(),
       object: 'chat.completion',
