@@ -6,21 +6,6 @@
     }
   },
   "rewrites": [
-    { "source": "/api/:path*", "destination": "/api/index" },
-    { "source": "/shop", "destination": "/api/index" },
-    { "source": "/customize", "destination": "/api/index" },
-    { "source": "/chat", "destination": "/api/index" },
-    { "source": "/auth", "destination": "/api/index" },
-    { "source": "/cart", "destination": "/api/index" },
-    { "source": "/checkout", "destination": "/api/index" },
-    { "source": "/my-orders", "destination": "/api/index" },
-    { "source": "/orders", "destination": "/api/index" },
-    { "source": "/payment-success", "destination": "/api/index" },
-    { "source": "/manual-payment", "destination": "/api/index" },
-    { "source": "/admin", "destination": "/api/index" },
-    { "source": "/contact-us", "destination": "/api/index" },
-    { "source": "/user-center", "destination": "/api/index" },
-    { "source": "/test-payment", "destination": "/api/index" },
-    { "source": "/(.*)", "destination": "/api/index" }
+    { "source": "/api/:path*", "destination": "/api/index" }
   ]
 }

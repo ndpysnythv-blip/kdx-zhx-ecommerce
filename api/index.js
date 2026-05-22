@@ -90,6 +90,11 @@ app.get('/api/health', function(req, res) {
   res.json({ status: 'ok', timestamp: new Date().toISOString(), db: !!db });
 });
 
+// 首页重定向到 shop
+app.get('/', function(req, res) {
+  res.redirect(302, '/shop');
+});
+
 if (db) {
   app.get('/api/products', function(req, res) {
     try { res.json(db.getProducts()); }
