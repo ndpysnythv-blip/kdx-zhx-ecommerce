@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="/font-awesome.min.css">
     <link rel="stylesheet" href="/styles-premium.css">
     <link rel="stylesheet" href="/mobile.css">
+    <link rel="stylesheet" href="/loader.css">
 </head>
 <body>
     <!-- 顶部导航栏 - 永远固定 -->
@@ -256,18 +257,46 @@
             // Logo点击逻辑：管理员跳转到后台，普通用户留在商城
             const logoLink = document.getElementById('logo-link');
             if (logoLink) {
+                let clickTimer = null;
                 logoLink.addEventListener('click', function(e) {
                     e.preventDefault();
-                    const user = JSON.parse(localStorage.getItem('user') || '{}');
-                    if (user.isAdmin) {
-                        window.location.href = '/admin';
+                    if (clickTimer === null) {
+                        clickTimer = setTimeout(() => {
+                            const user = JSON.parse(localStorage.getItem('user') || '{}');
+                            if (user.isAdmin) {
+                                window.location.href = '/admin';
+                            } else {
+                                window.location.href = '/shop';
+                            }
+                            clickTimer = null;
+                        }, 800);
                     } else {
-                        window.location.href = '/shop';
+                        clearTimeout(clickTimer);
+                        clickTimer = null;
+                        AppLoader.show('KDX丨ZHX');
+                        setTimeout(() => AppLoader.hide(), 2000);
                     }
                 });
             }
         });
     </script>
+    <script src="/loader.js"></script><script src="/loader-trigger.js"></script>
     <script src="/ai-assistant.js"></script>
+<div id="appLoader">
+    <div class="loader-container">
+        <div class="loader-particles">
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+        </div>
+        <div class="loader-logo">KDX丨ZHX</div>
+        <div class="loader-progress">
+            <div class="loader-progress-bar"></div>
+        </div>
+        <div class="loader-status" id="loaderStatus">加载中...</div>
+    </div>
+</div>
 </body>
 </html>

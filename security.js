@@ -1,22 +1,18 @@
-
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 
-// ==================== 安全配置 ====================
 const SECURITY_CONFIG = {
   bcryptRounds: 12,
-  rateLimitWindow: 15 * 60 * 1000, // 15分钟
-  maxLoginAttempts: 5, // 最大登录尝试次数
-  maxApiRequests: 100, // API请求限制
+  rateLimitWindow: 15 * 60 * 1000,
+  maxLoginAttempts: 5,
+  maxApiRequests: 100,
   sessionSecret: crypto.randomBytes(32).toString('hex'),
   jwtSecret: crypto.randomBytes(64).toString('hex')
 };
 
-// ==================== 请求记录存储 ====================
 const requestRecords = new Map();
 const loginAttempts = new Map();
 
-// ==================== 密码加密 ====================
 async function hashPassword(password) {
   const salt = await bcrypt.genSalt(SECURITY_CONFIG.bcryptRounds);
   return await bcrypt.hash(password, salt);
@@ -26,7 +22,6 @@ async function verifyPassword(password, hash) {
   return await bcrypt.compare(password, hash);
 }
 
-// ==================== XSS防护 ====================
 function sanitizeInput(input) {
   if (typeof input !== 'string') return input;
   return input
@@ -43,17 +38,22 @@ function sanitizeObject(obj) {
   }
   
   if (Array.isArray(obj)) {
-    return obj.map(item => sanitizeObject(item));
+    var result = [];
+    for (var i = 0; i < obj.length; i++) {
+      result.push(sanitizeObject(obj[i]));
+    }
+    return result;
   }
   
   const sanitized = {};
-  for (const [key, value] of Object.entries(obj)) {
-    sanitized[key] = sanitizeObject(value);
+  var keys = Object.keys(obj);
+  for (var i = 0; i < keys.length; i++) {
+    var key = keys[i];
+    sanitized[key] = sanitizeObject(obj[key]);
   }
   return sanitized;
 }
 
-// ==================== 输入验证 ====================
 const VALIDATORS = {
   phone: /^1\d{10}$/,
   email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
@@ -77,7 +77,6 @@ function validatePassword(password) {
   return VALIDATORS.password.test(password);
 }
 
-// ==================== 速率限制 ====================
 function getClientKey(req) {
   return req.ip || req.socket.remoteAddress || 'unknown';
 }
@@ -90,15 +89,21 @@ function checkRateLimit(key, maxRequests, windowMs) {
     requestRecords.set(key, []);
   }
   
-  const requests = requestRecords.get(key).filter(time => time > windowStart);
-  requestRecords.set(key, requests);
+  var requests = requestRecords.get(key);
+  var filteredRequests = [];
+  for (var i = 0; i < requests.length; i++) {
+    if (requests[i] > windowStart) {
+      filteredRequests.push(requests[i]);
+    }
+  }
+  requestRecords.set(key, filteredRequests);
   
-  if (requests.length >= maxRequests) {
-    return { allowed: false, resetIn: windowMs - (now - requests[0]) };
+  if (filteredRequests.length >= maxRequests) {
+    return { allowed: false, resetIn: windowMs - (now - filteredRequests[0]) };
   }
   
-  requests.push(now);
-  return { allowed: true, remaining: maxRequests - requests.length };
+  filteredRequests.push(now);
+  return { allowed: true, remaining: maxRequests - filteredRequests.length };
 }
 
 function checkLoginAttempts(key) {
@@ -109,18 +114,24 @@ function checkLoginAttempts(key) {
     loginAttempts.set(key, []);
   }
   
-  const attempts = loginAttempts.get(key).filter(time => time > windowStart);
-  loginAttempts.set(key, attempts);
+  var attempts = loginAttempts.get(key);
+  var filteredAttempts = [];
+  for (var i = 0; i < attempts.length; i++) {
+    if (attempts[i] > windowStart) {
+      filteredAttempts.push(attempts[i]);
+    }
+  }
+  loginAttempts.set(key, filteredAttempts);
   
-  if (attempts.length >= SECURITY_CONFIG.maxLoginAttempts) {
+  if (filteredAttempts.length >= SECURITY_CONFIG.maxLoginAttempts) {
     return { allowed: false, retryAfter: SECURITY_CONFIG.maxLoginAttempts };
   }
   
-  return { allowed: true, attempts: attempts.length };
+  return { allowed: true, attempts: filteredAttempts.length };
 }
 
 function recordFailedLogin(key) {
-  const attempts = loginAttempts.get(key) || [];
+  var attempts = loginAttempts.get(key) || [];
   attempts.push(Date.now());
   loginAttempts.set(key, attempts);
 }
@@ -129,7 +140,6 @@ function resetLoginAttempts(key) {
   loginAttempts.delete(key);
 }
 
-// ==================== 数据加密 ====================
 function encryptData(data, secret) {
   const iv = crypto.randomBytes(16);
   const cipher = crypto.createCipher('aes-256-cbc', secret);
@@ -148,7 +158,6 @@ function decryptData(encryptedData, secret) {
   return JSON.parse(decrypted);
 }
 
-// ==================== 安全头 ====================
 function setSecurityHeaders(res) {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
@@ -158,7 +167,6 @@ function setSecurityHeaders(res) {
   res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
 }
 
-// ==================== 防火墙/爬虫检测 ====================
 const SUSPICIOUS_USER_AGENTS = [
   'sqlmap', 'nmap', 'nikto', 'nessus', 'havij', 'pangolin', 'hydra', 'zap',
   'w3af', 'arachni', 'skipfish', 'dirbuster', 'gobuster', 'dirb', 'wpscan',
@@ -171,58 +179,86 @@ const SUSPICIOUS_USER_AGENTS = [
 function isSuspiciousRequest(req) {
   const ua = (req.headers['user-agent'] || '').toLowerCase();
   
-  for (const keyword of SUSPICIOUS_USER_AGENTS) {
-    if (ua.includes(keyword)) {
-      return { suspicious: true, reason: `检测到恶意User-Agent: ${keyword}` };
+  for (var i = 0; i < SUSPICIOUS_USER_AGENTS.length; i++) {
+    var keyword = SUSPICIOUS_USER_AGENTS[i];
+    if (ua.indexOf(keyword) !== -1) {
+      return { suspicious: true, reason: '检测到恶意User-Agent: ' + keyword };
     }
   }
   
-  if (req.headers['x-forwarded-for'] && req.headers['x-forwarded-for'].includes(',')) {
+  if (req.headers['x-forwarded-for'] && req.headers['x-forwarded-for'].indexOf(',') !== -1) {
     return { suspicious: true, reason: '检测到可疑代理' };
   }
   
   return { suspicious: false };
 }
 
-// ==================== 清理过期记录 ====================
 function cleanup() {
   const now = Date.now();
   const cutoff = now - 2 * SECURITY_CONFIG.rateLimitWindow;
   
-  for (const [key, records] of requestRecords.entries()) {
-    const filtered = records.filter(time => time > cutoff);
+  var keysToDelete = [];
+  var keys = Array.from(requestRecords.keys());
+  for (var i = 0; i < keys.length; i++) {
+    var key = keys[i];
+    var records = requestRecords.get(key);
+    var filtered = [];
+    for (var j = 0; j < records.length; j++) {
+      if (records[j] > cutoff) {
+        filtered.push(records[j]);
+      }
+    }
     if (filtered.length === 0) {
-      requestRecords.delete(key);
+      keysToDelete.push(key);
+    } else {
+      requestRecords.set(key, filtered);
     }
   }
+  for (var k = 0; k < keysToDelete.length; k++) {
+    requestRecords.delete(keysToDelete[k]);
+  }
   
-  for (const [key, attempts] of loginAttempts.entries()) {
-    const filtered = attempts.filter(time => time > cutoff);
-    if (filtered.length === 0) {
-      loginAttempts.delete(key);
+  var loginKeysToDelete = [];
+  var loginKeys = Array.from(loginAttempts.keys());
+  for (var l = 0; l < loginKeys.length; l++) {
+    var key2 = loginKeys[l];
+    var attempts2 = loginAttempts.get(key2);
+    var filtered2 = [];
+    for (var m = 0; m < attempts2.length; m++) {
+      if (attempts2[m] > cutoff) {
+        filtered2.push(attempts2[m]);
+      }
     }
+    if (filtered2.length === 0) {
+      loginKeysToDelete.push(key2);
+    } else {
+      loginAttempts.set(key2, filtered2);
+    }
+  }
+  for (var n = 0; n < loginKeysToDelete.length; n++) {
+    loginAttempts.delete(loginKeysToDelete[n]);
   }
 }
 
 setInterval(cleanup, 30 * 60 * 1000);
 
 module.exports = {
-  SECURITY_CONFIG,
-  hashPassword,
-  verifyPassword,
-  sanitizeInput,
-  sanitizeObject,
-  validatePhone,
-  validateEmail,
-  validateUsername,
-  validatePassword,
-  checkRateLimit,
-  checkLoginAttempts,
-  recordFailedLogin,
-  resetLoginAttempts,
-  getClientKey,
-  encryptData,
-  decryptData,
-  setSecurityHeaders,
-  isSuspiciousRequest
+  SECURITY_CONFIG: SECURITY_CONFIG,
+  hashPassword: hashPassword,
+  verifyPassword: verifyPassword,
+  sanitizeInput: sanitizeInput,
+  sanitizeObject: sanitizeObject,
+  validatePhone: validatePhone,
+  validateEmail: validateEmail,
+  validateUsername: validateUsername,
+  validatePassword: validatePassword,
+  checkRateLimit: checkRateLimit,
+  checkLoginAttempts: checkLoginAttempts,
+  recordFailedLogin: recordFailedLogin,
+  resetLoginAttempts: resetLoginAttempts,
+  getClientKey: getClientKey,
+  encryptData: encryptData,
+  decryptData: decryptData,
+  setSecurityHeaders: setSecurityHeaders,
+  isSuspiciousRequest: isSuspiciousRequest
 };

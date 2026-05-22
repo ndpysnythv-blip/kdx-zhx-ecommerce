@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="/font-awesome.min.css">
   <link rel="stylesheet" href="/styles-premium.css">
   <link rel="stylesheet" href="/mobile.css">
+  <link rel="stylesheet" href="/loader.css">
   <style>
     * {
       margin: 0;
@@ -353,7 +354,7 @@
   </div>
 
   <!-- EmailJS SDK -->
-  <script type="text/javascript" src="/email.min.js"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 
   <script type="text/javascript">
     // ============================================
@@ -504,6 +505,23 @@
       });
     }
   </script>
+    <script src="/loader.js"></script>
     <script src="/ai-assistant.js"></script>
+<div id="appLoader">
+    <div class="loader-container">
+        <div class="loader-particles">
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+        </div>
+        <div class="loader-logo">KDX丨ZHX</div>
+        <div class="loader-progress">
+            <div class="loader-progress-bar"></div>
+        </div>
+        <div class="loader-status" id="loaderStatus">加载中...</div>
+    </div>
+</div>
 </body>
 </html>

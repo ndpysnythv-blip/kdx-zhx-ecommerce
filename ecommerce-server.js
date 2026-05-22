@@ -5,7 +5,8 @@ const { v4: uuidv4 } = require('uuid');
 const bodyParser = require('body-parser');
 const helmet = require('helmet');
 const config = require('./config');
-const db = require('./database');
+const Database = require('./database');
+const db = new Database();
 const fs = require('fs');
 const crypto = require('crypto');
 const notificationService = require('./notification-service');
@@ -65,21 +66,23 @@ if (alipayConfig.enabled) {
 
 // ==================== 安全中间件 ====================
 // Helmet安全头
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'"],
-      fontSrc: ["'self'", "data:"],
-      objectSrc: ["'none'"],
-      mediaSrc: ["'self'"],
-      frameSrc: ["'none'"]
-    }
+app.use(helmet.contentSecurityPolicy({
+  directives: {
+    defaultSrc: ["'self'"],
+    scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdn.jsdelivr.net", "https://cdn.tailwindcss.com", "https://cdnjs.cloudflare.com"],
+    styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"],
+    imgSrc: ["'self'", "data:", "https://*"],
+    connectSrc: ["'self'"],
+    fontSrc: ["'self'", "https://cdnjs.cloudflare.com"],
+    objectSrc: ["'none'"],
+    mediaSrc: ["'self'"],
+    frameSrc: ["'none'"]
   }
 }));
+app.use(helmet.hsts({ maxAge: 31536000, includeSubDomains: true }));
+app.use(helmet.xssFilter());
+app.use(helmet.noSniff());
+app.use(helmet.frameguard({ action: 'deny' }));
 
 // CORS配置
 app.use(cors({ origin: [`http://localhost:${PORT}`], credentials: true }));
@@ -1661,16 +1664,6 @@ app.get('/admin', (req, res) => {
     // 检查是否是管理员账号访问
     // 这里简化处理，实际项目中应该有更严格的验证
     res.sendFile(path.join(__dirname, 'admin-shop.html'));
-});
-
-// 联系我们页面
-app.get('/contact-us', (req, res) => {
-    res.sendFile(path.join(__dirname, 'contact-us.html'));
-});
-
-// 用户中心
-app.get('/user-center', (req, res) => {
-    res.sendFile(path.join(__dirname, 'user-center.html'));
 });
 
 // 获取用户登录历史
