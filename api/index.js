@@ -821,5 +821,100 @@ app.get('/webfonts/:file', function(req, res) {
   res.sendFile(filePath);
 });
 
+// ==================== AI 智能客服 API ====================
+const AI_API_KEY = process.env.DASHSCOPE_API_KEY || process.env.OPENAI_API_KEY || '';
+const AI_API_URL = process.env.AI_API_URL || 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
+const AI_MODEL = process.env.AI_MODEL || 'qwen-turbo';
+
+app.post('/api/ai', async function(req, res) {
+  try {
+    const { messages } = req.body;
+
+    // 构建消息列表，添加简洁的 system prompt
+    const systemPrompt = '你是KDX丨ZHX官方商城的智能客服小K。用自然、友好的方式回答用户问题，像真人客服一样对话。回答简洁，可以带emoji。不要说"作为AI"之类的话，就当自己是真正的客服。';
+
+    const apiMessages = [{ role: 'system', content: systemPrompt }];
+
+    // 只取最近的消息（避免token过多）
+    const recentMessages = messages.slice(-10);
+    for (let i = 0; i < recentMessages.length; i++) {
+      const msg = recentMessages[i];
+      if (msg.role === 'user') {
+        apiMessages.push({ role: 'user', content: msg.content });
+      } else if (msg.role === 'assistant') {
+        apiMessages.push({ role: 'assistant', content: msg.content });
+      }
+    }
+
+    // 如果没有配置AI key，返回模拟回复
+    if (!AI_API_KEY) {
+      const fallbackReplies = [
+        '您好！我是小K，很高兴为您服务～有什么可以帮您的吗？😊',
+        '收到您的问题！让我为您查一下～',
+        '感谢您的咨询！我们的商品都是经过严格质检的，请放心选购哦～✨',
+        '好的，我来帮您处理！请问还有其他问题吗？',
+        '明白啦！如果您有任何其他问题，随时告诉我哦～💪'
+      ];
+      return res.json({
+        id: 'msg-' + Date.now(),
+        object: 'chat.completion',
+        created: Date.now(),
+        model: 'kdgpt-turbo',
+        choices: [{
+          index: 0,
+          message: { role: 'assistant', content: fallbackReplies[Math.floor(Math.random() * fallbackReplies.length)] },
+          finish_reason: 'stop'
+        }],
+        usage: { prompt_tokens: 10, completion_tokens: 20, total_tokens: 30 }
+      });
+    }
+
+    // 调用真正的 AI API
+    const response = await fetch(AI_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + AI_API_KEY
+      },
+      body: JSON.stringify({
+        model: AI_MODEL,
+        messages: apiMessages,
+        temperature: 0.8,
+        max_tokens: 500
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('AI API request failed: ' + response.status);
+    }
+
+    const data = await response.json();
+
+    // 转换响应格式为 OpenAI 兼容格式
+    res.json({
+      id: data.id || 'msg-' + Date.now(),
+      object: 'chat.completion',
+      created: Date.now(),
+      model: data.model || AI_MODEL,
+      choices: data.choices || [],
+      usage: data.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 }
+    });
+  } catch (error) {
+    console.error('[AI API] Error:', error.message);
+    res.json({
+      id: 'msg-' + Date.now(),
+      object: 'chat.completion',
+      created: Date.now(),
+      model: 'kdgpt-turbo',
+      choices: [{
+        index: 0,
+        message: { role: 'assistant', content: '抱歉，我现在有点忙，请稍后再试～😊' },
+        finish_reason: 'stop'
+      }],
+      usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 }
+    });
+  }
+});
+
 module.exports = serverless(app);
 // force redeploy Fri May 22 15:35:01 UTC 2026
