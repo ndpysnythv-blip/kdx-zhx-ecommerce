@@ -77,7 +77,7 @@ app.use(helmet.contentSecurityPolicy({
     frameSrc: ["'none'"]
   }
 }));
-app.use(helmet.hsts({ maxAge: 31536000, includeSubDomains: true });
+app.use(helmet.hsts({ maxAge: 31536000, includeSubDomains: true }));
 app.use(helmet.xssFilter());
 app.use(helmet.noSniff());
 app.use(helmet.frameguard({ action: 'deny' }));
