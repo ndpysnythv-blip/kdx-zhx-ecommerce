@@ -927,14 +927,11 @@
             clearTimeout(clickTimer);
             
             clickTimer = setTimeout(() => {
-                if (clickCount >= 2 && clickCount < 5 && window.AppLoader) {
-                    AppLoader.show('KDX丨ZHX');
-                    setTimeout(function() { AppLoader.hide(); }, 2000);
-                } else if (clickCount >= 5) {
+                if (clickCount >= 5) {
                     showPasswordModal();
                 }
                 clickCount = 0;
-            }, 800);
+            }, 1000);
         }
 
         function initConversation() {
