@@ -1,13 +1,38 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const uuid = require('uuid');
+const helmet = require('helmet');
 const serverless = require('serverless-http');
 
 const app = express();
 
+// ==================== 安全中间件 ====================
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'", "data:"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"]
+    }
+  }
+}));
+
+// CORS配置
 app.use(cors());
+
+// Body解析器限制
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+
+// 静态文件服务 - 让 Express 能够服务根目录下的所有静态文件
+app.use(express.static(path.join(__dirname, '..')));
 
 let db = null;
 let security = null;
