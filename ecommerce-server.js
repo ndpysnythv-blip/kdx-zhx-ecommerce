@@ -1665,6 +1665,16 @@ app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, 'admin-shop.html'));
 });
 
+// 联系我们页面
+app.get('/contact-us', (req, res) => {
+    res.sendFile(path.join(__dirname, 'contact-us.html'));
+});
+
+// 用户中心
+app.get('/user-center', (req, res) => {
+    res.sendFile(path.join(__dirname, 'user-center.html'));
+});
+
 // 获取用户登录历史
 app.get('/api/login-history', (req, res) => {
   try {
