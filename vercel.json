@@ -6,23 +6,21 @@
     }
   },
   "rewrites": [
-    { "source": "/tailwind-cdn.js", "destination": "/tailwind-cdn.js" },
-    { "source": "/font-awesome.min.css", "destination": "/font-awesome.min.css" },
-    { "source": "/webfonts/:path*", "destination": "/webfonts/:path*" },
     { "source": "/api/:path*", "destination": "/api/index" },
-    { "source": "/shop", "destination": "/shop.html" },
-    { "source": "/customize", "destination": "/customize.html" },
-    { "source": "/chat", "destination": "/chat.html" },
-    { "source": "/auth", "destination": "/auth.html" },
-    { "source": "/cart", "destination": "/cart.html" },
-    { "source": "/checkout", "destination": "/checkout.html" },
-    { "source": "/my-orders", "destination": "/my-orders.html" },
-    { "source": "/orders", "destination": "/my-orders.html" },
-    { "source": "/payment-success", "destination": "/payment-success.html" },
-    { "source": "/manual-payment", "destination": "/manual-payment.html" },
-    { "source": "/admin", "destination": "/admin-shop.html" },
-    { "source": "/contact-us", "destination": "/contact-us.html" },
-    { "source": "/user-center", "destination": "/user-center.html" },
-    { "source": "/test-payment", "destination": "/test-payment.html" }
+    { "source": "/shop", "destination": "/api/index" },
+    { "source": "/customize", "destination": "/api/index" },
+    { "source": "/chat", "destination": "/api/index" },
+    { "source": "/auth", "destination": "/api/index" },
+    { "source": "/cart", "destination": "/api/index" },
+    { "source": "/checkout", "destination": "/api/index" },
+    { "source": "/my-orders", "destination": "/api/index" },
+    { "source": "/orders", "destination": "/api/index" },
+    { "source": "/payment-success", "destination": "/api/index" },
+    { "source": "/manual-payment", "destination": "/api/index" },
+    { "source": "/admin", "destination": "/api/index" },
+    { "source": "/contact-us", "destination": "/api/index" },
+    { "source": "/user-center", "destination": "/api/index" },
+    { "source": "/test-payment", "destination": "/api/index" },
+    { "source": "/(.*)", "destination": "/api/index" }
   ]
 }
