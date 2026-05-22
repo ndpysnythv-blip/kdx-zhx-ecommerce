@@ -4,9 +4,17 @@
     {
       "src": "api/index.js",
       "use": "@vercel/node"
+    },
+    {
+      "src": "*.{js,css,woff2,svg,png,jpg,gif,ico}",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
+    {
+      "src": "/(.*\\.(js|css|woff2|svg|png|jpg|gif|ico))$",
+      "dest": "/$1"
+    },
     {
       "src": "/(.*)",
       "dest": "api/index.js"
