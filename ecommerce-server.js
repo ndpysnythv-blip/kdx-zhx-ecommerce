@@ -65,23 +65,25 @@ if (alipayConfig.enabled) {
 
 // ==================== 安全中间件 ====================
 // Helmet安全头
-app.use(helmet.contentSecurityPolicy({
-  directives: {
-    defaultSrc: ["'self'"],
-    scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-    styleSrc: ["'self'", "'unsafe-inline'"],
-    imgSrc: ["'self'", "data:", "https://*"],
-    connectSrc: ["'self'"],
-    fontSrc: ["'self'", "data:"],
-    objectSrc: ["'none'"],
-    mediaSrc: ["'self'"],
-    frameSrc: ["'none'"]
-  }
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'", "data:"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"]
+    }
+  },
+  hsts: { maxAge: 31536000, includeSubDomains: true },
+  xssFilter: true,
+  noSniff: true,
+  frameguard: { action: 'deny' }
 }));
-app.use(helmet.hsts({ maxAge: 31536000, includeSubDomains: true }));
-app.use(helmet.xssFilter());
-app.use(helmet.noSniff());
-app.use(helmet.frameguard({ action: 'deny' }));
 
 // CORS配置
 app.use(cors({ origin: [`http://localhost:${PORT}`], credentials: true }));
