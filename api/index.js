@@ -147,7 +147,25 @@ function generateSmsCode() {
 }
 
 app.get('/api/health', function(req, res) {
-  res.json({ status: 'ok', timestamp: new Date().toISOString(), db: !!db });
+  try {
+    let dbInfo = { exists: !!db };
+    if (db) {
+      dbInfo.dataDir = db.dataDir;
+      try {
+        dbInfo.products = db.getProducts();
+      } catch (e) {
+        dbInfo.productsError = e.message;
+      }
+    }
+    res.json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      db: dbInfo,
+      env: { VERCEL: !!process.env.VERCEL, NODE_ENV: process.env.NODE_ENV }
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message, stack: e.stack });
+  }
 });
 
 if (db) {
