@@ -1753,4 +1753,195 @@ app.post('/api/ai/instruction', async function(req, res) {
   }
 });
 
+// ==================== 管理员申请系统 ====================
+const adminRequests = new Map(); // 内存存储申请（生产环境应使用数据库）
+
+// 提交管理员申请
+app.post('/api/admin/request', async (req, res) => {
+  try {
+    const { reason } = req.body;
+    
+    if (!reason || reason.trim().length < 5) {
+      return res.status(400).json({ success: false, error: '请提供有效的申请理由（至少5个字符）' });
+    }
+    
+    const requestId = 'REQ-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6);
+    
+    // 保存申请
+    adminRequests.set(requestId, {
+      id: requestId,
+      reason: reason.trim(),
+      status: 'pending',
+      tempPassword: null,
+      createdAt: new Date().toISOString(),
+      ip: req.ip || 'unknown'
+    });
+    
+    console.log('[Admin Request] 新的管理员申请已提交:', requestId);
+    console.log('[Admin Request] 请让 AI 助手通过此命令批准或拒绝申请');
+    
+    res.json({
+      success: true,
+      requestId: requestId,
+      message: '申请已提交，请等待审核'
+    });
+  } catch (error) {
+    console.error('[Admin Request] Error:', error);
+    res.status(500).json({ success: false, error: '提交申请失败' });
+  }
+});
+
+// 查询申请状态
+app.get('/api/admin/request/:id/status', async (req, res) => {
+  try {
+    const requestId = req.params.id;
+    const request = adminRequests.get(requestId);
+    
+    if (!request) {
+      return res.status(404).json({ success: false, error: '申请不存在' });
+    }
+    
+    const response = {
+      status: request.status
+    };
+    
+    if (request.status === 'approved') {
+      response.tempPassword = request.tempPassword;
+    } else if (request.status === 'rejected' && request.rejectReason) {
+      response.reason = request.rejectReason;
+    }
+    
+    res.json(response);
+  } catch (error) {
+    console.error('[Admin Request Status] Error:', error);
+    res.status(500).json({ success: false, error: '查询失败' });
+  }
+});
+
+// 使用临时密码登录
+app.post('/api/admin/login', async (req, res) => {
+  try {
+    const { tempPassword } = req.body;
+    
+    if (!tempPassword) {
+      return res.status(400).json({ success: false, error: '请提供临时密码' });
+    }
+    
+    // 查找匹配的申请
+    let approvedRequest = null;
+    for (const [id, reqData] of adminRequests) {
+      if (reqData.status === 'approved' && reqData.tempPassword === tempPassword) {
+        approvedRequest = reqData;
+        break;
+      }
+    }
+    
+    if (!approvedRequest) {
+      return res.status(401).json({ success: false, error: '临时密码无效或已过期' });
+    }
+    
+    // 生成管理员用户
+    const adminUser = {
+      id: 'admin-' + Date.now(),
+      username: 'admin',
+      email: 'admin@kdxzhx.com',
+      phone: '',
+      role: 'admin',
+      isAdmin: true,
+      grantedAt: new Date().toISOString()
+    };
+    
+    // 标记为已使用（删除申请）
+    adminRequests.delete(approvedRequest.id);
+    
+    res.json({
+      success: true,
+      user: adminUser,
+      token: 'admin-token-' + Date.now()
+    });
+  } catch (error) {
+    console.error('[Admin Login] Error:', error);
+    res.status(500).json({ success: false, error: '登录失败' });
+  }
+});
+
+// AI 助手使用的批准/拒绝 API（内部使用，实际生产环境应该有安全验证）
+app.post('/api/admin/request/:id/approve', async (req, res) => {
+  try {
+    const requestId = req.params.id;
+    const request = adminRequests.get(requestId);
+    
+    if (!request) {
+      return res.status(404).json({ success: false, error: '申请不存在' });
+    }
+    
+    // 生成临时密码
+    const tempPassword = Math.random().toString(36).substr(2, 8).toUpperCase();
+    
+    // 更新申请状态
+    request.status = 'approved';
+    request.tempPassword = tempPassword;
+    request.approvedAt = new Date().toISOString();
+    
+    console.log('[Admin Request] 申请已批准:', requestId);
+    console.log('[Admin Request] 临时密码:', tempPassword);
+    
+    res.json({
+      success: true,
+      message: '申请已批准',
+      tempPassword: tempPassword
+    });
+  } catch (error) {
+    console.error('[Admin Approve] Error:', error);
+    res.status(500).json({ success: false, error: '批准失败' });
+  }
+});
+
+app.post('/api/admin/request/:id/reject', async (req, res) => {
+  try {
+    const requestId = req.params.id;
+    const { reason } = req.body;
+    const request = adminRequests.get(requestId);
+    
+    if (!request) {
+      return res.status(404).json({ success: false, error: '申请不存在' });
+    }
+    
+    request.status = 'rejected';
+    request.rejectReason = reason || '申请未被批准';
+    request.rejectedAt = new Date().toISOString();
+    
+    console.log('[Admin Request] 申请已拒绝:', requestId);
+    
+    res.json({
+      success: true,
+      message: '申请已拒绝'
+    });
+  } catch (error) {
+    console.error('[Admin Reject] Error:', error);
+    res.status(500).json({ success: false, error: '拒绝失败' });
+  }
+});
+
+// 获取所有待处理的申请（供 AI 助手查看）
+app.get('/api/admin/requests', async (req, res) => {
+  try {
+    const requests = [];
+    for (const [id, reqData] of adminRequests) {
+      requests.push({
+        id: reqData.id,
+        reason: reqData.reason,
+        status: reqData.status,
+        createdAt: reqData.createdAt,
+        ip: reqData.ip
+      });
+    }
+    
+    res.json({ success: true, requests: requests });
+  } catch (error) {
+    console.error('[Admin Requests List] Error:', error);
+    res.status(500).json({ success: false, error: '获取失败' });
+  }
+});
+
 module.exports = serverless(app);

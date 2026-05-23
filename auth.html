@@ -189,11 +189,12 @@
         <div class="w-full max-w-md fade-in">
             <!-- Logo -->
             <div class="text-center mb-10">
-                <div class="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-gradient-to-br from-gray-800/50 to-black/70 mb-5 border border-white/5 shadow-2xl">
+                <div id="admin-logo" class="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-gradient-to-br from-gray-800/50 to-black/70 mb-5 border border-white/5 shadow-2xl cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-white/20">
                     <i class="fas fa-store text-5xl text-white/90"></i>
                 </div>
                 <h1 class="text-4xl font-bold logo-glow tracking-tight">KDX丨ZHX</h1>
                 <p class="text-gray-400/80 mt-3 text-sm tracking-wide" id="page-subtitle">欢迎回来，请登录您的账户</p>
+                <p class="text-gray-500/60 mt-2 text-xs" id="click-hint" style="opacity: 0; transition: opacity 0.3s;"></p>
             </div>
             
             <!-- Login Card -->
@@ -491,12 +492,76 @@
         </div>
     </div>
 
+    <!-- 管理员申请弹窗 -->
+    <div id="admin-request-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
+        <div class="glass-card w-full max-w-md p-8 rounded-[32px]">
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-blue-600 to-purple-700 mb-5">
+                    <i class="fas fa-shield-alt text-4xl text-white"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-white">申请管理员权限</h2>
+                <p class="text-gray-400/80 mt-2 text-sm">请填写申请理由</p>
+            </div>
+
+            <form id="admin-request-form" onsubmit="submitAdminRequest(event)">
+                <div class="mb-6">
+                    <label class="block text-xs font-medium mb-2 text-gray-400/80 tracking-wider uppercase">申请理由</label>
+                    <textarea id="admin-reason" required class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500/50 transition resize-none" rows="4" placeholder="请输入您申请管理员权限的理由..."></textarea>
+                </div>
+
+                <div id="admin-request-status" class="mb-6 text-center hidden">
+                    <p class="text-yellow-400 text-sm"><i class="fas fa-clock mr-2"></i>申请已提交，请等待审核...</p>
+                </div>
+
+                <button type="submit" id="admin-request-btn" class="w-full py-4 bg-gradient-to-r from-blue-600 to-purple-700 text-white rounded-2xl font-semibold hover:opacity-90 transition">
+                    提交申请
+                </button>
+
+                <button type="button" onclick="closeAdminRequestModal()" class="w-full py-3 mt-3 text-gray-400 hover:text-white transition">
+                    取消
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 申请审核结果弹窗 -->
+    <div id="admin-result-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
+        <div class="glass-card w-full max-w-md p-8 rounded-[32px] text-center">
+            <div id="admin-result-icon" class="inline-flex items-center justify-center w-20 h-20 rounded-full mb-5"></div>
+            <h2 id="admin-result-title" class="text-2xl font-bold text-white mb-3"></h2>
+            <p id="admin-result-message" class="text-gray-400/80 text-sm mb-8"></p>
+            
+            <div id="admin-login-section" class="hidden">
+                <div class="mb-4">
+                    <label class="block text-xs font-medium mb-2 text-gray-400/80 tracking-wider uppercase">临时密码</label>
+                    <div class="input-wrapper flex items-center px-5 py-3.5">
+                        <input type="text" id="admin-temp-password" readonly class="input-field text-center text-lg font-mono" />
+                    </div>
+                </div>
+                <button onclick="adminLogin()" class="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-700 text-white rounded-2xl font-semibold hover:opacity-90 transition">
+                    进入管理后台
+                </button>
+            </div>
+
+            <button type="button" onclick="closeAdminResultModal()" class="w-full py-3 mt-3 text-gray-400 hover:text-white transition" id="admin-result-close-btn">
+                关闭
+            </button>
+        </div>
+    </div>
+
     <script>
         // State
         let currentTab = 'signup'; // Default to signup
         let isCaptchaVerified = false;
         let isSignupCaptchaVerified = false;
         let checkPhoneTimeout = null;
+        
+        // 管理员申请相关状态
+        let adminClickCount = 0;
+        let lastClickTime = 0;
+        let adminRequestId = null;
+        let adminTempPassword = null;
+        let adminPollingInterval = null;
 
         // Show Toast
         function showToast(message, isError = false) {
@@ -1870,8 +1935,217 @@
             performSignup();
         }
 
+        // ==================== 管理员申请系统 ====================
+        
+        // 初始化 logo 点击事件
+        function initAdminLogoClick() {
+            const logo = document.getElementById('admin-logo');
+            if (logo) {
+                logo.addEventListener('click', handleAdminLogoClick);
+            }
+        }
+        
+        // 处理 logo 点击
+        function handleAdminLogoClick() {
+            const now = Date.now();
+            const clickHint = document.getElementById('click-hint');
+            
+            // 如果距离上次点击超过 3 秒，重置计数
+            if (now - lastClickTime > 3000) {
+                adminClickCount = 0;
+            }
+            
+            adminClickCount++;
+            lastClickTime = now;
+            
+            // 更新提示
+            const remaining = 7 - adminClickCount;
+            if (remaining > 0) {
+                clickHint.textContent = `再点击 ${remaining} 次进入管理员模式...`;
+                clickHint.style.opacity = '1';
+                
+                // 3 秒后隐藏提示
+                setTimeout(() => {
+                    if (adminClickCount < 7) {
+                        clickHint.style.opacity = '0';
+                    }
+                }, 3000);
+            }
+            
+            // 连续点击 7 次触发
+            if (adminClickCount >= 7) {
+                adminClickCount = 0;
+                clickHint.style.opacity = '0';
+                openAdminRequestModal();
+            }
+        }
+        
+        // 打开管理员申请弹窗
+        function openAdminRequestModal() {
+            const modal = document.getElementById('admin-request-modal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                document.getElementById('admin-reason').value = '';
+                document.getElementById('admin-request-status').classList.add('hidden');
+                document.getElementById('admin-request-btn').disabled = false;
+            }
+        }
+        
+        // 关闭管理员申请弹窗
+        function closeAdminRequestModal() {
+            const modal = document.getElementById('admin-request-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+            }
+            stopAdminPolling();
+        }
+        
+        // 提交管理员申请
+        async function submitAdminRequest(event) {
+            event.preventDefault();
+            
+            const reason = document.getElementById('admin-reason').value.trim();
+            if (!reason) {
+                showToast('请填写申请理由', true);
+                return;
+            }
+            
+            const btn = document.getElementById('admin-request-btn');
+            btn.disabled = true;
+            btn.textContent = '提交中...';
+            
+            try {
+                const res = await fetch('/api/admin/request', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason })
+                });
+                
+                const data = await res.json();
+                
+                if (res.ok && data.success) {
+                    adminRequestId = data.requestId;
+                    document.getElementById('admin-request-status').classList.remove('hidden');
+                    btn.textContent = '已提交';
+                    
+                    // 开始轮询申请状态
+                    startAdminPolling();
+                } else {
+                    showToast(data.error || '提交申请失败', true);
+                    btn.disabled = false;
+                    btn.textContent = '提交申请';
+                }
+            } catch (error) {
+                console.error('Submit admin request error:', error);
+                showToast('提交申请失败，请重试', true);
+                btn.disabled = false;
+                btn.textContent = '提交申请';
+            }
+        }
+        
+        // 开始轮询申请状态
+        function startAdminPolling() {
+            // 每 2 秒检查一次状态
+            adminPollingInterval = setInterval(async () => {
+                if (!adminRequestId) return;
+                
+                try {
+                    const res = await fetch(`/api/admin/request/${adminRequestId}/status`);
+                    const data = await res.json();
+                    
+                    if (data.status === 'approved') {
+                        stopAdminPolling();
+                        showAdminResult(true, data.tempPassword);
+                    } else if (data.status === 'rejected') {
+                        stopAdminPolling();
+                        showAdminResult(false, data.reason);
+                    }
+                } catch (error) {
+                    console.error('Poll admin status error:', error);
+                }
+            }, 2000);
+        }
+        
+        // 停止轮询
+        function stopAdminPolling() {
+            if (adminPollingInterval) {
+                clearInterval(adminPollingInterval);
+                adminPollingInterval = null;
+            }
+        }
+        
+        // 显示审核结果
+        function showAdminResult(isApproved, passwordOrReason) {
+            closeAdminRequestModal();
+            
+            const modal = document.getElementById('admin-result-modal');
+            const iconDiv = document.getElementById('admin-result-icon');
+            const titleEl = document.getElementById('admin-result-title');
+            const messageEl = document.getElementById('admin-result-message');
+            const loginSection = document.getElementById('admin-login-section');
+            const closeBtn = document.getElementById('admin-result-close-btn');
+            
+            if (isApproved) {
+                adminTempPassword = passwordOrReason;
+                iconDiv.className = 'inline-flex items-center justify-center w-20 h-20 rounded-full mb-5 bg-gradient-to-br from-green-600 to-emerald-700';
+                iconDiv.innerHTML = '<i class="fas fa-check text-white text-4xl"></i>';
+                titleEl.textContent = '申请已通过！';
+                messageEl.textContent = '恭喜，您的管理员申请已被批准，请使用临时密码登录。';
+                document.getElementById('admin-temp-password').value = passwordOrReason;
+                loginSection.classList.remove('hidden');
+                closeBtn.classList.add('hidden');
+            } else {
+                iconDiv.className = 'inline-flex items-center justify-center w-20 h-20 rounded-full mb-5 bg-gradient-to-br from-red-600 to-rose-700';
+                iconDiv.innerHTML = '<i class="fas fa-times text-white text-4xl"></i>';
+                titleEl.textContent = '申请未通过';
+                messageEl.textContent = passwordOrReason || '抱歉，您的管理员申请未被批准。';
+                loginSection.classList.add('hidden');
+                closeBtn.classList.remove('hidden');
+            }
+            
+            modal.classList.remove('hidden');
+        }
+        
+        // 关闭结果弹窗
+        function closeAdminResultModal() {
+            const modal = document.getElementById('admin-result-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+            }
+            adminTempPassword = null;
+        }
+        
+        // 使用临时密码登录
+        async function adminLogin() {
+            if (!adminTempPassword) return;
+            
+            try {
+                const res = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tempPassword: adminTempPassword })
+                });
+                
+                const data = await res.json();
+                
+                if (res.ok && data.success) {
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    localStorage.setItem('token', data.token);
+                    showToast('登录成功！');
+                    setTimeout(() => { window.location.href = '/admin'; }, 1000);
+                } else {
+                    showToast(data.error || '登录失败', true);
+                }
+            } catch (error) {
+                console.error('Admin login error:', error);
+                showToast('登录失败，请重试', true);
+            }
+        }
+        
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
+            // 初始化管理员 logo 点击
+            initAdminLogoClick();
             // Parse return URL from query string
             const urlParams = new URLSearchParams(window.location.search);
             const returnUrl = urlParams.get('returnUrl');
