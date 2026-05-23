@@ -37,6 +37,27 @@ var vid=document.getElementById('v'),camBox=document.getElementById('cam');
 var lbl=document.getElementById('lbl');
 var W,H;
 
+/* Nebula background canvas — must exist before resize calls genNebula */
+var nebC=document.createElement('canvas'),nebX=nebC.getContext('2d');
+function genNebula(){
+  nebC.width=W;nebC.height=H;
+  nebX.fillStyle='#000005';nebX.fillRect(0,0,W,H);
+  var clouds=[
+    {x:W*.25,y:H*.35,r:W*.45,h:260,s:15,l:5,a:.025},
+    {x:W*.7,y:H*.6,r:W*.4,h:300,s:12,l:4,a:.02},
+    {x:W*.5,y:H*.2,r:W*.35,h:220,s:10,l:4,a:.018},
+    {x:W*.8,y:H*.3,r:W*.3,h:340,s:8,l:3,a:.015}
+  ];
+  for(var i=0;i<clouds.length;i++){
+    var cl=clouds[i];
+    var g=nebX.createRadialGradient(cl.x,cl.y,0,cl.x,cl.y,cl.r);
+    g.addColorStop(0,'hsla('+cl.h+','+cl.s+'%,'+cl.l+'%,'+cl.a+')');
+    g.addColorStop(.6,'hsla('+cl.h+','+cl.s+'%,'+(cl.l-1)+'%,'+(cl.a*.4)+')');
+    g.addColorStop(1,'transparent');
+    nebX.fillStyle=g;nebX.fillRect(0,0,W,H);
+  }
+}
+
 function resize(){W=innerWidth;H=innerHeight;c.width=W;c.height=H;genNebula()}
 resize();addEventListener('resize',resize);
 
@@ -84,28 +105,6 @@ function Orb(){
   this.trail=[];this.trailN=4;
 }
 for(var i=0;i<ORB_N;i++)orbs.push(new Orb());
-
-/* ═══════════ NEBULA BACKGROUND ═══════════ */
-var nebC=document.createElement('canvas'),nebX=nebC.getContext('2d');
-
-function genNebula(){
-  nebC.width=W;nebC.height=H;
-  nebX.fillStyle='#000005';nebX.fillRect(0,0,W,H);
-  var clouds=[
-    {x:W*.25,y:H*.35,r:W*.45,h:260,s:15,l:5,a:.025},
-    {x:W*.7,y:H*.6,r:W*.4,h:300,s:12,l:4,a:.02},
-    {x:W*.5,y:H*.2,r:W*.35,h:220,s:10,l:4,a:.018},
-    {x:W*.8,y:H*.3,r:W*.3,h:340,s:8,l:3,a:.015}
-  ];
-  for(var i=0;i<clouds.length;i++){
-    var cl=clouds[i];
-    var g=nebX.createRadialGradient(cl.x,cl.y,0,cl.x,cl.y,cl.r);
-    g.addColorStop(0,'hsla('+cl.h+','+cl.s+'%,'+cl.l+'%,'+cl.a+')');
-    g.addColorStop(.6,'hsla('+cl.h+','+cl.s+'%,'+(cl.l-1)+'%,'+(cl.a*.4)+')');
-    g.addColorStop(1,'transparent');
-    nebX.fillStyle=g;nebX.fillRect(0,0,W,H);
-  }
-}
 
 /* ═══════════ CONNECTIONS (very subtle) ═══════════ */
 function drawConn(){
