@@ -7,14 +7,8 @@
     "start": "node --openssl-legacy-provider ecommerce-server.js",
     "dev": "nodemon --openssl-legacy-provider ecommerce-server.js"
   },
-  "emailjs": {
-    "description": "EmailJS配置指南",
-    "docs": "EMAILJS_SETUP.md"
-  },
   "dependencies": {
     "@alicloud/pop-core": "^1.8.0",
-    "@emailjs/nodejs": "^5.0.2",
-    "@sendgrid/mail": "^8.1.0",
     "alipay-sdk": "^3.6.0",
     "axios": "^1.6.2",
     "bcryptjs": "^2.4.3",
@@ -25,7 +19,7 @@
     "express-rate-limit": "^7.1.5",
     "helmet": "^7.1.0",
     "moment": "^2.29.4",
-    "nodemailer": "^8.0.6",
+    "serverless-http": "^3.2.0",
     "twilio": "^6.0.0",
     "uuid": "^9.0.1"
   },
