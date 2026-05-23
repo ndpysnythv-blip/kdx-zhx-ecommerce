@@ -93,15 +93,19 @@ function getAIConfig(type = 'chatbot') {
     console.error('read ai-config failed:', e.message);
   }
   
+  // 从环境变量读取配置
+  var systemApiKey = process.env.ZHIPU_SYSTEM_API_KEY || process.env.ZHIPU_API_KEY || process.env.AI_API_KEY || '';
+  var chatbotApiKey = process.env.ZHIPU_CHATBOT_API_KEY || process.env.ZHIPU_API_KEY || process.env.AI_API_KEY || '';
+  
   // 默认配置
   var defaultConfig = {
-    apiKey: process.env.ZHIPU_API_KEY || process.env.AI_API_KEY || '',
+    apiKey: type === 'system' ? systemApiKey : chatbotApiKey,
     apiUrl: process.env.AI_API_URL || 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
     model: process.env.AI_MODEL || 'glm-4',
     temperature: type === 'system' ? 0.3 : 0.8,
     maxTokens: type === 'system' ? 200 : 500,
     systemPrompt: type === 'system' 
-      ? '你是一个手机号验证助手。' 
+      ? '你是KDX丨ZHX官方商城的高级管理AI助手，能够处理订单、商品、数据分析等后台管理任务。' 
       : '你是KDX丨ZHX官方商城的智能客服小K。用自然、友好的方式回答用户问题，像真人客服一样对话。回答简洁，可以带emoji。不要说"作为AI"之类的话，就当自己是真正的客服。'
   };
   return defaultConfig;
