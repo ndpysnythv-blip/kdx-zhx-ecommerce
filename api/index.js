@@ -15,7 +15,7 @@ app.use(helmet({
       scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdn.jsdelivr.net", "https://cdn.tailwindcss.com", "https://cdnjs.cloudflare.com", "https://cdn.staticfile.org"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com", "https://cdn.staticfile.org"],
       imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "https://open.bigmodel.cn"],
+      connectSrc: ["'self'", "https://open.bigmodel.cn", "https://kdxzhx.top", "http://kdxzhx.top"],
       fontSrc: ["'self'", "data:", "https://cdnjs.cloudflare.com", "https://cdn.staticfile.org"],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
@@ -24,7 +24,21 @@ app.use(helmet({
   }
 }));
 
-app.use(cors());
+const allowedOrigins = [
+  'https://kdxzhx.top',
+  'http://kdxzhx.top',
+  'http://localhost:9999'
+];
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, true);
+    }
+  },
+  credentials: true
+}));
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(express.static(path.join(__dirname, '..')));
@@ -51,7 +65,8 @@ try {
 }
 
 try {
-  notificationService = require('../notification-service');
+  // 邮件发送功能已移除，保留模块加载以兼容旧逻辑
+  notificationService = null;
 } catch(e) {
   console.error('notification-service load failed:', e.message);
 }
@@ -503,9 +518,7 @@ if (db) {
       smsCodes.set(identifier, { code: code, sentAt: Date.now(), type: type || 'login' });
       setTimeout(function() { smsCodes.delete(identifier); }, 300000);
       if (notificationService && email) {
-        try {
-          await notificationService.sendVerificationCodeByEmail(email, code, type);
-        } catch(e) {}
+        console.log('邮件发送功能已移除，跳过邮件通知');
       }
       res.json({ success: true, message: '验证码已发送', code: code });
     } catch(e) {
