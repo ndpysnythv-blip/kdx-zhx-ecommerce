@@ -3,45 +3,15 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const uuid = require('uuid');
-const helmet = require('helmet');
 const serverless = require('serverless-http');
 
 const app = express();
 
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdn.jsdelivr.net", "https://cdn.tailwindcss.com", "https://cdnjs.cloudflare.com", "https://cdn.staticfile.org"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com", "https://cdn.staticfile.org"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "https://open.bigmodel.cn", "https://kdxzhx.top", "http://kdxzhx.top"],
-      fontSrc: ["'self'", "data:", "https://cdnjs.cloudflare.com", "https://cdn.staticfile.org"],
-      objectSrc: ["'none'"],
-      mediaSrc: ["'self'"],
-      frameSrc: ["'none'"]
-    }
-  }
-}));
+// 简化 CORS 配置
+app.use(cors());
 
-const allowedOrigins = [
-  'https://kdxzhx.top',
-  'http://kdxzhx.top',
-  'http://localhost:9999'
-];
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true
-}));
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
-app.use(express.static(path.join(__dirname, '..')));
 
 let db = null;
 let security = null;
@@ -54,8 +24,10 @@ let AlipayFormData = null;
 try {
   const Database = require('../database');
   db = new Database();
+  console.log('✅ Database loaded successfully, dataDir:', db.dataDir);
 } catch(e) {
-  console.error('database load failed:', e.message);
+  console.error('❌ database load failed:', e.message);
+  db = null;
 }
 
 try {
@@ -176,10 +148,6 @@ function generateSmsCode() {
 
 app.get('/api/health', function(req, res) {
   res.json({ status: 'ok', timestamp: new Date().toISOString(), db: !!db });
-});
-
-app.get('/', function(req, res) {
-  res.redirect(302, '/shop');
 });
 
 if (db) {
@@ -2033,6 +2001,12 @@ app.get('/api/admin/requests', async (req, res) => {
     console.error('[Admin Requests List] Error:', error);
     res.status(500).json({ success: false, error: '获取失败' });
   }
+});
+
+// 错误处理中间件
+app.use(function(err, req, res, next) {
+  console.error('Express error:', err);
+  res.status(500).json({ error: 'Server error', message: err.message });
 });
 
 module.exports = serverless(app);

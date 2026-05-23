@@ -1,16 +1,35 @@
 const fs = require('fs');
 const path = require('path');
-const config = require('./config');
+
+const isVercel = !!(process.env.VERCEL || process.env.NOW_REGION || process.env.VERCEL_ENV);
 
 class Database {
   constructor() {
-    this.dataDir = path.join(__dirname, 'data');
+    if (isVercel) {
+      this.dataDir = '/tmp/kdx-data';
+    } else {
+      this.dataDir = path.join(__dirname, 'data');
+    }
     this.ensureDataDir();
   }
 
   ensureDataDir() {
-    if (!fs.existsSync(this.dataDir)) {
-      fs.mkdirSync(this.dataDir, { recursive: true });
+    try {
+      if (!fs.existsSync(this.dataDir)) {
+        fs.mkdirSync(this.dataDir, { recursive: true });
+      }
+    } catch (e) {
+      console.error('ensureDataDir failed:', e.message);
+      if (this.dataDir !== '/tmp/kdx-data') {
+        this.dataDir = '/tmp/kdx-data';
+        try {
+          if (!fs.existsSync(this.dataDir)) {
+            fs.mkdirSync(this.dataDir, { recursive: true });
+          }
+        } catch (e2) {
+          console.error('fallback ensureDataDir failed:', e2.message);
+        }
+      }
     }
   }
 
@@ -98,4 +117,4 @@ class Database {
   }
 }
 
-module.exports = new Database();
+module.exports = Database;
