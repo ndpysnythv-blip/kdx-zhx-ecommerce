@@ -1,19 +1,14 @@
 const fs = require('fs');
 const path = require('path');
 
-const IS_VERCEL = process.env.VERCEL || process.env.VERCEL_ENV;
+const isVercel = !!(process.env.VERCEL || process.env.NOW_REGION || process.env.VERCEL_ENV);
 
 class Database {
   constructor() {
-    if (IS_VERCEL) {
+    if (isVercel) {
       this.dataDir = '/tmp/kdx-data';
     } else {
-      try {
-        const config = require('./config');
-        this.dataDir = path.join(__dirname, 'data');
-      } catch(e) {
-        this.dataDir = path.join(__dirname, 'data');
-      }
+      this.dataDir = path.join(__dirname, 'data');
     }
     this.ensureDataDir();
   }
@@ -23,8 +18,18 @@ class Database {
       if (!fs.existsSync(this.dataDir)) {
         fs.mkdirSync(this.dataDir, { recursive: true });
       }
-    } catch(e) {
+    } catch (e) {
       console.error('ensureDataDir failed:', e.message);
+      if (this.dataDir !== '/tmp/kdx-data') {
+        this.dataDir = '/tmp/kdx-data';
+        try {
+          if (!fs.existsSync(this.dataDir)) {
+            fs.mkdirSync(this.dataDir, { recursive: true });
+          }
+        } catch (e2) {
+          console.error('fallback ensureDataDir failed:', e2.message);
+        }
+      }
     }
   }
 
@@ -35,16 +40,9 @@ class Database {
         const data = fs.readFileSync(filePath, 'utf8');
         return JSON.parse(data);
       }
-      if (!IS_VERCEL) {
-        const fallbackPath = path.join(__dirname, 'data', fileName);
-        if (fs.existsSync(fallbackPath)) {
-          const data = fs.readFileSync(fallbackPath, 'utf8');
-          return JSON.parse(data);
-        }
-      }
       return [];
-    } catch(e) {
-      console.error('Error reading ' + fileName + ':', e.message);
+    } catch (error) {
+      console.error(`Error reading ${fileName}:`, error);
       return [];
     }
   }
@@ -54,28 +52,46 @@ class Database {
     try {
       fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
       return true;
-    } catch(e) {
-      console.error('Error writing ' + fileName + ':', e.message);
+    } catch (error) {
+      console.error(`Error writing ${fileName}:`, error);
       return false;
     }
   }
 
-  getProducts() { return this.readJSON('products.json'); }
-  saveProducts(products) { return this.writeJSON('products.json', products); }
-  getOrders() { return this.readJSON('orders.json'); }
-  saveOrders(orders) { return this.writeJSON('orders.json', orders); }
-  getUsers() { return this.readJSON('users.json'); }
-  saveUsers(users) { return this.writeJSON('users.json', users); }
-  getRefunds() { return this.readJSON('refunds.json'); }
-  saveRefunds(refunds) { return this.writeJSON('refunds.json', refunds); }
+  getProducts() {
+    return this.readJSON('products.json');
+  }
+
+  saveProducts(products) {
+    return this.writeJSON('products.json', products);
+  }
+
+  getOrders() {
+    return this.readJSON('orders.json');
+  }
+
+  saveOrders(orders) {
+    return this.writeJSON('orders.json', orders);
+  }
+
+  getUsers() {
+    return this.readJSON('users.json');
+  }
+
+  saveUsers(users) {
+    return this.writeJSON('users.json', users);
+  }
+
+  getRefunds() {
+    return this.readJSON('refunds.json');
+  }
+
+  saveRefunds(refunds) {
+    return this.writeJSON('refunds.json', refunds);
+  }
 
   findById(data, id) {
-    for (var i = 0; i < data.length; i++) {
-      if (data[i].id === id) {
-        return data[i];
-      }
-    }
-    return null;
+    return data.find(item => item.id === id);
   }
 
   addItem(fileName, item) {
@@ -86,24 +102,9 @@ class Database {
 
   updateItem(fileName, id, updatedItem) {
     const data = this.readJSON(fileName);
-    var index = -1;
-    for (var i = 0; i < data.length; i++) {
-      if (data[i].id === id) {
-        index = i;
-        break;
-      }
-    }
+    const index = data.findIndex(item => item.id === id);
     if (index !== -1) {
-      var mergedItem = {};
-      for (var key in data[index]) {
-        mergedItem[key] = data[index][key];
-      }
-      for (var key2 in updatedItem) {
-        if (updatedItem.hasOwnProperty(key2)) {
-          mergedItem[key2] = updatedItem[key2];
-        }
-      }
-      data[index] = mergedItem;
+      data[index] = { ...data[index], ...updatedItem };
       return this.writeJSON(fileName, data);
     }
     return false;
@@ -111,12 +112,7 @@ class Database {
 
   deleteItem(fileName, id) {
     const data = this.readJSON(fileName);
-    var filtered = [];
-    for (var i = 0; i < data.length; i++) {
-      if (data[i].id !== id) {
-        filtered.push(data[i]);
-      }
-    }
+    const filtered = data.filter(item => item.id !== id);
     return this.writeJSON(fileName, filtered);
   }
 }
