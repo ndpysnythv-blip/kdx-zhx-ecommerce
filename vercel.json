@@ -12,11 +12,14 @@
       "dest": "api/index.js"
     },
     {
+      "handle": "filesystem"
+    },
+    {
       "src": "^/$",
       "dest": "/index.html"
     },
     {
-      "src": "/((?!api/).*)",
+      "src": "/((?!api/)[^.]*)$",
       "dest": "/$1.html",
       "check": true
     }
