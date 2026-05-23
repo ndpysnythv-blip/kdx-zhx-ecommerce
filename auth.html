@@ -217,7 +217,7 @@
                                     <input type="tel" id="signup-phone" required 
                                            class="input-field"
                                            placeholder="请输入手机号"
-                                           oninput="checkAndRedirectExistingPhone(); updateSignupCaptchaBtn();">
+                                           oninput="handlePhoneInput(event);">
                                     <div id="phone-verify-status" class="ml-2 text-sm"></div>
                                 </div>
                                 <div class="flex items-center justify-between mt-1">
@@ -686,21 +686,18 @@
             // 清除旧的计时器
             if (aiVerifyTimeout) clearTimeout(aiVerifyTimeout);
             
-            // 输入完成后（11位），自动触发验证
+            // 输入完成后（11位），直接显示验证成功（不调用 AI）
             if (phone.length === 11 && validatePhone(phone)) {
-                // 显示简单状态
+                // 显示验证成功状态
                 if (statusDiv) {
-                    statusDiv.innerHTML = '<i class="fas fa-spinner fa-spin text-gray-500"></i>';
+                    statusDiv.innerHTML = '<i class="fas fa-check-circle text-green-500"></i>';
                 }
                 if (messageDiv) {
-                    messageDiv.textContent = '准备验证...';
-                    messageDiv.className = 'text-xs mt-1 text-gray-500';
+                    messageDiv.textContent = '手机号格式正确';
+                    messageDiv.className = 'text-xs mt-1 text-green-500';
                 }
-                
-                // 延迟200ms再触发，让用户完成输入
-                aiVerifyTimeout = setTimeout(() => {
-                    startAiPhoneVerification(phone);
-                }, 300);
+                phoneVerified = true;
+                updateSignupCaptchaBtn();
             } else if (phone.length === 11 && !validatePhone(phone)) {
                 // 格式不对
                 if (statusDiv) {
@@ -1869,8 +1866,8 @@
                 return;
             }
             
-            // 先进行手机号验证
-            startAiPhoneVerification(phone, performSignup);
+            // 直接进行注册，跳过复杂的 AI 手机号验证
+            performSignup();
         }
 
         // Initialize
