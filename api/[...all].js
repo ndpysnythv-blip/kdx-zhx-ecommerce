@@ -1,22 +1,17 @@
-const express = require('express');
-const serverless = require('serverless-http');
-
-const app = express();
-
-app.use(express.json());
-
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Hello from dynamic route api!' });
-});
-
-app.get('/products', (req, res) => {
-  res.json([
-    { id: '1', name: 'Test Product', price: 100 }
-  ]);
-});
-
-app.get('*', (req, res) => {
-  res.json({ message: 'Route not found', path: req.path });
-});
-
-module.exports = serverless(app);
+module.exports = (req, res) => {
+  const { pathname } = new URL(req.url, 'http://localhost');
+  
+  if (pathname === '/api/health' || pathname === '/health') {
+    res.status(200).json({ status: 'ok', message: 'Hello from plain Vercel function!' });
+    return;
+  }
+  
+  if (pathname === '/api/products' || pathname === '/products') {
+    res.status(200).json([
+      { id: '1', name: 'Test Product', price: 100 }
+    ]);
+    return;
+  }
+  
+  res.status(404).json({ message: 'Route not found', path: pathname });
+};
