@@ -242,6 +242,28 @@
         let currentImageIndex = 0;
         let autoSlideTimer = null;
         let isTransitioning = false;
+        let cart = [];
+
+        function updateCartBadge() {
+            const savedCart = localStorage.getItem('cart');
+            if (savedCart) {
+                try {
+                    cart = JSON.parse(savedCart);
+                } catch (e) {
+                    cart = [];
+                }
+            }
+            const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+            const cartBadge = document.getElementById('cart-count');
+            if (cartBadge) {
+                if (cartCount > 0) {
+                    cartBadge.textContent = cartCount;
+                    cartBadge.classList.remove('hidden');
+                } else {
+                    cartBadge.classList.add('hidden');
+                }
+            }
+        }
 
         const urlParams = new URLSearchParams(window.location.search);
         const productId = urlParams.get('id');
