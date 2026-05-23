@@ -6,66 +6,70 @@
 <title>KDX 手势粒子特效</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:#000;overflow:hidden;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none}
-canvas{position:fixed;top:0;left:0;width:100%;height:100%}
-#bg{z-index:0}#main{z-index:1}#bloom{z-index:2;pointer-events:none}#overlay{z-index:3;pointer-events:none}
-#cam{position:fixed;bottom:20px;right:20px;width:200px;height:150px;border-radius:14px;
-overflow:hidden;border:1.5px solid rgba(255,255,255,.1);z-index:10;background:#0a0a0a;
-box-shadow:0 8px 40px rgba(0,0,0,.6),inset 0 0 30px rgba(0,0,0,.3);display:none;opacity:.85}
+html,body{width:100%;height:100%;background:#000;overflow:hidden}
+body{font-family:'Segoe UI',sans-serif;color:#fff;user-select:none}
+canvas{display:block;position:fixed;top:0;left:0}
+#bg{z-index:0}#main{z-index:1}#bloom{z-index:2;pointer-events:none}#ov{z-index:3;pointer-events:none}
+#cam{position:fixed;bottom:16px;right:16px;width:180px;height:135px;border-radius:12px;
+overflow:hidden;border:1px solid rgba(255,255,255,.08);z-index:10;background:#080808;
+box-shadow:0 6px 30px rgba(0,0,0,.5);display:none;opacity:.8}
 #cam video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
-#label{position:fixed;top:32px;left:50%;transform:translateX(-50%);font-size:24px;
-font-weight:200;letter-spacing:8px;z-index:5;text-shadow:0 0 40px rgba(255,255,255,.3);
-opacity:0;transition:opacity .5s cubic-bezier(.4,0,.2,1);pointer-events:none;
-text-transform:uppercase}
-#label.show{opacity:1}
-#info{position:fixed;top:32px;left:32px;z-index:5;font-size:11px;line-height:1.8;
-opacity:.3;pointer-events:none;font-weight:200;letter-spacing:1px}
-#keys{position:fixed;bottom:28px;left:28px;z-index:5;font-size:11px;line-height:2.2;
+#lbl{position:fixed;top:28px;left:50%;transform:translateX(-50%);font-size:22px;
+font-weight:200;letter-spacing:7px;z-index:5;text-shadow:0 0 30px rgba(255,255,255,.25);
+opacity:0;transition:opacity .4s;pointer-events:none;text-transform:uppercase}
+#lbl.show{opacity:1}
+#st{position:fixed;top:28px;left:28px;z-index:5;font-size:11px;line-height:1.8;
 opacity:.25;pointer-events:none;font-weight:200}
-#keys span{display:inline-block;padding:3px 12px;margin:2px 4px;
-background:rgba(255,255,255,.04);border-radius:20px;border:1px solid rgba(255,255,255,.06);
-backdrop-filter:blur(4px)}
+#keys{position:fixed;bottom:24px;left:24px;z-index:5;font-size:11px;line-height:2.2;
+opacity:.2;pointer-events:none;font-weight:200}
+#keys span{display:inline-block;padding:2px 10px;margin:2px 3px;
+background:rgba(255,255,255,.03);border-radius:16px;border:1px solid rgba(255,255,255,.05)}
 </style>
 </head>
 <body>
 <canvas id="bg"></canvas>
 <canvas id="main"></canvas>
 <canvas id="bloom"></canvas>
-<canvas id="overlay"></canvas>
+<canvas id="ov"></canvas>
 <div id="cam"><video id="v" autoplay playsinline muted></video></div>
-<div id="label"></div>
-<div id="info"></div>
+<div id="lbl"></div>
+<div id="st"></div>
 <div id="keys">
 <span>✋ 张开 — 扩散</span><span>✊ 握拳 — 收缩</span><span>🤏 捏合 — 漩涡</span>
-<span>☝️ 指向 — 追踪</span><span>🖐️🖐️ 双手 — 引力场</span>
+<span>☝️ 指向 — 追踪</span><span>🖐️🖐️ 双手 — 引力场</span><span>键盘1-5切换</span>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675466862/camera_utils.js" crossorigin="anonymous"></script>
 
 <script>
 (function(){
 'use strict';
 
+/* ── DOM ── */
 const $=id=>document.getElementById(id);
 const video=$('v'),camBox=$('cam');
-const oc=$('overlay'),ox=oc.getContext('2d');
+const oc=$('ov'),ox=oc.getContext('2d');
 const mc=$('main'),mx=mc.getContext('2d');
 const bc=$('bg'),bx=bc.getContext('2d');
 const blc=$('bloom'),blx=blc.getContext('2d');
-const label=$('label'),info=$('info');
+const lbl=$('lbl'),st=$('st');
 
+/* ── Canvas sizing ── */
 let W,H;
 function resize(){
   W=innerWidth;H=innerHeight;
-  for(const c of[mc,bc,oc,blc]){c.width=W;c.height=H}
+  [mc,bc,oc,blc].forEach(c=>{c.width=W;c.height=H});
   stars.forEach(s=>{s.x=Math.random()*W;s.y=Math.random()*H});
 }
 resize();addEventListener('resize',resize);
 
-/* ══════════════════════════════════════════
+/* ── Hidden canvas for camera processing ── */
+const procW=160,procH=120;
+const hCvs=document.createElement('canvas');
+hCvs.width=procW;hCvs.height=procH;
+const hx=hCvs.getContext('2d',{willReadFrequently:true});
+
+/* ══════════════════════════════════════
    GESTURE SYSTEM
-   ══════════════════════════════════════════ */
+   ══════════════════════════════════════ */
 const G={NONE:'none',OPEN:'open',FIST:'fist',PINCH:'pinch',POINT:'point',TWO:'two'};
 const GN={[G.NONE]:'',[G.OPEN]:'张开 · 扩散',[G.FIST]:'握拳 · 收缩',
   [G.PINCH]:'捏合 · 漩涡',[G.POINT]:'指向 · 追踪',[G.TWO]:'双手 · 引力场'};
@@ -75,286 +79,359 @@ const GC={
   [G.POINT]:{h:165,s:90,l:52},[G.TWO]:{h:195,s:100,l:60}
 };
 
-function fingers(lm){
-  const t=[4,8,12,16,20],p=[3,6,10,14,18],r=[];
-  r.push(Math.abs(lm[4].x-lm[2].x)>Math.abs(lm[3].x-lm[2].x)*1.2);
-  for(let i=1;i<5;i++) r.push(lm[t[i]].y<lm[p[i]].y);
-  return r;
-}
-function gesture(lm){
-  const f=fingers(lm),pd=Math.hypot(lm[4].x-lm[8].x,lm[4].y-lm[8].y);
-  if(pd<.06)return G.PINCH;
-  if(f.every(v=>v))return G.OPEN;
-  if(f.slice(1).every(v=>!v))return G.FIST;
-  if(f[1]&&!f[2]&&!f[3]&&!f[4])return G.POINT;
-  return G.NONE;
-}
-function ctr(lm){return{x:lm[9].x,y:lm[9].y}}
-function pnt(lm){return{x:(lm[4].x+lm[8].x)/2,y:(lm[4].y+lm[8].y)/2}}
-function pdr(lm){return{x:lm[8].x-lm[6].x,y:lm[8].y-lm[6].y}}
+let gs={type:G.NONE,prev:G.NONE,hc:[],t:0,blend:0};
+function setGesture(type){if(type!==gs.type){gs.prev=gs.type;gs.type=type;gs.blend=0}}
 
-/* ══════════════════════════════════════════
-   PARTICLE SYSTEM — 3000 particles
-   ══════════════════════════════════════════ */
-const MAX=3000;
-let cnt=1200;
-const pool=[];
-
+/* ══════════════════════════════════════
+   PARTICLE SYSTEM — 2500 particles
+   ══════════════════════════════════════ */
+const MAX=2500;let cnt=1000;const pool=[];
 class P{
   constructor(){this.reset()}
   reset(){
     this.x=Math.random()*W;this.y=Math.random()*H;
-    this.vx=(Math.random()-.5)*.8;this.vy=(Math.random()-.5)*.8;
-    this.r=Math.random()*2+.4;this.br=this.r;
-    this.life=1;this.h=Math.random()*360;
-    this.s=75;this.l=55;this.a=Math.random()*.5+.15;this.ba=this.a;
+    this.vx=(Math.random()-.5)*.6;this.vy=(Math.random()-.5)*.6;
+    this.r=Math.random()*2+.4;this.br=this.r;this.life=1;
+    this.h=Math.random()*360;this.s=70;this.l=55;
+    this.a=Math.random()*.45+.12;this.ba=this.a;
     this.tl=[];this.tlen=4;this.on=true;
-    this.ph=Math.random()*Math.PI*2;
-    this.ph2=Math.random()*Math.PI*2;
-    this.spd=Math.random()*.4+.2;
+    this.ph=Math.random()*6.28;this.ph2=Math.random()*6.28;
   }
-  update(dt){
+  update(){
     if(!this.on)return;
-    this.tl.push({x:this.x,y:this.y,a:this.a,l:this.life});
+    this.tl.push({x:this.x,y:this.y});
     if(this.tl.length>this.tlen)this.tl.shift();
     this.x+=this.vx;this.y+=this.vy;
     if(this.x<-30)this.x=W+30;if(this.x>W+30)this.x=-30;
     if(this.y<-30)this.y=H+30;if(this.y>H+30)this.y=-30;
   }
   draw(c){
-    if(!this.on)return;
-    const al=this.a*this.life;
-    if(al<.01)return;
+    if(!this.on)return;const al=this.a*this.life;if(al<.01)return;
     if(this.tl.length>1){
       c.beginPath();c.moveTo(this.tl[0].x,this.tl[0].y);
-      for(let i=1;i<this.tl.length;i++) c.lineTo(this.tl[i].x,this.tl[i].y);
-      c.strokeStyle=`hsla(${this.h},${this.s}%,${this.l}%,${al*.25})`;
-      c.lineWidth=this.r*.6;c.lineCap='round';c.stroke();
+      for(let i=1;i<this.tl.length;i++)c.lineTo(this.tl[i].x,this.tl[i].y);
+      c.strokeStyle=`hsla(${this.h},${this.s}%,${this.l}%,${al*.2})`;
+      c.lineWidth=this.r*.5;c.lineCap='round';c.stroke();
     }
     const g=c.createRadialGradient(this.x,this.y,0,this.x,this.y,this.r*4);
-    g.addColorStop(0,`hsla(${this.h},${this.s}%,${this.l+15}%,${al})`);
-    g.addColorStop(.3,`hsla(${this.h},${this.s}%,${this.l}%,${al*.4})`);
+    g.addColorStop(0,`hsla(${this.h},${this.s}%,${this.l+12}%,${al})`);
+    g.addColorStop(.35,`hsla(${this.h},${this.s}%,${this.l}%,${al*.35})`);
     g.addColorStop(1,`hsla(${this.h},${this.s}%,${this.l}%,0)`);
-    c.beginPath();c.arc(this.x,this.y,this.r*4,0,Math.PI*2);c.fillStyle=g;c.fill();
-    c.beginPath();c.arc(this.x,this.y,this.r*.45,0,Math.PI*2);
-    c.fillStyle=`hsla(${this.h},100%,92%,${al*.9})`;c.fill();
+    c.beginPath();c.arc(this.x,this.y,this.r*4,0,6.28);c.fillStyle=g;c.fill();
+    c.beginPath();c.arc(this.x,this.y,this.r*.4,0,6.28);
+    c.fillStyle=`hsla(${this.h},100%,93%,${al*.85})`;c.fill();
   }
 }
 for(let i=0;i<MAX;i++)pool.push(new P);
 
-/* ══════════════════════════════════════════
-   GESTURE STATE — smooth transitions
-   ══════════════════════════════════════════ */
-let gs={type:G.NONE,prev:G.NONE,hc:[],pp:[],pd:[],t:0,blend:0};
-
-function setGesture(type){
-  if(type!==gs.type){gs.prev=gs.type;gs.type=type;gs.blend=0}
-}
-
-/* ══════════════════════════════════════════
-   PHYSICS ENGINE
-   ══════════════════════════════════════════ */
+/* ══════════════════════════════════════
+   PHYSICS
+   ══════════════════════════════════════ */
 function physics(dt){
-  gs.t+=dt;
-  gs.blend=Math.min(1,gs.blend+dt*3);
-  const col=GC[gs.type],pcol=GC[gs.prev];
-  const b=gs.blend;
-  const ch=col.h*b+pcol.h*(1-b);
-  const cs=col.s*b+pcol.s*(1-b);
-  const cl=col.l*b+pcol.l*(1-b);
+  gs.t+=dt;gs.blend=Math.min(1,gs.blend+dt*3);
+  const col=GC[gs.type],pc=GC[gs.prev],b=gs.blend;
+  const ch=col.h*b+pc.h*(1-b),cs=col.s*b+pc.s*(1-b),cl=col.l*b+pc.l*(1-b);
 
   for(let i=0;i<cnt;i++){
     const p=pool[i];if(!p.on)continue;
-    p.h+=(ch+(Math.sin(gs.t*2+p.ph)*15)-p.h)*.03;
+    p.h+=(ch+Math.sin(gs.t*2+p.ph)*12-p.h)*.03;
     p.s+=(cs-p.s)*.03;p.l+=(cl-p.l)*.03;
     switch(gs.type){
       case G.OPEN:phOpen(p);break;case G.FIST:phFist(p);break;
       case G.PINCH:phPinch(p);break;case G.POINT:phPoint(p);break;
       case G.TWO:phTwo(p);break;default:phIdle(p);
     }
-    p.vx+=Math.sin(gs.t*1.1+p.ph2)*.015;
-    p.vy+=Math.cos(gs.t*.9+p.ph)*.015;
-    p.vx+=Math.sin(gs.t*3.7+p.ph*2)*.005;
-    p.vy+=Math.cos(gs.t*2.9+p.ph2*2)*.005;
-    p.vx*=.985;p.vy*=.985;
+    p.vx+=Math.sin(gs.t*1.1+p.ph2)*.012;
+    p.vy+=Math.cos(gs.t*.9+p.ph)*.012;
+    p.vx*=.986;p.vy*=.986;
   }
 }
-
 function phIdle(p){
-  p.vx+=Math.sin(gs.t*.4+p.ph)*.015+Math.cos(gs.t*.7+p.ph2)*.008;
-  p.vy+=Math.cos(gs.t*.35+p.ph*1.3)*.015+Math.sin(gs.t*.55+p.ph2)*.008;
-  p.r+=(p.br-p.r)*.04;p.a+=(p.ba-p.a)*.04;
-  p.tlen=Math.max(3,p.tlen-1);
+  p.vx+=Math.sin(gs.t*.4+p.ph)*.012+Math.cos(gs.t*.7+p.ph2)*.006;
+  p.vy+=Math.cos(gs.t*.35+p.ph*1.3)*.012+Math.sin(gs.t*.55+p.ph2)*.006;
+  p.r+=(p.br-p.r)*.04;p.a+=(p.ba-p.a)*.04;p.tlen=Math.max(3,p.tlen-1);
 }
 function phOpen(p){
   if(!gs.hc.length){phIdle(p);return}
-  const h=gs.hc[0],hx=h.x*W,hy=h.y*H,dx=p.x-hx,dy=p.y-hy,d=Math.sqrt(dx*dx+dy*dy),R=350;
-  if(d<R&&d>1){const f=(1-d/R)*(1-d/R)*4;p.vx+=dx/d*f;p.vy+=dy/d*f;
-    p.r=p.br*(1+(1-d/R)*2.5);p.a=Math.min(1,p.ba*(1.2+(1-d/R)));
-    const a=Math.atan2(dy,dx);p.vx+=Math.cos(a+Math.PI/2)*f*.35;p.vy+=Math.sin(a+Math.PI/2)*f*.35;
+  const h=gs.hc[0],hx=h.x*W,hy=h.y*H,dx=p.x-hx,dy=p.y-hy,d=Math.hypot(dx,dy),R=320;
+  if(d<R&&d>1){const f=(1-d/R)*(1-d/R)*3.5;p.vx+=dx/d*f;p.vy+=dy/d*f;
+    p.r=p.br*(1+(1-d/R)*2);p.a=Math.min(1,p.ba*(1.2+(1-d/R)));
+    const a=Math.atan2(dy,dx);p.vx+=Math.cos(a+1.57)*f*.3;p.vy+=Math.sin(a+1.57)*f*.3;
     if(d<R*.3){p.vx*=1.02;p.vy*=1.02}}
-  p.tlen=12;
+  p.tlen=11;
 }
 function phFist(p){
   if(!gs.hc.length){phIdle(p);return}
-  const h=gs.hc[0],hx=h.x*W,hy=h.y*H,dx=hx-p.x,dy=hy-p.y,d=Math.sqrt(dx*dx+dy*dy),R=400;
-  if(d<R&&d>25){const f=(1-d/R)*(1-d/R)*5;p.vx+=dx/d*f;p.vy+=dy/d*f;
+  const h=gs.hc[0],hx=h.x*W,hy=h.y*H,dx=hx-p.x,dy=hy-p.y,d=Math.hypot(dx,dy),R=380;
+  if(d<R&&d>22){const f=(1-d/R)*(1-d/R)*4.5;p.vx+=dx/d*f;p.vy+=dy/d*f;
     p.r=p.br*(.2+d/R*.8);const a=Math.atan2(dy,dx);
-    p.vx+=Math.cos(a+Math.PI/2)*f*.2;p.vy+=Math.sin(a+Math.PI/2)*f*.2}
-  else if(d<=25){const a=Math.atan2(p.y-hy,p.x-hx),spd=2+Math.sin(gs.t*4+p.ph)*.5;
-    p.vx=Math.cos(a+1.8)*spd;p.vy=Math.sin(a+1.8)*spd;p.r=p.br*.2;p.a=Math.min(1,p.ba*2.5)}
+    p.vx+=Math.cos(a+1.57)*f*.18;p.vy+=Math.sin(a+1.57)*f*.18}
+  else if(d<=22){const a=Math.atan2(p.y-hy,p.x-hx),sp=1.8+Math.sin(gs.t*4+p.ph)*.4;
+    p.vx=Math.cos(a+1.8)*sp;p.vy=Math.sin(a+1.8)*sp;p.r=p.br*.2;p.a=Math.min(1,p.ba*2.2)}
   p.tlen=3;
 }
 function phPinch(p){
-  if(!gs.pp.length){phIdle(p);return}
-  const pt=gs.pp[0],px=pt.x*W,py=pt.y*H,dx=px-p.x,dy=py-p.y,d=Math.sqrt(dx*dx+dy*dy),R=280;
-  if(d<R&&d>3){const f=(1-d/R)*(1-d/R)*6,a=Math.atan2(dy,dx);
-    p.vx+=Math.cos(a+Math.PI/2)*f*.9;p.vy+=Math.sin(a+Math.PI/2)*f*.9;
-    p.vx+=dx/d*f*.35;p.vy+=dy/d*f*.35;
-    p.r=p.br*(1+Math.sin(gs.t*6+p.ph)*.6);p.a=Math.min(1,p.ba*(1.3+(1-d/R)));
+  if(!gs.hc.length){phIdle(p);return}
+  const h=gs.hc[0],px=h.x*W,py=h.y*H,dx=px-p.x,dy=py-p.y,d=Math.hypot(dx,dy),R=260;
+  if(d<R&&d>3){const f=(1-d/R)*(1-d/R)*5.5,a=Math.atan2(dy,dx);
+    p.vx+=Math.cos(a+1.57)*f*.85;p.vy+=Math.sin(a+1.57)*f*.85;
+    p.vx+=dx/d*f*.3;p.vy+=dy/d*f*.3;
+    p.r=p.br*(1+Math.sin(gs.t*6+p.ph)*.5);p.a=Math.min(1,p.ba*(1.3+(1-d/R)));
     if(d<R*.2){p.vx*=1.03;p.vy*=1.03}}
-  p.tlen=18;
+  p.tlen=16;
 }
 function phPoint(p){
-  if(!gs.hc.length||!gs.pd.length){phIdle(p);return}
-  const h=gs.hc[0],dir=gs.pd[0],hx=h.x*W,hy=h.y*H,dx=p.x-hx,dy=p.y-hy,d=Math.sqrt(dx*dx+dy*dy);
-  if(d<450&&d>8){const dl=Math.sqrt(dir.x*dir.x+dir.y*dir.y);
-    if(dl>0){const nx=dir.x/dl,ny=dir.y/dl,cross=dx*ny-dy*nx;
-      if(Math.abs(cross)<100&&(dx*nx+dy*ny)>0){p.vx+=nx*2.5;p.vy+=ny*2.5;
-        p.vx-=cross*ny*.06;p.vy+=cross*nx*.06;
-        p.r=p.br*(1.2+(1-Math.abs(cross)/100));p.a=Math.min(1,p.ba*1.8)}}}
-  p.tlen=10;
+  if(!gs.hc.length){phIdle(p);return}
+  const h=gs.hc[0],hx=h.x*W,hy=h.y*H,dx=p.x-hx,dy=p.y-hy,d=Math.hypot(dx,dy),R=400;
+  if(d<R&&d>8){
+    // Use hand velocity as direction
+    const dir=gs.dir||{x:0,y:-1};
+    const nx=dir.x,ny=dir.y,cross=dx*ny-dy*nx;
+    if(Math.abs(cross)<90&&(dx*nx+dy*ny)>0){
+      p.vx+=nx*2;p.vy+=ny*2;p.vx-=cross*ny*.05;p.vy+=cross*nx*.05;
+      p.r=p.br*(1.2+(1-Math.abs(cross)/90));p.a=Math.min(1,p.ba*1.6);
+    }}
+  p.tlen=9;
 }
 function phTwo(p){
-  if(gs.hc.length<2){if(gs.hc.length===1){const h=gs.hc[0],dx=h.x*W-p.x,dy=h.y*H-p.y,d=Math.sqrt(dx*dx+dy*dy);
-    if(d<350&&d>1){const f=(1-d/350)*(1-d/350)*3;p.vx+=dx/d*f;p.vy+=dy/d*f}}return}
+  if(gs.hc.length<2){if(gs.hc.length===1){const h=gs.hc[0],dx=h.x*W-p.x,dy=h.y*H-p.y,d=Math.hypot(dx,dy);
+    if(d<320&&d>1){const f=(1-d/320)*(1-d/320)*2.8;p.vx+=dx/d*f;p.vy+=dy/d*f}}return}
   const[h1,h2]=gs.hc;
-  for(const hand of[h1,h2]){const dx=hand.x*W-p.x,dy=hand.y*H-p.y,d=Math.sqrt(dx*dx+dy*dy);
-    if(d<350&&d>1){const f=(1-d/350)*(1-d/350)*3;p.vx+=dx/d*f;p.vy+=dy/d*f}}
-  const mx=(h1.x+h2.x)/2*W,my=(h1.y+h2.y)/2*H,dx=mx-p.x,dy=my-p.y,d=Math.sqrt(dx*dx+dy*dy);
-  if(d<120){p.vx-=dx/d*2;p.vy-=dy/d*2}
-  p.r=p.br*(1+Math.sin(gs.t*3.5+p.ph)*.35);p.tlen=14;
+  for(const hand of[h1,h2]){const dx=hand.x*W-p.x,dy=hand.y*H-p.y,d=Math.hypot(dx,dy);
+    if(d<320&&d>1){const f=(1-d/320)*(1-d/320)*2.8;p.vx+=dx/d*f;p.vy+=dy/d*f}}
+  const mx=(h1.x+h2.x)/2*W,my=(h1.y+h2.y)/2*H,d=Math.hypot(mx-p.x,my-p.y);
+  if(d<100){p.vx-=(mx-p.x)/d*1.8;p.vy-=(my-p.y)/d*1.8}
+  p.r=p.br*(1+Math.sin(gs.t*3.5+p.ph)*.3);p.tlen=13;
 }
 
-/* ══════════════════════════════════════════
-   BACKGROUND — deep space
-   ══════════════════════════════════════════ */
+/* ══════════════════════════════════════
+   BACKGROUND
+   ══════════════════════════════════════ */
 let stars=[];
-for(let i=0;i<250;i++)stars.push({x:Math.random()*W,y:Math.random()*H,
-  r:Math.random()*1.2+.2,a:Math.random()*.4+.08,tw:Math.random()*Math.PI*2,sp:Math.random()*.8+.4});
-
+for(let i=0;i<200;i++)stars.push({x:Math.random()*W,y:Math.random()*H,
+  r:Math.random()*1+.2,a:Math.random()*.35+.06,tw:Math.random()*6.28,sp:Math.random()*.6+.3});
 function drawBg(dt){
-  bx.fillStyle='rgba(0,0,0,.12)';bx.fillRect(0,0,W,H);
+  bx.fillStyle='rgba(0,0,0,.1)';bx.fillRect(0,0,W,H);
   for(const s of stars){s.tw+=dt*s.sp;const a=s.a*(.4+.6*Math.sin(s.tw));
-    bx.beginPath();bx.arc(s.x,s.y,s.r,0,Math.PI*2);bx.fillStyle=`rgba(255,255,255,${a})`;bx.fill()}
-  if(gs.hc.length>0){const h=gs.hc[0],col=GC[gs.type];
-    const g=bx.createRadialGradient(h.x*W,h.y*H,0,h.x*W,h.y*H,400);
-    g.addColorStop(0,`hsla(${col.h},${col.s}%,${col.l}%,.04)`);
-    g.addColorStop(.5,`hsla(${col.h},${col.s}%,${col.l}%,.015)`);g.addColorStop(1,'transparent');
-    bx.fillStyle=g;bx.fillRect(0,0,W,H)}
+    bx.beginPath();bx.arc(s.x,s.y,s.r,0,6.28);bx.fillStyle=`rgba(255,255,255,${a})`;bx.fill()}
+  if(gs.hc.length){const h=gs.hc[0],col=GC[gs.type];
+    const g=bx.createRadialGradient(h.x*W,h.y*H,0,h.x*W,h.y*H,350);
+    g.addColorStop(0,`hsla(${col.h},${col.s}%,${col.l}%,.035)`);
+    g.addColorStop(1,'transparent');bx.fillStyle=g;bx.fillRect(0,0,W,H)}
 }
 
-/* ══════════════════════════════════════════
-   BLOOM PASS — glow post-processing
-   ══════════════════════════════════════════ */
+/* ══════════════════════════════════════
+   BLOOM
+   ══════════════════════════════════════ */
 function drawBloom(){
   blx.clearRect(0,0,W,H);blx.globalCompositeOperation='lighter';
-  blx.filter='blur(12px) brightness(1.2)';blx.globalAlpha=.35;blx.drawImage(mc,0,0,W,H);
-  blx.filter='blur(28px) brightness(.8)';blx.globalAlpha=.2;blx.drawImage(mc,0,0,W,H);
+  blx.filter='blur(10px) brightness(1.1)';blx.globalAlpha=.3;blx.drawImage(mc,0,0,W,H);
+  blx.filter='blur(24px) brightness(.7)';blx.globalAlpha=.18;blx.drawImage(mc,0,0,W,H);
   blx.filter='none';blx.globalAlpha=1;blx.globalCompositeOperation='source-over';
 }
 
-/* ══════════════════════════════════════════
-   CONNECTIONS — neural network style
-   ══════════════════════════════════════════ */
+/* ══════════════════════════════════════
+   CONNECTIONS
+   ══════════════════════════════════════ */
 function drawConn(){
-  const md=70,mx2=250;let n=0;
+  const md=65,mx2=200;let n=0;
   for(let i=0;i<cnt&&n<mx2;i++){const a=pool[i];if(!a.on)continue;
     for(let j=i+1;j<cnt&&n<mx2;j++){const b=pool[j];if(!b.on)continue;
-      const dx=a.x-b.x,dy=a.y-b.y,d=Math.sqrt(dx*dx+dy*dy);
-      if(d<md){const al=(1-d/md)*.12*a.life*b.life;
+      const d=Math.hypot(a.x-b.x,a.y-b.y);
+      if(d<md){const al=(1-d/md)*.1*a.life*b.life;
         mx.beginPath();mx.moveTo(a.x,a.y);mx.lineTo(b.x,b.y);
-        mx.strokeStyle=`hsla(${(a.h+b.h)/2},50%,55%,${al})`;mx.lineWidth=.4;mx.stroke();n++}}}
+        mx.strokeStyle=`hsla(${(a.h+b.h)/2},45%,50%,${al})`;mx.lineWidth=.35;mx.stroke();n++}}}
 }
 
-/* ══════════════════════════════════════════
-   HAND OVERLAY
-   ══════════════════════════════════════════ */
-const HC=[[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],
-  [9,13],[13,14],[14,15],[15,16],[13,17],[0,17],[17,18],[18,19],[19,20]];
-function drawHand(lms){
-  ox.clearRect(0,0,W,H);if(!lms)return;
+/* ══════════════════════════════════════
+   HAND OVERLAY — draw detected hand blobs
+   ══════════════════════════════════════ */
+function drawHandOverlay(){
+  ox.clearRect(0,0,W,H);
+  if(!gs.hc.length)return;
   const col=GC[gs.type];
-  for(const lm of lms){ox.strokeStyle=`hsla(${col.h},${col.s}%,${col.l}%,.2)`;ox.lineWidth=.8;
-    for(const[s,e]of HC){ox.beginPath();ox.moveTo(lm[s].x*W,lm[s].y*H);ox.lineTo(lm[e].x*W,lm[e].y*H);ox.stroke()}
-    for(const p of lm){const x=p.x*W,y=p.y*H;
-      const g=ox.createRadialGradient(x,y,0,x,y,6);
-      g.addColorStop(0,`hsla(${col.h},${col.s}%,${col.l}%,.6)`);g.addColorStop(1,'transparent');
-      ox.beginPath();ox.arc(x,y,6,0,Math.PI*2);ox.fillStyle=g;ox.fill();
-      ox.beginPath();ox.arc(x,y,1.5,0,Math.PI*2);ox.fillStyle=`hsla(${col.h},100%,90%,.7)`;ox.fill()}}
+  for(const h of gs.hc){
+    const x=h.x*W,y=h.y*H;
+    // outer glow
+    const g=ox.createRadialGradient(x,y,0,x,y,50);
+    g.addColorStop(0,`hsla(${col.h},${col.s}%,${col.l}%,.15)`);
+    g.addColorStop(1,'transparent');
+    ox.beginPath();ox.arc(x,y,50,0,6.28);ox.fillStyle=g;ox.fill();
+    // center dot
+    ox.beginPath();ox.arc(x,y,3,0,6.28);
+    ox.fillStyle=`hsla(${col.h},100%,85%,.6)`;ox.fill();
+    // ring
+    ox.beginPath();ox.arc(x,y,20,0,6.28);
+    ox.strokeStyle=`hsla(${col.h},${col.s}%,${col.l}%,.2)`;ox.lineWidth=1;ox.stroke();
+  }
 }
 
-/* ══════════════════════════════════════════
-   MAIN LOOP
-   ══════════════════════════════════════════ */
-let lt=0,fc=0,ft=0,fps=0;
-function loop(ts){
-  const dt=Math.min((ts-lt)/1000,.05);lt=ts;fc++;ft+=dt;
-  if(ft>=1){fps=fc;fc=0;ft=0}
-  mx.fillStyle='rgba(0,0,0,.06)';mx.fillRect(0,0,W,H);
-  drawBg(dt);physics(dt);
-  for(let i=0;i<cnt;i++){pool[i].update(dt);pool[i].draw(mx)}
-  drawConn();drawBloom();
-  info.innerHTML=`FPS ${fps} &middot; ${cnt} 粒子`;
-  if(gs.type!==G.NONE){label.textContent=GN[gs.type];label.classList.add('show')}
-  else{label.classList.remove('show')}
-  requestAnimationFrame(loop);
-}
-requestAnimationFrame(loop);
+/* ══════════════════════════════════════
+   CAMERA + SKIN COLOR HAND DETECTION
+   ══════════════════════════════════════ */
+let camOn=false,prevFrame=null;
 
-/* ══════════════════════════════════════════
-   AUTO-START CAMERA & MEDIAPIPE
-   ══════════════════════════════════════════ */
-let camOn=false,handsObj=null,camObj=null;
-
-async function autoStart(){
-  let retries=0;
-  while(typeof window.Hands==='undefined'&&retries<50){await new Promise(r=>setTimeout(r,200));retries++}
-  if(typeof window.Hands==='undefined'){console.warn('MediaPipe not loaded');return}
+async function startCamera(){
   try{
     const stream=await navigator.mediaDevices.getUserMedia({video:{width:640,height:480,facingMode:'user'}});
     video.srcObject=stream;camBox.style.display='block';
     await new Promise(r=>{video.onloadedmetadata=()=>{video.play();r()}});
-    handsObj=new window.Hands({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${f}`});
-    handsObj.setOptions({maxNumHands:2,modelComplexity:1,minDetectionConfidence:.7,minTrackingConfidence:.5});
-    handsObj.onResults(res=>{
-      drawHand(res.multiHandLandmarks);
-      if(res.multiHandLandmarks&&res.multiHandLandmarks.length>0){
-        const h=res.multiHandLandmarks;gs.hc=h.map(ctr);gs.pp=h.map(pnt);gs.pd=h.map(pdr);
-        setGesture(h.length>=2?G.TWO:gesture(h[0]));
-      }else{setGesture(G.NONE);gs.hc=[];gs.pp=[];gs.pd=[]}
-    });
-    camObj=new window.Camera(video,{onFrame:async()=>{if(handsObj)await handsObj.send({image:video})},width:640,height:480});
-    await camObj.start();camOn=true;
-  }catch(e){console.warn('Camera unavailable:',e.message)}
+    camOn=true;
+  }catch(e){console.warn('Camera:',e.message)}
 }
-autoStart();
 
-/* ══════════════════════════════════════════
+function detectHands(){
+  if(!camOn||video.readyState<2)return;
+  // Draw video to small processing canvas
+  hx.drawImage(video,0,0,procW,procH);
+  const img=hx.getImageData(0,0,procW,procH);
+  const d=img.data;
+
+  // Skin color detection (YCbCr space)
+  const skin=new Uint8Array(procW*procH);
+  for(let i=0;i<d.length;i+=4){
+    const r=d[i],g=d[i+1],b=d[i+2];
+    // Convert to YCbCr
+    const y=.299*r+.587*g+.114*b;
+    const cb=128-.169*r-.331*g+.5*b;
+    const cr=128+.5*r-.419*g-.081*b;
+    // Skin color range
+    if(cr>133&&cr<173&&cb>77&&cb<127&&y>80){
+      skin[i/4]=1;
+    }
+  }
+
+  // Find connected blobs using flood fill
+  const visited=new Uint8Array(procW*procH);
+  const blobs=[];
+
+  for(let y=2;y<procH-2;y++){
+    for(let x=2;x<procW-2;x++){
+      const idx=y*procW+x;
+      if(skin[idx]&&!visited[idx]){
+        // BFS flood fill
+        let sumX=0,sumY=0,count=0;
+        const q=[idx];visited[idx]=1;
+        let minX=x,maxX=x,minY=y,maxY=y;
+        while(q.length>0&&count<800){
+          const ci=q.shift();
+          const cx=ci%procW,cy=(ci-cx)/procW;
+          sumX+=cx;sumY+=cy;count++;
+          minX=Math.min(minX,cx);maxX=Math.max(maxX,cx);
+          minY=Math.min(minY,cy);maxY=Math.max(maxY,cy);
+          // 4-connected neighbors
+          for(const[dx,dy]of[[-1,0],[1,0],[0,-1],[0,1]]){
+            const nx=cx+dx,ny=cy+dy;
+            if(nx>=0&&nx<procW&&ny>=0&&ny<procH){
+              const ni=ny*procW+nx;
+              if(skin[ni]&&!visited[ni]){visited[ni]=1;q.push(ni)}
+            }
+          }
+        }
+        // Filter: blob must be large enough to be a hand
+        if(count>150){
+          const bw=maxX-minX,bh=maxY-minY;
+          const area=bw*bh;
+          const density=count/(area||1);
+          blobs.push({
+            x:1-sumX/count/procW, // mirror X
+            y:sumY/count/procH,
+            count,area,density,
+            w:bw/procW,h:bh/procH,
+            spread:count/(Math.max(bw,bh)||1) // elongation
+          });
+        }
+      }
+    }
+  }
+
+  // Sort by size (largest first)
+  blobs.sort((a,b)=>b.count-a.count);
+
+  // Determine gesture from blob properties
+  if(blobs.length>=2&&blobs[1].count>100){
+    gs.hc=[blobs[0],blobs[1]].map(b=>({x:b.x,y:b.y}));
+    setGesture(G.TWO);
+  }else if(blobs.length>=1&&blobs[0].count>150){
+    const b=blobs[0];
+    gs.hc=[{x:b.x,y:b.y}];
+
+    // Track velocity for pointing direction
+    if(gs._prevX!==undefined){
+      gs.dir={x:b.x-gs._prevX,y:b.y-gs._prevY};
+    }
+    gs._prevX=b.x;gs._prevY=b.y;
+
+    const spread=b.spread;
+    const density=b.density;
+    const speed=Math.hypot((gs.dir||{}).x||0,(gs.dir||{}).y||0);
+
+    // Classify gesture:
+    // High spread + low density = open hand (fingers spread)
+    // Low spread + high density = fist (compact)
+    // Fast movement = pointing/swiping
+    if(speed>.03&&spread>3){
+      setGesture(G.OPEN); // fast open hand = dispersal
+    }else if(spread>4.5&&density<.6){
+      setGesture(G.OPEN);
+    }else if(spread<3&&density>.7){
+      setGesture(G.FIST);
+    }else if(speed>.04){
+      setGesture(G.POINT);
+    }else if(spread>3.5){
+      setGesture(G.PINCH);
+    }else{
+      setGesture(G.FIST);
+    }
+  }else{
+    gs.hc=[];setGesture(G.NONE);
+  }
+}
+
+/* ══════════════════════════════════════
+   MAIN LOOP
+   ══════════════════════════════════════ */
+let lt=0,fc=0,ft=0,fps=0,detT=0;
+function loop(ts){
+  const dt=Math.min((ts-lt)/1000,.05);lt=ts;fc++;ft+=dt;detT+=dt;
+  if(ft>=1){fps=fc;fc=0;ft=0}
+
+  // Detect hands every ~66ms (15fps) for performance
+  if(detT>.066){detectHands();detT=0}
+
+  mx.fillStyle='rgba(0,0,0,.06)';mx.fillRect(0,0,W,H);
+  drawBg(dt);physics(dt);
+  for(let i=0;i<cnt;i++){pool[i].update();pool[i].draw(mx)}
+  drawConn();drawBloom();drawHandOverlay();
+
+  st.innerHTML=`FPS ${fps} · ${cnt} 粒子`;
+  if(gs.type!==G.NONE){lbl.textContent=GN[gs.type];lbl.classList.add('show')}
+  else{lbl.classList.remove('show')}
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+/* ── Start camera immediately ── */
+startCamera();
+
+/* ══════════════════════════════════════
    MOUSE / TOUCH FALLBACK
-   ══════════════════════════════════════════ */
+   ══════════════════════════════════════ */
 let mx2=W/2,my2=H/2,mDown=false,lx=mx2,ly=my2;
 mc.style.pointerEvents='auto';mc.style.zIndex='4';
-mc.addEventListener('mousemove',e=>{lx=mx2;ly=my2;mx2=e.clientX;my2=e.clientY;if(camOn)return;
-  gs.hc=[{x:mx2/W,y:my2/H}];gs.pp=[{x:mx2/W,y:my2/H}];
-  const dx=mx2-lx,dy=my2-ly,sp=Math.sqrt(dx*dx+dy*dy);
+mc.addEventListener('mousemove',e=>{
+  lx=mx2;ly=my2;mx2=e.clientX;my2=e.clientY;if(camOn&&gs.hc.length)return;
+  gs.hc=[{x:mx2/W,y:my2/H}];const dx=mx2-lx,dy=my2-ly,sp=Math.hypot(dx,dy);
+  gs.dir={x:dx*.01,y:dy*.01};
   if(mDown)setGesture(G.FIST);else if(sp>8)setGesture(G.OPEN);
-  else{setGesture(G.POINT);gs.pd=[{x:dx*.01,y:dy*.01}]}});
-mc.addEventListener('mousedown',()=>{mDown=true;if(!camOn)setGesture(G.FIST)});
-mc.addEventListener('mouseup',()=>{mDown=false;if(!camOn)setGesture(G.OPEN)});
+  else{setGesture(G.POINT)}
+});
+mc.addEventListener('mousedown',()=>{mDown=true;if(!camOn||!gs.hc.length)setGesture(G.FIST)});
+mc.addEventListener('mouseup',()=>{mDown=false;if(!camOn||!gs.hc.length)setGesture(G.OPEN)});
 mc.addEventListener('mouseleave',()=>{if(!camOn){setGesture(G.NONE);gs.hc=[]}});
-mc.addEventListener('touchmove',e=>{e.preventDefault();const t=e.touches[0];lx=mx2;ly=my2;mx2=t.clientX;my2=t.clientY;
-  if(camOn)return;gs.hc=[{x:mx2/W,y:my2/H}];gs.pp=[{x:mx2/W,y:my2/H}];setGesture(G.PINCH)},{passive:false});
+mc.addEventListener('touchmove',e=>{e.preventDefault();const t=e.touches[0];
+  lx=mx2;ly=my2;mx2=t.clientX;my2=t.clientY;
+  if(camOn&&gs.hc.length)return;gs.hc=[{x:mx2/W,y:my2/H}];setGesture(G.PINCH)},{passive:false});
 mc.addEventListener('touchend',()=>{if(!camOn){setGesture(G.NONE);gs.hc=[]}});
 const km={'0':G.NONE,'1':G.OPEN,'2':G.FIST,'3':G.PINCH,'4':G.POINT,'5':G.TWO};
 addEventListener('keydown',e=>{if(km[e.key]!==undefined)setGesture(km[e.key]);
