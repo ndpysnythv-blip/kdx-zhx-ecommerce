@@ -74,36 +74,75 @@ try {
   alipayConfig = { enabled: false };
 }
 
-function getAIConfig() {
+function getAIConfig(type = 'chatbot') {
   try {
     var configPath = path.join(__dirname, '..', 'data', 'ai-config.json');
     if (fs.existsSync(configPath)) {
       var data = fs.readFileSync(configPath, 'utf8');
-      return JSON.parse(data);
+      var config = JSON.parse(data);
+      
+      // 新格式支持
+      if (config.system && config.chatbot) {
+        return type === 'system' ? config.system : config.chatbot;
+      }
+      
+      // 旧格式向后兼容
+      return config;
     }
-  } catch(e) {
+  } catch (e) {
     console.error('read ai-config failed:', e.message);
   }
-  return {
+  
+  // 默认配置
+  var defaultConfig = {
     apiKey: process.env.ZHIPU_API_KEY || process.env.AI_API_KEY || '',
     apiUrl: process.env.AI_API_URL || 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
     model: process.env.AI_MODEL || 'glm-4',
-    temperature: 0.8,
-    maxTokens: 500,
-    systemPrompt: '你是KDX丨ZHX官方商城的智能客服小K。用自然、友好的方式回答用户问题，像真人客服一样对话。回答简洁，可以带emoji。不要说"作为AI"之类的话，就当自己是真正的客服。'
+    temperature: type === 'system' ? 0.3 : 0.8,
+    maxTokens: type === 'system' ? 200 : 500,
+    systemPrompt: type === 'system' 
+      ? '你是一个手机号验证助手。' 
+      : '你是KDX丨ZHX官方商城的智能客服小K。用自然、友好的方式回答用户问题，像真人客服一样对话。回答简洁，可以带emoji。不要说"作为AI"之类的话，就当自己是真正的客服。'
   };
+  return defaultConfig;
 }
 
-function saveAIConfig(config) {
+function saveAIConfig(config, type = 'chatbot') {
   try {
     var configPath = path.join(__dirname, '..', 'data', 'ai-config.json');
     var dir = path.dirname(configPath);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+    
+    // 读取现有配置
+    var fullConfig = { system: {}, chatbot: {} };
+    if (fs.existsSync(configPath)) {
+      try {
+        var existingData = fs.readFileSync(configPath, 'utf8');
+        fullConfig = JSON.parse(existingData);
+        
+        // 确保新格式结构
+        if (!fullConfig.system) fullConfig.system = {};
+        if (!fullConfig.chatbot) fullConfig.chatbot = {};
+      } catch (e) {
+        // 解析失败，用默认结构
+      }
+    }
+    
+    // 更新指定类型的配置
+    if (type === 'system') {
+      fullConfig.system = Object.assign(fullConfig.system || {}, config);
+    } else if (type === 'chatbot') {
+      fullConfig.chatbot = Object.assign(fullConfig.chatbot || {}, config);
+    } else {
+      // 兼容旧格式保存（保存到chatbot）
+      fullConfig.chatbot = Object.assign(fullConfig.chatbot || {}, config);
+    }
+    
+    fs.writeFileSync(configPath, JSON.stringify(fullConfig, null, 2));
     return true;
-  } catch(e) {
+  } catch (e) {
     console.error('save ai-config failed:', e.message);
     return false;
   }
@@ -775,28 +814,102 @@ if (db) {
 }
 
 app.get('/api/ai-config', function(req, res) {
-  var config = getAIConfig();
+  var type = req.query.type || 'chatbot';
+  var config = getAIConfig(type);
   var maskedKey = '';
   if (config.apiKey) {
     maskedKey = config.apiKey.substring(0, 8) + '****' + config.apiKey.substring(config.apiKey.length - 4);
   }
+  
+  // 获取两个配置的完整信息
+  var systemConfig = getAIConfig('system');
+  var chatbotConfig = getAIConfig('chatbot');
+  
+  var maskedSystemKey = '';
+  if (systemConfig.apiKey) {
+    maskedSystemKey = systemConfig.apiKey.substring(0, 8) + '****' + systemConfig.apiKey.substring(systemConfig.apiKey.length - 4);
+  }
+  
+  var maskedChatbotKey = '';
+  if (chatbotConfig.apiKey) {
+    maskedChatbotKey = chatbotConfig.apiKey.substring(0, 8) + '****' + chatbotConfig.apiKey.substring(chatbotConfig.apiKey.length - 4);
+  }
+  
   res.json({
+    // 当前类型的配置（向后兼容）
     apiUrl: config.apiUrl,
     model: config.model,
-    modelName: config.model, // 向后兼容
+    modelName: config.model,
     temperature: config.temperature,
     maxTokens: config.maxTokens,
     systemPrompt: config.systemPrompt,
     hasApiKey: !!config.apiKey,
     apiKeyMasked: maskedKey,
     configured: !!config.apiKey,
-    apiKey: maskedKey // 向后兼容
+    apiKey: maskedKey,
+    
+    // 双配置完整信息
+    system: {
+      apiUrl: systemConfig.apiUrl,
+      model: systemConfig.model,
+      temperature: systemConfig.temperature,
+      maxTokens: systemConfig.maxTokens,
+      systemPrompt: systemConfig.systemPrompt,
+      hasApiKey: !!systemConfig.apiKey,
+      apiKeyMasked: maskedSystemKey
+    },
+    chatbot: {
+      apiUrl: chatbotConfig.apiUrl,
+      model: chatbotConfig.model,
+      temperature: chatbotConfig.temperature,
+      maxTokens: chatbotConfig.maxTokens,
+      systemPrompt: chatbotConfig.systemPrompt,
+      hasApiKey: !!chatbotConfig.apiKey,
+      apiKeyMasked: maskedChatbotKey
+    }
   });
 });
 
 app.post('/api/ai-config', function(req, res) {
   try {
-    var currentConfig = getAIConfig();
+    var type = req.query.type || 'chatbot';
+    
+    // 处理双配置保存
+    if (req.body.system || req.body.chatbot) {
+      // 保存system配置
+      if (req.body.system) {
+        var sysConfig = getAIConfig('system');
+        if (req.body.system.apiKey && req.body.system.apiKey !== '****') {
+          sysConfig.apiKey = req.body.system.apiKey;
+        }
+        if (req.body.system.apiUrl) sysConfig.apiUrl = req.body.system.apiUrl;
+        if (req.body.system.model) sysConfig.model = req.body.system.model;
+        if (req.body.system.temperature !== undefined) sysConfig.temperature = parseFloat(req.body.system.temperature);
+        if (req.body.system.maxTokens !== undefined) sysConfig.maxTokens = parseInt(req.body.system.maxTokens);
+        if (req.body.system.systemPrompt !== undefined) sysConfig.systemPrompt = req.body.system.systemPrompt;
+        saveAIConfig(sysConfig, 'system');
+      }
+      
+      // 保存chatbot配置
+      if (req.body.chatbot) {
+        var chatConfig = getAIConfig('chatbot');
+        if (req.body.chatbot.apiKey && req.body.chatbot.apiKey !== '****') {
+          chatConfig.apiKey = req.body.chatbot.apiKey;
+        }
+        if (req.body.chatbot.apiUrl) chatConfig.apiUrl = req.body.chatbot.apiUrl;
+        if (req.body.chatbot.model) chatConfig.model = req.body.chatbot.model;
+        if (req.body.chatbot.temperature !== undefined) chatConfig.temperature = parseFloat(req.body.chatbot.temperature);
+        if (req.body.chatbot.maxTokens !== undefined) chatConfig.maxTokens = parseInt(req.body.chatbot.maxTokens);
+        if (req.body.chatbot.systemPrompt !== undefined) chatConfig.systemPrompt = req.body.chatbot.systemPrompt;
+        saveAIConfig(chatConfig, 'chatbot');
+      }
+      
+      res.json({ success: true, message: 'AI配置已保存', ok: true });
+      return;
+    }
+    
+    // 兼容旧格式单配置保存
+    var currentConfig = getAIConfig(type);
     
     // 处理API密钥
     if (req.body.apiKey && req.body.apiKey !== '****') {
@@ -836,7 +949,7 @@ app.post('/api/ai-config', function(req, res) {
       currentConfig.systemPrompt = req.body.systemPrompt;
     }
     
-    var result = saveAIConfig(currentConfig);
+    var result = saveAIConfig(currentConfig, type);
     if (result) {
       res.json({ success: true, message: 'AI配置已保存', ok: true });
     } else {
@@ -850,7 +963,8 @@ app.post('/api/ai-config', function(req, res) {
 
 app.post('/api/ai/test', async function(req, res) {
   try {
-    var config = getAIConfig();
+    var type = req.query.type || 'chatbot';
+    var config = getAIConfig(type);
     
     // 如果请求带了配置，优先用请求里的
     if (req.body && req.body.apiKey && req.body.apiKey !== '****') {
@@ -937,7 +1051,7 @@ app.post('/api/ai/test', async function(req, res) {
 // 手机号验证API - 用于登录时的AI验证
 app.post('/api/ai/phone-verify', async function(req, res) {
   try {
-    var config = getAIConfig();
+    var config = getAIConfig('system'); // 使用system配置
     const { phone } = req.body;
 
     if (!phone) {
@@ -956,7 +1070,7 @@ app.post('/api/ai/phone-verify', async function(req, res) {
         const verifyMessages = [
           {
             role: 'system',
-            content: '你是一个手机号验证助手。用户会提供一个中国大陆手机号，请验证：1. 格式是否正确 2. 是否看起来是真实有效手机号。请以JSON格式回复，包含：verified（布尔值）、valid（布尔值）、message（验证结果说明）、details（详细信息）'
+            content: config.systemPrompt || '你是一个手机号验证助手。用户会提供一个中国大陆手机号，请验证：1. 格式是否正确 2. 是否看起来是真实有效手机号。请以JSON格式回复，包含：verified（布尔值）、valid（布尔值）、message（验证结果说明）、details（详细信息）'
           },
           {
             role: 'user',
@@ -973,8 +1087,8 @@ app.post('/api/ai/phone-verify', async function(req, res) {
           body: JSON.stringify({
             model: config.model,
             messages: verifyMessages,
-            temperature: 0.3,
-            max_tokens: 200
+            temperature: config.temperature || 0.3,
+            max_tokens: config.maxTokens || 200
           })
         });
 
@@ -1037,7 +1151,7 @@ app.post('/api/ai/verify-phone', async function(req, res) {
 
 app.post('/api/ai', async function(req, res) {
   try {
-    var config = getAIConfig();
+    var config = getAIConfig('chatbot'); // 使用chatbot配置
     const { messages } = req.body;
 
     const apiMessages = [{ role: 'system', content: config.systemPrompt || '你是KDX丨ZHX官方商城的智能客服小K。' }];
