@@ -3,8 +3,6 @@
     { "source": "/api/:path*", "destination": "/api/index" },
     { "source": "/(.*)", "destination": "/$1" }
   ],
-  "buildCommand": "npm run build",
-  "outputDirectory": ".",
   "functions": {
     "api/index.js": {
       "maxDuration": 60
