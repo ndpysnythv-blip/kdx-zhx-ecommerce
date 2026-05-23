@@ -1,6 +1,8 @@
+
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 
+// ==================== 安全配置 ====================
 const SECURITY_CONFIG = {
   bcryptRounds: 12,
   rateLimitWindow: 15 * 60 * 1000,
@@ -10,9 +12,11 @@ const SECURITY_CONFIG = {
   jwtSecret: crypto.randomBytes(64).toString('hex')
 };
 
+// ==================== 请求记录存储 ====================
 const requestRecords = new Map();
 const loginAttempts = new Map();
 
+// ==================== 密码加密 ====================
 async function hashPassword(password) {
   const salt = await bcrypt.genSalt(SECURITY_CONFIG.bcryptRounds);
   return await bcrypt.hash(password, salt);
@@ -22,6 +26,7 @@ async function verifyPassword(password, hash) {
   return await bcrypt.compare(password, hash);
 }
 
+// ==================== XSS防护 ====================
 function sanitizeInput(input) {
   if (typeof input !== 'string') return input;
   return input
@@ -38,24 +43,19 @@ function sanitizeObject(obj) {
   }
   
   if (Array.isArray(obj)) {
-    var result = [];
-    for (var i = 0; i < obj.length; i++) {
-      result.push(sanitizeObject(obj[i]));
-    }
-    return result;
+    return obj.map(item => sanitizeObject(item));
   }
   
   const sanitized = {};
-  var keys = Object.keys(obj);
-  for (var i = 0; i < keys.length; i++) {
-    var key = keys[i];
-    sanitized[key] = sanitizeObject(obj[key]);
+  for (const [key, value] of Object.entries(obj)) {
+    sanitized[key] = sanitizeObject(value);
   }
   return sanitized;
 }
 
+// ==================== 输入验证 ====================
 const VALIDATORS = {
-  phone: /^1\d{10}$/,
+  phone: /^1[3-9]\d{9}$/,
   email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
   username: /^[a-zA-Z0-9_\u4e00-\u9fa5]{2,20}$/,
   password: /^.{4,50}$/
@@ -77,6 +77,7 @@ function validatePassword(password) {
   return VALIDATORS.password.test(password);
 }
 
+// ==================== 速率限制 ====================
 function getClientKey(req) {
   return req.ip || req.socket.remoteAddress || 'unknown';
 }
@@ -89,21 +90,15 @@ function checkRateLimit(key, maxRequests, windowMs) {
     requestRecords.set(key, []);
   }
   
-  var requests = requestRecords.get(key);
-  var filteredRequests = [];
-  for (var i = 0; i < requests.length; i++) {
-    if (requests[i] > windowStart) {
-      filteredRequests.push(requests[i]);
-    }
-  }
-  requestRecords.set(key, filteredRequests);
+  const requests = requestRecords.get(key).filter(time => time > windowStart);
+  requestRecords.set(key, requests);
   
-  if (filteredRequests.length >= maxRequests) {
-    return { allowed: false, resetIn: windowMs - (now - filteredRequests[0]) };
+  if (requests.length >= maxRequests) {
+    return { allowed: false, resetIn: windowMs - (now - requests[0]) };
   }
   
-  filteredRequests.push(now);
-  return { allowed: true, remaining: maxRequests - filteredRequests.length };
+  requests.push(now);
+  return { allowed: true, remaining: maxRequests - requests.length };
 }
 
 function checkLoginAttempts(key) {
@@ -114,24 +109,18 @@ function checkLoginAttempts(key) {
     loginAttempts.set(key, []);
   }
   
-  var attempts = loginAttempts.get(key);
-  var filteredAttempts = [];
-  for (var i = 0; i < attempts.length; i++) {
-    if (attempts[i] > windowStart) {
-      filteredAttempts.push(attempts[i]);
-    }
-  }
-  loginAttempts.set(key, filteredAttempts);
+  const attempts = loginAttempts.get(key).filter(time => time > windowStart);
+  loginAttempts.set(key, attempts);
   
-  if (filteredAttempts.length >= SECURITY_CONFIG.maxLoginAttempts) {
+  if (attempts.length >= SECURITY_CONFIG.maxLoginAttempts) {
     return { allowed: false, retryAfter: SECURITY_CONFIG.maxLoginAttempts };
   }
   
-  return { allowed: true, attempts: filteredAttempts.length };
+  return { allowed: true, attempts: attempts.length };
 }
 
 function recordFailedLogin(key) {
-  var attempts = loginAttempts.get(key) || [];
+  const attempts = loginAttempts.get(key) || [];
   attempts.push(Date.now());
   loginAttempts.set(key, attempts);
 }
@@ -140,9 +129,15 @@ function resetLoginAttempts(key) {
   loginAttempts.delete(key);
 }
 
+// ==================== 数据加密 ====================
+function deriveKey(secret) {
+  return crypto.createHash('sha256').update(secret).digest();
+}
+
 function encryptData(data, secret) {
   const iv = crypto.randomBytes(16);
-  const cipher = crypto.createCipher('aes-256-cbc', secret);
+  const key = deriveKey(secret);
+  const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
   let encrypted = cipher.update(JSON.stringify(data), 'utf8', 'hex');
   encrypted += cipher.final('hex');
   return iv.toString('hex') + ':' + encrypted;
@@ -152,21 +147,24 @@ function decryptData(encryptedData, secret) {
   const parts = encryptedData.split(':');
   const iv = Buffer.from(parts[0], 'hex');
   const encrypted = parts[1];
-  const decipher = crypto.createDecipher('aes-256-cbc', secret);
+  const key = deriveKey(secret);
+  const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
   let decrypted = decipher.update(encrypted, 'hex', 'utf8');
   decrypted += decipher.final('utf8');
   return JSON.parse(decrypted);
 }
 
+// ==================== 安全头 ====================
 function setSecurityHeaders(res) {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('Content-Security-Policy', "default-src 'self' 'unsafe-inline' 'unsafe-eval' data:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://cdn.staticfile.org; img-src 'self' data: https:; font-src 'self' data: https://cdn.staticfile.org;");
+  res.setHeader('Content-Security-Policy', "default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data:; img-src 'self' data: https:;");
   res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
 }
 
+// ==================== 防火墙/爬虫检测 ====================
 const SUSPICIOUS_USER_AGENTS = [
   'sqlmap', 'nmap', 'nikto', 'nessus', 'havij', 'pangolin', 'hydra', 'zap',
   'w3af', 'arachni', 'skipfish', 'dirbuster', 'gobuster', 'dirb', 'wpscan',
@@ -179,86 +177,58 @@ const SUSPICIOUS_USER_AGENTS = [
 function isSuspiciousRequest(req) {
   const ua = (req.headers['user-agent'] || '').toLowerCase();
   
-  for (var i = 0; i < SUSPICIOUS_USER_AGENTS.length; i++) {
-    var keyword = SUSPICIOUS_USER_AGENTS[i];
-    if (ua.indexOf(keyword) !== -1) {
-      return { suspicious: true, reason: '检测到恶意User-Agent: ' + keyword };
+  for (const keyword of SUSPICIOUS_USER_AGENTS) {
+    if (ua.includes(keyword)) {
+      return { suspicious: true, reason: `检测到恶意User-Agent: ${keyword}` };
     }
   }
   
-  if (req.headers['x-forwarded-for'] && req.headers['x-forwarded-for'].indexOf(',') !== -1) {
+  if (req.headers['x-forwarded-for'] && req.headers['x-forwarded-for'].includes(',')) {
     return { suspicious: true, reason: '检测到可疑代理' };
   }
   
   return { suspicious: false };
 }
 
+// ==================== 清理过期记录 ====================
 function cleanup() {
   const now = Date.now();
   const cutoff = now - 2 * SECURITY_CONFIG.rateLimitWindow;
   
-  var keysToDelete = [];
-  var keys = Array.from(requestRecords.keys());
-  for (var i = 0; i < keys.length; i++) {
-    var key = keys[i];
-    var records = requestRecords.get(key);
-    var filtered = [];
-    for (var j = 0; j < records.length; j++) {
-      if (records[j] > cutoff) {
-        filtered.push(records[j]);
-      }
-    }
+  for (const [key, records] of requestRecords.entries()) {
+    const filtered = records.filter(time => time > cutoff);
     if (filtered.length === 0) {
-      keysToDelete.push(key);
-    } else {
-      requestRecords.set(key, filtered);
+      requestRecords.delete(key);
     }
-  }
-  for (var k = 0; k < keysToDelete.length; k++) {
-    requestRecords.delete(keysToDelete[k]);
   }
   
-  var loginKeysToDelete = [];
-  var loginKeys = Array.from(loginAttempts.keys());
-  for (var l = 0; l < loginKeys.length; l++) {
-    var key2 = loginKeys[l];
-    var attempts2 = loginAttempts.get(key2);
-    var filtered2 = [];
-    for (var m = 0; m < attempts2.length; m++) {
-      if (attempts2[m] > cutoff) {
-        filtered2.push(attempts2[m]);
-      }
+  for (const [key, attempts] of loginAttempts.entries()) {
+    const filtered = attempts.filter(time => time > cutoff);
+    if (filtered.length === 0) {
+      loginAttempts.delete(key);
     }
-    if (filtered2.length === 0) {
-      loginKeysToDelete.push(key2);
-    } else {
-      loginAttempts.set(key2, filtered2);
-    }
-  }
-  for (var n = 0; n < loginKeysToDelete.length; n++) {
-    loginAttempts.delete(loginKeysToDelete[n]);
   }
 }
 
 setInterval(cleanup, 30 * 60 * 1000);
 
 module.exports = {
-  SECURITY_CONFIG: SECURITY_CONFIG,
-  hashPassword: hashPassword,
-  verifyPassword: verifyPassword,
-  sanitizeInput: sanitizeInput,
-  sanitizeObject: sanitizeObject,
-  validatePhone: validatePhone,
-  validateEmail: validateEmail,
-  validateUsername: validateUsername,
-  validatePassword: validatePassword,
-  checkRateLimit: checkRateLimit,
-  checkLoginAttempts: checkLoginAttempts,
-  recordFailedLogin: recordFailedLogin,
-  resetLoginAttempts: resetLoginAttempts,
-  getClientKey: getClientKey,
-  encryptData: encryptData,
-  decryptData: decryptData,
-  setSecurityHeaders: setSecurityHeaders,
-  isSuspiciousRequest: isSuspiciousRequest
+  SECURITY_CONFIG,
+  hashPassword,
+  verifyPassword,
+  sanitizeInput,
+  sanitizeObject,
+  validatePhone,
+  validateEmail,
+  validateUsername,
+  validatePassword,
+  checkRateLimit,
+  checkLoginAttempts,
+  recordFailedLogin,
+  resetLoginAttempts,
+  getClientKey,
+  encryptData,
+  decryptData,
+  setSecurityHeaders,
+  isSuspiciousRequest
 };
