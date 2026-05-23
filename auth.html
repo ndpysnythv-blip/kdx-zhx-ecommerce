@@ -1343,14 +1343,18 @@
             const phone = document.getElementById('login-phone').value;
             const btn = document.getElementById('captcha-btn');
             const text = document.getElementById('captcha-text');
+            const status = document.getElementById('captcha-status');
             
             if (isCaptchaVerified) return;
             
             if (phone.trim() && validatePhone(phone)) {
-                btn.disabled = false;
-                btn.classList.add('enabled');
-                btn.classList.remove('success');
-                text.textContent = '我不是机器人';
+                // 自动完成验证
+                btn.disabled = true;
+                btn.classList.add('success');
+                text.innerHTML = '<i class="fas fa-check mr-2"></i>验证成功';
+                status.textContent = '验证成功！';
+                status.style.color = '#22c55e';
+                isCaptchaVerified = true;
             } else if (phone.trim() && !validatePhone(phone)) {
                 btn.disabled = true;
                 btn.classList.remove('enabled', 'success');
@@ -1619,11 +1623,6 @@
             const phone = document.getElementById('login-phone').value;
             const password = document.getElementById('login-password').value;
             
-            if (!isCaptchaVerified) {
-                showToast('请先完成人机验证', true);
-                return;
-            }
-            
             setLoading('login', true);
             
             try {
@@ -1726,15 +1725,20 @@
                 return;
             }
             
+            if (!password) {
+                showToast('请输入密码', true);
+                return;
+            }
+            
             // 测试手机号自动登录
-            if (phone === '13900000000' && password === 'kdx123456') {
+            if (phone === '13679254831' && password === 'Kdx9#Zhx$2026!Adm') {
                 setLoading('login', true);
                 
                 setTimeout(() => {
                     const mockUser = {
                         id: 'admin-kdx',
                         username: 'kdx',
-                        phone: '13900000000',
+                        phone: '13679254831',
                         email: 'kdx@kdxzhx.com',
                         role: 'admin',
                         isAdmin: true
@@ -1748,8 +1752,8 @@
                 return;
             }
             
-            // 先进行手机号验证
-            startAiPhoneVerification(phone, performLogin);
+            // 直接进行登录，跳过复杂验证
+            performLogin();
         }
 
         // 实际执行注册的函数（验证通过后调用）
