@@ -503,6 +503,13 @@ if (db) {
 
   app.post('/api/sms/send', async function(req, res) {
     try {
+      if (security) {
+        var clientKey = security.getClientKey(req);
+        var rateCheck = security.checkRateLimit('sms:' + clientKey, 5, 60 * 1000);
+        if (!rateCheck.allowed) {
+          return res.status(429).json({ error: '发送验证码过于频繁，请稍后再试' });
+        }
+      }
       const phone = req.body.phone;
       const type = req.body.type;
       const email = req.body.email;
@@ -520,7 +527,7 @@ if (db) {
       if (notificationService && email) {
         console.log('邮件发送功能已移除，跳过邮件通知');
       }
-      res.json({ success: true, message: '验证码已发送', code: code });
+      res.json({ success: true, message: '验证码已发送' });
     } catch(e) {
       res.status(500).json({ error: '发送验证码失败' });
     }
@@ -628,6 +635,13 @@ if (db) {
 
   app.post('/api/register', async function(req, res) {
     try {
+      if (security) {
+        var clientKey = security.getClientKey(req);
+        var rateCheck = security.checkRateLimit('register:' + clientKey, 5, 15 * 60 * 1000);
+        if (!rateCheck.allowed) {
+          return res.status(429).json({ error: '注册过于频繁，请稍后再试' });
+        }
+      }
       const email = req.body.email;
       const phone = req.body.phone;
       const password = req.body.password;
@@ -638,6 +652,12 @@ if (db) {
       var sPass = security ? security.sanitizeInput(password) : password;
       if (!sPhone) {
         return res.status(400).json({ error: '请输入手机号' });
+      }
+      if (security && !security.validatePhone(sPhone)) {
+        return res.status(400).json({ error: '请输入正确的11位手机号' });
+      }
+      if (sEmail && security && !security.validateEmail(sEmail)) {
+        return res.status(400).json({ error: '请输入正确的邮箱地址' });
       }
       if (!sPass || sPass.length < 4) {
         return res.status(400).json({ error: '密码至少4位' });
@@ -692,6 +712,17 @@ if (db) {
 
   app.post('/api/login', async function(req, res) {
     try {
+      if (security) {
+        var clientKey = security.getClientKey(req);
+        var rateCheck = security.checkRateLimit('login:' + clientKey, 10, 15 * 60 * 1000);
+        if (!rateCheck.allowed) {
+          return res.status(429).json({ error: '登录尝试过于频繁，请稍后再试' });
+        }
+        var loginCheck = security.checkLoginAttempts(clientKey);
+        if (!loginCheck.allowed) {
+          return res.status(429).json({ error: '登录失败次数过多，请15分钟后再试' });
+        }
+      }
       const username = req.body.username;
       const password = req.body.password;
       const loginType = req.body.loginType;
@@ -727,8 +758,10 @@ if (db) {
         valid = sPass === user.password;
       }
       if (!valid) {
+        if (security) security.recordFailedLogin(security.getClientKey(req));
         return res.status(401).json({ error: '账号或密码错误' });
       }
+      if (security) security.resetLoginAttempts(security.getClientKey(req));
       var userWithoutPassword = {};
       for (var key in user) {
         if (key !== 'password') {
@@ -765,7 +798,10 @@ if (db) {
         if (!user) {
           return res.status(404).json({ error: '该邮箱未注册' });
         }
-        res.json({ password: user.password });
+        var resetCode = generateSmsCode();
+        smsCodes.set('reset:' + email, { code: resetCode, sentAt: Date.now(), type: 'reset', userId: user.id });
+        setTimeout(function() { smsCodes.delete('reset:' + email); }, 300000);
+        res.json({ success: true, message: '重置验证码已发送到您的邮箱', code: resetCode });
       } else if (type === 'order') {
         if (!orderNo) {
           return res.status(400).json({ error: '请输入订单号' });
@@ -792,12 +828,54 @@ if (db) {
         if (!foundUser) {
           return res.status(404).json({ error: '未找到关联账号' });
         }
-        res.json({ phone: foundUser.phone, password: foundUser.password });
+        var resetCode = generateSmsCode();
+        smsCodes.set('reset:' + foundUser.phone, { code: resetCode, sentAt: Date.now(), type: 'reset', userId: foundUser.id });
+        setTimeout(function() { smsCodes.delete('reset:' + foundUser.phone); }, 300000);
+        res.json({ success: true, message: '重置验证码已发送', phone: foundUser.phone ? foundUser.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2') : '', code: resetCode });
       } else {
         res.status(400).json({ error: '无效的找回方式' });
       }
     } catch(e) {
       res.status(500).json({ error: '找回密码失败' });
+    }
+  });
+
+  app.post('/api/reset-password', async function(req, res) {
+    try {
+      const identifier = req.body.email || req.body.phone;
+      const code = req.body.code;
+      const newPassword = req.body.newPassword;
+      if (!identifier || !code || !newPassword) {
+        return res.status(400).json({ error: '请提供完整信息' });
+      }
+      if (newPassword.length < 4) {
+        return res.status(400).json({ error: '密码至少4位' });
+      }
+      var stored = smsCodes.get('reset:' + identifier);
+      if (!stored || stored.code !== code) {
+        return res.status(400).json({ error: '验证码错误或已过期' });
+      }
+      smsCodes.delete('reset:' + identifier);
+      const users = db.getUsers();
+      var userIdx = -1;
+      for (var i = 0; i < users.length; i++) {
+        if (users[i].id === stored.userId) {
+          userIdx = i;
+          break;
+        }
+      }
+      if (userIdx === -1) {
+        return res.status(404).json({ error: '用户不存在' });
+      }
+      var hashed = newPassword;
+      if (security) {
+        hashed = await security.hashPassword(newPassword);
+      }
+      users[userIdx].password = hashed;
+      db.saveUsers(users);
+      res.json({ success: true, message: '密码重置成功' });
+    } catch(e) {
+      res.status(500).json({ error: '重置密码失败' });
     }
   });
 
@@ -1384,18 +1462,18 @@ function updateOrderPrice(orderId, newPrice) {
   try {
     if (!db) return { success: false, message: '数据库不可用' };
     const orders = db.getOrders();
-    var found = false;
+    var foundOrder = null;
     for (var i = 0; i < orders.length; i++) {
       if (orders[i].id === orderId || orders[i].alipayTradeNo === orderId) {
         orders[i].total = parseFloat(newPrice);
         orders[i].updatedAt = new Date().toISOString();
-        found = true;
+        foundOrder = orders[i];
         break;
       }
     }
-    if (found) {
+    if (foundOrder) {
       db.saveOrders(orders);
-      return { success: true, message: '订单价格已更新', order: orders[i] };
+      return { success: true, message: '订单价格已更新', order: foundOrder };
     }
     return { success: false, message: '未找到订单' };
   } catch(e) {
@@ -1408,18 +1486,18 @@ function updateOrderStatus(orderId, newStatus) {
   try {
     if (!db) return { success: false, message: '数据库不可用' };
     const orders = db.getOrders();
-    var found = false;
+    var foundOrder = null;
     for (var i = 0; i < orders.length; i++) {
       if (orders[i].id === orderId || orders[i].alipayTradeNo === orderId) {
         orders[i].status = newStatus;
         orders[i].updatedAt = new Date().toISOString();
-        found = true;
+        foundOrder = orders[i];
         break;
       }
     }
-    if (found) {
+    if (foundOrder) {
       db.saveOrders(orders);
-      return { success: true, message: '订单状态已更新', order: orders[i] };
+      return { success: true, message: '订单状态已更新', order: foundOrder };
     }
     return { success: false, message: '未找到订单' };
   } catch(e) {
@@ -1448,18 +1526,18 @@ function updateProductPrice(productId, newPrice) {
   try {
     if (!db) return { success: false, message: '数据库不可用' };
     const products = db.getProducts();
-    var found = false;
+    var foundProduct = null;
     for (var i = 0; i < products.length; i++) {
       if (products[i].id === productId) {
         products[i].price = parseFloat(newPrice);
         products[i].updatedAt = new Date().toISOString();
-        found = true;
+        foundProduct = products[i];
         break;
       }
     }
-    if (found) {
+    if (foundProduct) {
       db.saveProducts(products);
-      return { success: true, message: '商品价格已更新', product: products[i] };
+      return { success: true, message: '商品价格已更新', product: foundProduct };
     }
     return { success: false, message: '未找到商品' };
   } catch(e) {
