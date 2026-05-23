@@ -8,8 +8,60 @@
     "role": "admin",
     "isAdmin": true,
     "createdAt": "2026-01-01T00:00:00.000Z",
-    "autoLoginEnabled": false,
-    "lastLoginAt": null,
-    "lastLoginIp": null
+    "autoLoginEnabled": true,
+    "lastLoginAt": "2026-05-23T05:10:31.049Z",
+    "lastLoginIp": "127.0.0.1",
+    "loginHistory": [
+      {
+        "ip": "127.0.0.1",
+        "userAgent": "curl/8.5.0",
+        "deviceType": "desktop",
+        "timestamp": "2026-05-23T04:58:01.295Z",
+        "isSuccessful": true,
+        "id": "ebe0a8b3-4fa7-4942-9519-46ab993188da"
+      },
+      {
+        "ip": "127.0.0.1",
+        "userAgent": "curl/8.5.0",
+        "deviceType": "desktop",
+        "timestamp": "2026-05-23T05:10:30.716Z",
+        "isSuccessful": true,
+        "id": "511e6b6a-1107-4ba6-b99f-b97ef426d610"
+      }
+    ],
+    "lastLoginLocation": {
+      "ip": "127.0.0.1",
+      "userAgent": "curl/8.5.0",
+      "deviceType": "desktop",
+      "timestamp": "2026-05-23T05:10:30.716Z"
+    }
+  },
+  {
+    "id": "50494c35-4d38-4459-a017-89e7e7a88cb2",
+    "username": "test@example.com",
+    "password": "$2a$12$IkCUqi6GuiyI3XKLp3Ju8./H6s6cO/8z.6T0UFsFKJrbkq/J0dDhi",
+    "email": "test@example.com",
+    "phone": "13900001111",
+    "role": "user",
+    "createdAt": "2026-05-23T05:11:38.476Z",
+    "loginHistory": [
+      {
+        "ip": "127.0.0.1",
+        "userAgent": "curl/8.5.0",
+        "deviceType": "desktop",
+        "timestamp": "2026-05-23T05:11:39.608Z",
+        "isSuccessful": true,
+        "id": "60e70f2d-aa48-46a0-9351-c4d1cbfe1c68"
+      }
+    ],
+    "lastLoginAt": "2026-05-23T05:11:39.941Z",
+    "lastLoginLocation": {
+      "ip": "127.0.0.1",
+      "userAgent": "curl/8.5.0",
+      "deviceType": "desktop",
+      "timestamp": "2026-05-23T05:11:39.608Z"
+    },
+    "lastLoginIp": "127.0.0.1",
+    "autoLoginEnabled": true
   }
 ]
