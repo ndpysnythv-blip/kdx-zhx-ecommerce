@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 const uuid = require('uuid');
 const helmet = require('helmet');
 
@@ -71,6 +72,41 @@ try {
 } catch(e) {
   console.error('alipay load failed:', e.message);
   alipayConfig = { enabled: false };
+}
+
+function getAIConfig() {
+  try {
+    var configPath = path.join(__dirname, '..', 'data', 'ai-config.json');
+    if (fs.existsSync(configPath)) {
+      var data = fs.readFileSync(configPath, 'utf8');
+      return JSON.parse(data);
+    }
+  } catch(e) {
+    console.error('read ai-config failed:', e.message);
+  }
+  return {
+    apiKey: process.env.ZHIPU_API_KEY || process.env.AI_API_KEY || '',
+    apiUrl: process.env.AI_API_URL || 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
+    model: process.env.AI_MODEL || 'glm-4',
+    temperature: 0.8,
+    maxTokens: 500,
+    systemPrompt: '你是KDX丨ZHX官方商城的智能客服小K。用自然、友好的方式回答用户问题，像真人客服一样对话。回答简洁，可以带emoji。不要说"作为AI"之类的话，就当自己是真正的客服。'
+  };
+}
+
+function saveAIConfig(config) {
+  try {
+    var configPath = path.join(__dirname, '..', 'data', 'ai-config.json');
+    var dir = path.dirname(configPath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+    return true;
+  } catch(e) {
+    console.error('save ai-config failed:', e.message);
+    return false;
+  }
 }
 
 const smsCodes = new Map();
@@ -738,16 +774,101 @@ if (db) {
   app.post('/api/login', function(req, res) { res.status(503).json({ error: '数据库不可用' }); });
 }
 
-const AI_API_KEY = process.env.ZHIPU_API_KEY || process.env.AI_API_KEY || '';
-const AI_API_URL = process.env.AI_API_URL || 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
-const AI_MODEL = process.env.AI_MODEL || 'glm-4';
+app.get('/api/ai-config', function(req, res) {
+  var config = getAIConfig();
+  var maskedKey = '';
+  if (config.apiKey) {
+    maskedKey = config.apiKey.substring(0, 8) + '****' + config.apiKey.substring(config.apiKey.length - 4);
+  }
+  res.json({
+    apiUrl: config.apiUrl,
+    model: config.model,
+    temperature: config.temperature,
+    maxTokens: config.maxTokens,
+    systemPrompt: config.systemPrompt,
+    hasApiKey: !!config.apiKey,
+    apiKeyMasked: maskedKey
+  });
+});
+
+app.post('/api/ai-config', function(req, res) {
+  try {
+    var currentConfig = getAIConfig();
+    if (req.body.apiKey && req.body.apiKey !== '****') {
+      currentConfig.apiKey = req.body.apiKey;
+    }
+    if (req.body.apiUrl) {
+      currentConfig.apiUrl = req.body.apiUrl;
+    }
+    if (req.body.model) {
+      currentConfig.model = req.body.model;
+    }
+    if (req.body.temperature !== undefined) {
+      currentConfig.temperature = parseFloat(req.body.temperature);
+    }
+    if (req.body.maxTokens !== undefined) {
+      currentConfig.maxTokens = parseInt(req.body.maxTokens);
+    }
+    if (req.body.systemPrompt) {
+      currentConfig.systemPrompt = req.body.systemPrompt;
+    }
+    var result = saveAIConfig(currentConfig);
+    if (result) {
+      res.json({ success: true, message: 'AI配置已保存' });
+    } else {
+      res.status(500).json({ error: '保存配置失败' });
+    }
+  } catch(e) {
+    res.status(500).json({ error: '保存配置失败' });
+  }
+});
+
+app.post('/api/ai/test', async function(req, res) {
+  try {
+    var config = getAIConfig();
+    if (!config.apiKey) {
+      return res.json({ success: false, message: '未配置API密钥' });
+    }
+    var testMessages = [
+      { role: 'system', content: config.systemPrompt },
+      { role: 'user', content: '你好' }
+    ];
+    var startTime = Date.now();
+    var response = await fetch(config.apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + config.apiKey
+      },
+      body: JSON.stringify({
+        model: config.model,
+        messages: testMessages,
+        temperature: config.temperature,
+        max_tokens: 50
+      })
+    });
+    var elapsed = Date.now() - startTime;
+    if (!response.ok) {
+      var errText = await response.text();
+      return res.json({ success: false, message: 'API调用失败: HTTP ' + response.status, detail: errText, elapsed: elapsed });
+    }
+    var data = await response.json();
+    var reply = '';
+    if (data.choices && data.choices[0] && data.choices[0].message) {
+      reply = data.choices[0].message.content;
+    }
+    res.json({ success: true, message: 'AI连接正常', reply: reply, model: data.model, elapsed: elapsed, usage: data.usage });
+  } catch(e) {
+    res.json({ success: false, message: '连接失败: ' + e.message });
+  }
+});
 
 app.post('/api/ai', async function(req, res) {
   try {
+    var config = getAIConfig();
     const { messages } = req.body;
 
-    const systemPrompt = '你是KDX丨ZHX官方商城的智能客服小K。用自然、友好的方式回答用户问题，像真人客服一样对话。回答简洁，可以带emoji。不要说"作为AI"之类的话，就当自己是真正的客服。';
-    const apiMessages = [{ role: 'system', content: systemPrompt }];
+    const apiMessages = [{ role: 'system', content: config.systemPrompt || '你是KDX丨ZHX官方商城的智能客服小K。' }];
 
     const recentMessages = messages.slice(-10);
     for (let i = 0; i < recentMessages.length; i++) {
@@ -759,7 +880,7 @@ app.post('/api/ai', async function(req, res) {
       }
     }
 
-    if (!AI_API_KEY) {
+    if (!config.apiKey) {
       const fallbackReplies = [
         '您好！我是小K，很高兴为您服务～有什么可以帮您的吗？😊',
         '收到您的问题！让我为您查一下～',
@@ -781,17 +902,17 @@ app.post('/api/ai', async function(req, res) {
       });
     }
 
-    const response = await fetch(AI_API_URL, {
+    const response = await fetch(config.apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + AI_API_KEY
+        'Authorization': 'Bearer ' + config.apiKey
       },
       body: JSON.stringify({
-        model: AI_MODEL,
+        model: config.model,
         messages: apiMessages,
-        temperature: 0.8,
-        max_tokens: 500
+        temperature: config.temperature || 0.8,
+        max_tokens: config.maxTokens || 500
       })
     });
 
@@ -805,7 +926,7 @@ app.post('/api/ai', async function(req, res) {
       id: data.id || 'msg-' + Date.now(),
       object: 'chat.completion',
       created: Date.now(),
-      model: data.model || AI_MODEL,
+      model: data.model || config.model,
       choices: data.choices || [],
       usage: data.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 }
     });
