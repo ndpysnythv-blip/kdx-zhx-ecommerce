@@ -1,26 +1,13 @@
 [
   {
-    "id": "admin-kdx",
-    "username": "kdx",
+    "id": "admin-kdxzhx",
+    "username": "kdxzhx_admin",
     "phone": "13900000000",
-    "email": "kdx@kdxzhx.com",
-    "password": "$2a$12$WRKBYiooLX8LUWD3tn6G/eFlxerC1X1myxFOn9XGpGZmJAglj.ZKa",
+    "email": "admin@kdxzhx.top",
+    "password": "$2a$12$HG.9m8dygj6jodLtkcvp5eGevRaITaiuBeo5gGYAmSlAn4SSG55fy",
     "role": "admin",
     "isAdmin": true,
-    "createdAt": "2024-01-01T00:00:00.000Z",
-    "autoLoginEnabled": true,
-    "lastLoginAt": "2024-01-01T00:00:00.000Z",
-    "lastLoginIp": "127.0.0.1"
-  },
-  {
-    "id": "user-001",
-    "username": "user001",
-    "phone": "13800138000",
-    "email": "user001@example.com",
-    "password": "$2a$12$Tkkcs7sUUVip3lGnVkdUBO8xWk5y9gFuR9YZX8qe4uzC0nq5lLWkq",
-    "role": "user",
-    "isAdmin": false,
-    "createdAt": "2024-01-02T00:00:00.000Z",
+    "createdAt": "2026-01-01T00:00:00.000Z",
     "autoLoginEnabled": false,
     "lastLoginAt": null,
     "lastLoginIp": null
