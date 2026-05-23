@@ -30,6 +30,12 @@
 
                 <!-- 功能按钮 - 右侧 -->
                 <div class="flex items-center gap-4">
+                    <!-- 购物车按钮 -->
+                    <button onclick="window.location.href='/cart'" class="relative text-gray-600 hover:text-black transition">
+                        <i class="fas fa-shopping-cart text-xl"></i>
+                        <span id="cart-count" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center hidden">0</span>
+                    </button>
+                    
                     <!-- 登录按钮 -->
                     <div id="userSection">
                         <button id="loginBtn" onclick="window.location.href='/auth?returnUrl=' + encodeURIComponent(window.location.pathname + window.location.search)" class="bg-black text-white px-6 py-2 rounded-lg font-medium hover:bg-gray-800 transition">

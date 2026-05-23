@@ -9,7 +9,7 @@
     "isAdmin": true,
     "createdAt": "2026-01-01T00:00:00.000Z",
     "autoLoginEnabled": true,
-    "lastLoginAt": "2026-05-23T05:10:31.049Z",
+    "lastLoginAt": "2026-05-23T05:26:55.215Z",
     "lastLoginIp": "127.0.0.1",
     "loginHistory": [
       {
@@ -27,13 +27,21 @@
         "timestamp": "2026-05-23T05:10:30.716Z",
         "isSuccessful": true,
         "id": "511e6b6a-1107-4ba6-b99f-b97ef426d610"
+      },
+      {
+        "ip": "127.0.0.1",
+        "userAgent": "curl/8.5.0",
+        "deviceType": "desktop",
+        "timestamp": "2026-05-23T05:26:54.869Z",
+        "isSuccessful": true,
+        "id": "27c6ea42-1d7f-4305-8d0d-a481e538d87e"
       }
     ],
     "lastLoginLocation": {
       "ip": "127.0.0.1",
       "userAgent": "curl/8.5.0",
       "deviceType": "desktop",
-      "timestamp": "2026-05-23T05:10:30.716Z"
+      "timestamp": "2026-05-23T05:26:54.869Z"
     }
   },
   {

@@ -369,7 +369,13 @@
 
                 <!-- 功能按钮 - 右侧 -->
                 <div class="flex items-center gap-4">
-                    <button onclick="window.location.href='chat'" class="text-gray-600 hover:text-black transition">
+                    <!-- 购物车按钮 -->
+                    <button onclick="window.location.href='/cart'" class="relative text-gray-600 hover:text-black transition">
+                        <i class="fas fa-shopping-cart text-xl"></i>
+                        <span id="cart-count" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center hidden">0</span>
+                    </button>
+                    
+                    <button onclick="window.location.href='/chat'" class="text-gray-600 hover:text-black transition">
                         <i class="fas fa-headset text-xl"></i>
                     </button>
                     
