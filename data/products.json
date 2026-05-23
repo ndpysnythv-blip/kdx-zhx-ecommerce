@@ -3,66 +3,90 @@
     "id": "prod-1",
     "name": "智能手表 - 星空黑",
     "price": 299,
+    "originalPrice": 399,
     "category": "watch",
     "image": "https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=400&h=400&fit=crop",
-    "description": "高端智能手表，健康监测、运动追踪、消息提醒",
+    "description": "高端智能手表，健康监测、运动追踪、消息提醒。支持心率监测、血氧检测、睡眠分析、12种运动模式，IP68级防水，7天超长续航。",
     "stock": 50,
     "sales": 128,
-    "features": ["健康监测", "运动追踪", "消息提醒"]
+    "sold": 128,
+    "tags": ["热销"],
+    "features": ["健康监测", "运动追踪", "消息提醒"],
+    "specs": ["屏幕尺寸:1.43英寸", "电池容量:300mAh", "防水等级:IP68", "续航时间:7天"]
   },
   {
     "id": "prod-2",
     "name": "智能手表 - 玫瑰金",
     "price": 329,
+    "originalPrice": 429,
     "category": "watch",
     "image": "https://images.unsplash.com/photo-1609081219090-a6d81d3085bf?w=400&h=400&fit=crop",
-    "description": "时尚玫瑰金配色，高端质感",
+    "description": "时尚玫瑰金配色，高端质感。支持心率监测、血氧检测、睡眠分析、12种运动模式，IP68级防水，7天超长续航，女性健康助手。",
     "stock": 35,
     "sales": 89,
-    "features": ["健康监测", "运动追踪", "消息提醒"]
+    "sold": 89,
+    "tags": ["新品"],
+    "features": ["健康监测", "运动追踪", "消息提醒"],
+    "specs": ["屏幕尺寸:1.43英寸", "电池容量:300mAh", "防水等级:IP68", "续航时间:7天"]
   },
   {
     "id": "prod-3",
     "name": "高品质数据线 - 2米",
     "price": 39,
+    "originalPrice": 59,
     "category": "cable",
     "image": "https://images.unsplash.com/photo-1586864387967-d02ef85d93e8?w=400&h=400&fit=crop",
-    "description": "耐用编织线，快充传输二合一",
+    "description": "耐用编织线，快充传输二合一。采用高品质尼龙编织，100W快充，支持数据传输，2米超长长度，抗拉耐折。",
     "stock": 200,
     "sales": 456,
-    "features": ["编织材质", "快充", "数据传输"]
+    "sold": 456,
+    "tags": ["热销"],
+    "features": ["编织材质", "快充", "数据传输"],
+    "specs": ["长度:2米", "功率:100W", "接口:Type-C", "材质:尼龙编织"]
   },
   {
     "id": "prod-4",
     "name": "无线充电器",
     "price": 89,
+    "originalPrice": 129,
     "category": "accessory",
     "image": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop",
-    "description": "15W快充，兼容各种设备",
+    "description": "15W快充，兼容各种设备。支持苹果、华为、小米等主流品牌，Qi标准认证，智能识别异物，安全可靠。",
     "stock": 80,
     "sales": 234,
-    "features": ["15W快充", "无线充电", "多设备兼容"]
+    "sold": 234,
+    "tags": [],
+    "features": ["15W快充", "无线充电", "多设备兼容"],
+    "specs": ["功率:15W", "标准:Qi认证", "输入:5V/2A", "材质:ABS+PC"]
   },
   {
     "id": "prod-5",
     "name": "保护壳 - 透明",
     "price": 29,
+    "originalPrice": 49,
     "category": "accessory",
     "image": "https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?w=400&h=400&fit=crop",
-    "description": "高透明不发黄，防摔耐磨",
+    "description": "高透明不发黄，防摔耐磨。采用德国拜耳TPU材质，高透不发黄，气囊防摔设计，真机开模精准孔位。",
     "stock": 150,
     "sales": 567,
-    "features": ["高透明", "防摔", "不发黄"]
+    "sold": 567,
+    "tags": ["热销"],
+    "features": ["高透明", "防摔", "不发黄"],
+    "specs": ["材质:TPU", "厚度:1.5mm", "工艺:注塑成型", "适用:通用机型"]
   },
   {
     "id": "prod-6",
     "name": "蓝牙耳机 Pro",
     "price": 199,
+    "originalPrice": 299,
     "category": "other",
     "image": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop",
-    "description": "主动降噪，音质出色",
+    "description": "主动降噪，音质出色。40dB深度降噪，Hi-Fi级音质，蓝牙5.3稳定连接，30小时超长续航，IPX5级防水。",
     "stock": 60,
     "sales": 189,
-    "features": ["主动降噪", "超长续航", "Hi-Fi音质"]
+    "sold": 189,
+    "tags": ["新品"],
+    "features": ["主动降噪", "超长续航", "Hi-Fi音质"],
+    "specs": ["降噪深度:40dB", "续航时间:30小时", "蓝牙版本:5.3", "防水等级:IPX5"]
   }
 ]
