@@ -1,8 +1,9 @@
 {
   "functions": {
     "api/index.js": {
-      "runtime": "@vercel/node@3",
-      "maxDuration": 60
+      "runtime": "@vercel/node@20.x",
+      "maxDuration": 60,
+      "memory": 1024
     }
   },
   "rewrites": [
@@ -10,5 +11,6 @@
     { "source": "/(.*)", "destination": "/$1" }
   ],
   "buildCommand": "npm run build",
-  "outputDirectory": "."
+  "outputDirectory": ".",
+  "nodeVersion": "20.x"
 }
