@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const uuid = require('uuid');
 const helmet = require('helmet');
+const serverless = require('serverless-http');
 
 const app = express();
 
@@ -11,11 +12,11 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.staticfile.org"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdn.jsdelivr.net", "https://cdn.tailwindcss.com", "https://cdnjs.cloudflare.com", "https://cdn.staticfile.org"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com", "https://cdn.staticfile.org"],
       imgSrc: ["'self'", "data:", "https:"],
       connectSrc: ["'self'", "https://open.bigmodel.cn"],
-      fontSrc: ["'self'", "data:", "https://cdn.staticfile.org"],
+      fontSrc: ["'self'", "data:", "https://cdnjs.cloudflare.com", "https://cdn.staticfile.org"],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
       frameSrc: ["'none'"]
@@ -1752,4 +1753,4 @@ app.post('/api/ai/instruction', async function(req, res) {
   }
 });
 
-module.exports = app;
+module.exports = serverless(app);
