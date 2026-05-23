@@ -295,7 +295,7 @@
 
             <div id="page-ai-config" class="page-content hidden">
                 <div class="flex items-center justify-between mb-8">
-                    <h2 class="text-2xl font-bold text-gray-900">AI智能客服配置</h2>
+                    <h2 class="text-2xl font-bold text-gray-900">AI配置</h2>
                     <div id="aiConfigStatus" class="flex items-center gap-2">
                         <span class="w-3 h-3 bg-gray-400 rounded-full"></span>
                         <span class="text-sm text-gray-500">未连接</span>
@@ -304,56 +304,95 @@
 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="lg:col-span-2 space-y-6">
-                        <div class="bg-white rounded-2xl p-6 shadow-lg">
+                        <!-- System API - 后台高级AI -->
+                        <div class="bg-white rounded-2xl p-6 shadow-lg border-2 border-purple-200">
                             <h3 class="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
-                                <i class="fas fa-key text-purple-500"></i>
-                                API 配置
+                                <i class="fas fa-brain text-purple-600"></i>
+                                System API - 后台高级AI
+                                <span class="ml-auto px-3 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">管理助手</span>
                             </h3>
-                            <form id="aiConfigForm" class="space-y-5">
+                            <form id="aiSystemConfigForm" class="space-y-4">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2">API密钥</label>
                                     <div class="relative">
-                                        <input type="password" id="aiApiKey" class="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 pr-12" placeholder="请输入API密钥" />
-                                        <button type="button" onclick="toggleApiKeyVisibility()" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                                            <i id="apiKeyEyeIcon" class="fas fa-eye"></i>
+                                        <input type="password" id="systemApiKey" class="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 pr-12" placeholder="请输入System API密钥" />
+                                        <button type="button" onclick="toggleApiKeyVisibility('system')" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                            <i id="systemApiKeyEyeIcon" class="fas fa-eye"></i>
                                         </button>
                                     </div>
-                                    <p class="text-xs text-gray-400 mt-1">密钥将以脱敏形式显示，仅展示前4位和后4位</p>
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2">API地址</label>
-                                    <input type="text" id="aiApiUrl" value="https://open.bigmodel.cn/api/paas/v4/chat/completions" class="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="https://api.example.com/v1/chat/completions" />
+                                    <input type="text" id="systemApiUrl" value="https://open.bigmodel.cn/api/paas/v4/chat/completions" class="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="https://open.bigmodel.cn/api/paas/v4/chat/completions" />
                                 </div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">模型名称</label>
-                                        <input type="text" id="aiModelName" value="glm-4" class="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="glm-4" />
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">模型</label>
+                                        <input type="text" id="systemModel" value="glm-4" class="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="glm-4" />
                                     </div>
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">温度</label>
-                                        <input type="number" id="aiTemperature" value="0.8" min="0" max="2" step="0.1" class="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500" />
-                                        <p class="text-xs text-gray-400 mt-1">范围 0-2，值越高回复越随机</p>
+                                        <input type="number" id="systemTemperature" value="0.3" min="0" max="2" step="0.1" class="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500" />
                                     </div>
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">最大Token数</label>
-                                    <input type="number" id="aiMaxTokens" value="500" min="1" class="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500" />
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">系统提示词</label>
+                                    <textarea id="systemPrompt" rows="4" class="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="你是KDX丨ZHX官方商城的高级管理AI助手..."></textarea>
+                                </div>
+                                <button type="button" onclick="testAiConnection('system')" class="px-4 py-2 border-2 border-purple-500 text-purple-600 rounded-lg font-semibold hover:bg-purple-50 transition">
+                                    <i class="fas fa-plug mr-2"></i>
+                                    测试System API
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Chatbot API - 智能客服 -->
+                        <div class="bg-white rounded-2xl p-6 shadow-lg border-2 border-blue-200">
+                            <h3 class="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
+                                <i class="fas fa-robot text-blue-600"></i>
+                                Chatbot API - 智能客服
+                                <span class="ml-auto px-3 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">客服助手</span>
+                            </h3>
+                            <form id="aiChatbotConfigForm" class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">API密钥</label>
+                                    <div class="relative">
+                                        <input type="password" id="chatbotApiKey" class="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 pr-12" placeholder="请输入Chatbot API密钥" />
+                                        <button type="button" onclick="toggleApiKeyVisibility('chatbot')" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                            <i id="chatbotApiKeyEyeIcon" class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">API地址</label>
+                                    <input type="text" id="chatbotApiUrl" value="https://open.bigmodel.cn/api/paas/v4/chat/completions" class="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://open.bigmodel.cn/api/paas/v4/chat/completions" />
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">模型</label>
+                                        <input type="text" id="chatbotModel" value="glm-4" class="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="glm-4" />
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">温度</label>
+                                        <input type="number" id="chatbotTemperature" value="0.8" min="0" max="2" step="0.1" class="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                    </div>
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2">系统提示词</label>
-                                    <textarea id="aiSystemPrompt" rows="5" class="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="请输入系统提示词，用于定义AI助手的角色和行为..."></textarea>
+                                    <textarea id="chatbotPrompt" rows="4" class="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="你是KDX丨ZHX官方商城的智能客服小K..."></textarea>
                                 </div>
-                                <div class="flex gap-3 pt-2">
-                                    <button type="button" onclick="testAiConnection()" id="testConnBtn" class="flex-1 px-6 py-3 border-2 border-purple-500 text-purple-600 rounded-xl font-semibold hover:bg-purple-50 transition">
-                                        <i class="fas fa-plug mr-2"></i>
-                                        测试连接
-                                    </button>
-                                    <button type="button" onclick="saveAiConfig()" id="saveConfigBtn" class="flex-1 gradient-bg text-white px-6 py-3 rounded-xl font-semibold hover:opacity-90 transition">
-                                        <i class="fas fa-save mr-2"></i>
-                                        保存配置
-                                    </button>
-                                </div>
+                                <button type="button" onclick="testAiConnection('chatbot')" class="px-4 py-2 border-2 border-blue-500 text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition">
+                                    <i class="fas fa-plug mr-2"></i>
+                                    测试Chatbot API
+                                </button>
                             </form>
+                        </div>
+
+                        <div class="flex gap-3 pt-2">
+                            <button type="button" onclick="saveAiConfig()" id="saveConfigBtn" class="flex-1 gradient-bg text-white px-6 py-3 rounded-xl font-semibold hover:opacity-90 transition">
+                                <i class="fas fa-save mr-2"></i>
+                                保存所有配置
+                            </button>
                         </div>
                     </div>
 
@@ -364,21 +403,17 @@
                                 配置说明
                             </h4>
                             <div class="space-y-3 text-sm text-gray-600">
-                                <div class="p-3 bg-blue-50 rounded-xl">
-                                    <p class="font-medium text-blue-800 mb-1">API密钥</p>
-                                    <p class="text-blue-600 text-xs">在AI服务商平台获取的访问密钥</p>
-                                </div>
                                 <div class="p-3 bg-purple-50 rounded-xl">
-                                    <p class="font-medium text-purple-800 mb-1">API地址</p>
-                                    <p class="text-purple-600 text-xs">兼容OpenAI格式的聊天补全接口地址</p>
+                                    <p class="font-medium text-purple-800 mb-1">System API</p>
+                                    <p class="text-purple-600 text-xs">用于后台管理AI助手，处理订单、商品、数据分析，权限最高</p>
                                 </div>
-                                <div class="p-3 bg-green-50 rounded-xl">
-                                    <p class="font-medium text-green-800 mb-1">模型名称</p>
-                                    <p class="text-green-600 text-xs">服务商提供的模型标识，如 glm-4、gpt-3.5-turbo</p>
+                                <div class="p-3 bg-blue-50 rounded-xl">
+                                    <p class="font-medium text-blue-800 mb-1">Chatbot API</p>
+                                    <p class="text-blue-600 text-xs">用于网站客服，回答用户咨询</p>
                                 </div>
-                                <div class="p-3 bg-orange-50 rounded-xl">
-                                    <p class="font-medium text-orange-800 mb-1">系统提示词</p>
-                                    <p class="text-orange-600 text-xs">定义AI助手的角色、语气和行为规则</p>
+                                <div class="p-3 bg-gray-50 rounded-xl">
+                                    <p class="font-medium text-gray-800 mb-1">API密钥</p>
+                                    <p class="text-gray-600 text-xs">在 open.bigmodel.cn 获取</p>
                                 </div>
                             </div>
                         </div>
@@ -398,10 +433,9 @@
                                 安全提示
                             </h4>
                             <ul class="text-sm space-y-2 text-white/90">
-                                <li><i class="fas fa-check mr-2"></i>API密钥加密存储</li>
-                                <li><i class="fas fa-check mr-2"></i>仅管理员可查看配置</li>
-                                <li><i class="fas fa-check mr-2"></i>密钥传输使用HTTPS</li>
-                                <li><i class="fas fa-check mr-2"></i>支持随时更换密钥</li>
+                                <li><i class="fas fa-check mr-2"></i>API密钥本地加密存储</li>
+                                <li><i class="fas fa-check mr-2"></i>仅管理员可访问配置</li>
+                                <li><i class="fas fa-check mr-2"></i>密钥不提交到Git仓库</li>
                             </ul>
                         </div>
                     </div>
@@ -767,23 +801,26 @@
             }
         }
 
-        let aiConfigRawApiKey = '';
+        const aiConfigRaw = {
+            system: '',
+            chatbot: ''
+        };
 
         function maskApiKey(key) {
             if (!key || key.length <= 8) return key ? '****' : '';
             return key.substring(0, 4) + '****' + key.substring(key.length - 4);
         }
 
-        function toggleApiKeyVisibility() {
-            const input = document.getElementById('aiApiKey');
-            const icon = document.getElementById('apiKeyEyeIcon');
+        function toggleApiKeyVisibility(type) {
+            const input = document.getElementById(type + 'ApiKey');
+            const icon = document.getElementById(type + 'ApiKeyEyeIcon');
             if (input.type === 'password') {
                 input.type = 'text';
-                input.value = aiConfigRawApiKey;
+                input.value = aiConfigRaw[type];
                 icon.className = 'fas fa-eye-slash';
             } else {
                 input.type = 'password';
-                input.value = maskApiKey(aiConfigRawApiKey);
+                input.value = maskApiKey(aiConfigRaw[type]);
                 icon.className = 'fas fa-eye';
             }
         }
@@ -794,18 +831,28 @@
                 if (!response.ok) return;
                 const config = await response.json();
 
-                aiConfigRawApiKey = config.apiKey || '';
-                document.getElementById('aiApiKey').type = 'password';
-                document.getElementById('aiApiKey').value = maskApiKey(aiConfigRawApiKey);
-                document.getElementById('apiKeyEyeIcon').className = 'fas fa-eye';
+                if (config.system) {
+                    aiConfigRaw.system = config.system.apiKey || '';
+                    document.getElementById('systemApiKey').type = 'password';
+                    document.getElementById('systemApiKey').value = maskApiKey(aiConfigRaw.system);
+                    if (config.system.apiUrl) document.getElementById('systemApiUrl').value = config.system.apiUrl;
+                    if (config.system.modelName || config.system.model) document.getElementById('systemModel').value = config.system.modelName || config.system.model;
+                    if (config.system.temperature !== undefined) document.getElementById('systemTemperature').value = config.system.temperature;
+                    if (config.system.systemPrompt !== undefined) document.getElementById('systemPrompt').value = config.system.systemPrompt;
+                }
 
-                if (config.apiUrl) document.getElementById('aiApiUrl').value = config.apiUrl;
-                if (config.modelName) document.getElementById('aiModelName').value = config.modelName;
-                if (config.temperature !== undefined) document.getElementById('aiTemperature').value = config.temperature;
-                if (config.maxTokens !== undefined) document.getElementById('aiMaxTokens').value = config.maxTokens;
-                if (config.systemPrompt !== undefined) document.getElementById('aiSystemPrompt').value = config.systemPrompt;
+                if (config.chatbot) {
+                    aiConfigRaw.chatbot = config.chatbot.apiKey || '';
+                    document.getElementById('chatbotApiKey').type = 'password';
+                    document.getElementById('chatbotApiKey').value = maskApiKey(aiConfigRaw.chatbot);
+                    if (config.chatbot.apiUrl) document.getElementById('chatbotApiUrl').value = config.chatbot.apiUrl;
+                    if (config.chatbot.modelName || config.chatbot.model) document.getElementById('chatbotModel').value = config.chatbot.modelName || config.chatbot.model;
+                    if (config.chatbot.temperature !== undefined) document.getElementById('chatbotTemperature').value = config.chatbot.temperature;
+                    if (config.chatbot.systemPrompt !== undefined) document.getElementById('chatbotPrompt').value = config.chatbot.systemPrompt;
+                }
 
-                updateAiConfigStatus(config.configured ? 'connected' : 'disconnected');
+                const allConfigured = (config.system?.hasApiKey || config.system?.apiKey) && (config.chatbot?.hasApiKey || config.chatbot?.apiKey);
+                updateAiConfigStatus(allConfigured ? 'connected' : 'disconnected');
             } catch (error) {
                 console.error('加载AI配置失败:', error);
                 updateAiConfigStatus('disconnected');
@@ -826,19 +873,27 @@
         }
 
         async function saveAiConfig() {
-            const apiKeyInput = document.getElementById('aiApiKey');
-            let apiKeyValue = apiKeyInput.value.trim();
-            if (apiKeyValue && apiKeyValue.includes('****')) {
-                apiKeyValue = aiConfigRawApiKey;
-            }
+            let systemKey = document.getElementById('systemApiKey').value.trim();
+            if (systemKey && systemKey.includes('****')) systemKey = aiConfigRaw.system;
+            
+            let chatbotKey = document.getElementById('chatbotApiKey').value.trim();
+            if (chatbotKey && chatbotKey.includes('****')) chatbotKey = aiConfigRaw.chatbot;
 
             const config = {
-                apiKey: apiKeyValue,
-                apiUrl: document.getElementById('aiApiUrl').value.trim(),
-                modelName: document.getElementById('aiModelName').value.trim(),
-                temperature: parseFloat(document.getElementById('aiTemperature').value),
-                maxTokens: parseInt(document.getElementById('aiMaxTokens').value),
-                systemPrompt: document.getElementById('aiSystemPrompt').value
+                system: {
+                    apiKey: systemKey,
+                    apiUrl: document.getElementById('systemApiUrl').value.trim(),
+                    modelName: document.getElementById('systemModel').value.trim(),
+                    temperature: parseFloat(document.getElementById('systemTemperature').value),
+                    systemPrompt: document.getElementById('systemPrompt').value
+                },
+                chatbot: {
+                    apiKey: chatbotKey,
+                    apiUrl: document.getElementById('chatbotApiUrl').value.trim(),
+                    modelName: document.getElementById('chatbotModel').value.trim(),
+                    temperature: parseFloat(document.getElementById('chatbotTemperature').value),
+                    systemPrompt: document.getElementById('chatbotPrompt').value
+                }
             };
 
             const btn = document.getElementById('saveConfigBtn');
@@ -855,10 +910,12 @@
 
                 const data = await response.json();
                 if (response.ok && data.ok) {
-                    aiConfigRawApiKey = apiKeyValue;
-                    apiKeyInput.type = 'password';
-                    apiKeyInput.value = maskApiKey(aiConfigRawApiKey);
-                    document.getElementById('apiKeyEyeIcon').className = 'fas fa-eye';
+                    aiConfigRaw.system = systemKey;
+                    aiConfigRaw.chatbot = chatbotKey;
+                    document.getElementById('systemApiKey').type = 'password';
+                    document.getElementById('systemApiKey').value = maskApiKey(systemKey);
+                    document.getElementById('chatbotApiKey').type = 'password';
+                    document.getElementById('chatbotApiKey').value = maskApiKey(chatbotKey);
                     updateAiConfigStatus('connected');
                     showAiToast('配置保存成功！', 'success');
                 } else {
@@ -873,23 +930,20 @@
             }
         }
 
-        async function testAiConnection() {
-            const apiKeyInput = document.getElementById('aiApiKey');
-            let apiKeyValue = apiKeyInput.value.trim();
-            if (apiKeyValue && apiKeyValue.includes('****')) {
-                apiKeyValue = aiConfigRawApiKey;
-            }
+        async function testAiConnection(type) {
+            let apiKey = document.getElementById(type + 'ApiKey').value.trim();
+            if (apiKey && apiKey.includes('****')) apiKey = aiConfigRaw[type];
 
             const config = {
-                apiKey: apiKeyValue,
-                apiUrl: document.getElementById('aiApiUrl').value.trim(),
-                modelName: document.getElementById('aiModelName').value.trim(),
-                temperature: parseFloat(document.getElementById('aiTemperature').value),
-                maxTokens: parseInt(document.getElementById('aiMaxTokens').value),
-                systemPrompt: document.getElementById('aiSystemPrompt').value
+                apiKey,
+                apiUrl: document.getElementById(type + 'ApiUrl').value.trim(),
+                modelName: document.getElementById(type + 'Model').value.trim(),
+                temperature: parseFloat(document.getElementById(type + 'Temperature').value),
+                systemPrompt: document.getElementById(type + 'Prompt').value
             };
 
-            const btn = document.getElementById('testConnBtn');
+            const btnSelector = type === 'system' ? 'button[onclick="testAiConnection(\'system\')"]' : 'button[onclick="testAiConnection(\'chatbot\')"]';
+            const btn = document.querySelector(btnSelector);
             const originalText = btn.innerHTML;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>测试中...';
             btn.disabled = true;
@@ -900,7 +954,7 @@
             resultPanel.classList.add('hidden');
 
             try {
-                const response = await fetch('/api/ai/test', {
+                const response = await fetch('/api/ai/test?type=' + type, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(config)
@@ -915,7 +969,7 @@
                         <div class="p-3 bg-green-50 rounded-xl">
                             <div class="flex items-center gap-2 mb-2">
                                 <i class="fas fa-check-circle text-green-500"></i>
-                                <span class="font-medium text-green-800">连接成功</span>
+                                <span class="font-medium text-green-800">${type.toUpperCase()} API 连接成功</span>
                             </div>
                             <p class="text-green-700 text-xs">${data.message || 'AI服务连接正常'}</p>
                             ${data.model ? `<p class="text-green-600 text-xs mt-1">模型: ${data.model}</p>` : ''}
@@ -928,7 +982,7 @@
                         <div class="p-3 bg-red-50 rounded-xl">
                             <div class="flex items-center gap-2 mb-2">
                                 <i class="fas fa-times-circle text-red-500"></i>
-                                <span class="font-medium text-red-800">连接失败</span>
+                                <span class="font-medium text-red-800">${type.toUpperCase()} API 连接失败</span>
                             </div>
                             <p class="text-red-700 text-xs">${data.error || '无法连接到AI服务'}</p>
                         </div>

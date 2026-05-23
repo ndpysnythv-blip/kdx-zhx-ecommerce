@@ -1149,6 +1149,114 @@ app.post('/api/ai/verify-phone', async function(req, res) {
   }
 });
 
+// 后台管理AI助手 - 使用System API（高级AI）
+app.post('/api/ai/chat', async function(req, res) {
+  try {
+    var config = getAIConfig('system'); // 使用system配置（高级AI）
+    const { message, permissions } = req.body;
+
+    // 获取系统数据用于AI上下文
+    let systemContext = '';
+    if (db) {
+      const products = db.getProducts();
+      const orders = db.getOrders();
+      const stats = {
+        totalProducts: products.length,
+        totalOrders: orders.length,
+        totalRevenue: orders.reduce((sum, o) => sum + (o.total || 0), 0),
+        pendingOrders: orders.filter(o => o.status === 'pending').length,
+        paidOrders: orders.filter(o => o.status === 'paid').length,
+        shippedOrders: orders.filter(o => o.status === 'shipped').length
+      };
+      
+      systemContext = `
+当前系统数据（仅供参考）：
+- 商品总数：${stats.totalProducts}
+- 订单总数：${stats.totalOrders}
+- 总收入：¥${stats.totalRevenue.toFixed(2)}
+- 待处理订单：${stats.pendingOrders}
+- 已付款订单：${stats.paidOrders}
+- 已发货订单：${stats.shippedOrders}
+
+最近5个订单：
+${orders.slice(-5).map(o => `ID: ${o.id}, 状态: ${o.status}, 金额: ¥${o.total}`).join('\n')}
+
+可用操作（返回JSON格式，格式为 {"action": {"type": "xxx", "data": {}}}）：
+- addProduct: 打开添加商品弹窗
+- viewOrders: 跳转订单管理
+- analyzeData: 跳转数据看板
+- clearZeroStock: 清理零库存商品
+`;
+    }
+
+    const systemPrompt = `${config.systemPrompt || '你是KDX丨ZHX官方商城的高级管理AI助手。'}
+${systemContext}
+
+你的任务是帮助管理员高效地管理商城。你可以：
+1. 回答管理相关问题
+2. 建议并执行管理操作（通过action返回）
+3. 分析销售数据
+4. 给出优化建议
+
+注意：仅在权限允许时建议操作。`;
+
+    if (!config.apiKey) {
+      return res.json({
+        response: '您好！我是KDX-AI智能助手。我可以帮您管理商城：\n\n• 查询订单状态\n• 分析销售数据\n• 快速上架商品\n• 处理库存管理\n\n请问有什么需要帮助的吗？',
+        action: null
+      });
+    }
+
+    const response = await fetch(config.apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + config.apiKey
+      },
+      body: JSON.stringify({
+        model: config.model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: message }
+        ],
+        temperature: config.temperature || 0.7,
+        max_tokens: config.maxTokens || 800
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('AI API request failed: ' + response.status);
+    }
+
+    const data = await response.json();
+    let aiResponse = data.choices?.[0]?.message?.content || '抱歉，我无法处理您的请求。';
+    
+    // 尝试解析AI返回的action
+    let action = null;
+    try {
+      const actionMatch = aiResponse.match(/\{[\s\S]*"action"[\s\S]*\}/);
+      if (actionMatch) {
+        const parsed = JSON.parse(actionMatch[0]);
+        action = parsed.action;
+        aiResponse = aiResponse.replace(actionMatch[0], '').trim();
+      }
+    } catch (e) {
+      // 解析失败，忽略action
+    }
+
+    res.json({
+      response: aiResponse,
+      action: action
+    });
+  } catch (error) {
+    console.error('[AI Chat API] Error:', error.message);
+    res.json({
+      response: '抱歉，系统暂时繁忙，请稍后再试。',
+      action: null
+    });
+  }
+});
+
 app.post('/api/ai', async function(req, res) {
   try {
     var config = getAIConfig('chatbot'); // 使用chatbot配置
