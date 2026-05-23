@@ -5,9 +5,9 @@ const bcrypt = require('bcryptjs');
 // ==================== 安全配置 ====================
 const SECURITY_CONFIG = {
   bcryptRounds: 12,
-  rateLimitWindow: 15 * 60 * 1000,
-  maxLoginAttempts: 5,
-  maxApiRequests: 100,
+  rateLimitWindow: 15 * 60 * 1000, // 15分钟
+  maxLoginAttempts: 5, // 最大登录尝试次数
+  maxApiRequests: 100, // API请求限制
   sessionSecret: crypto.randomBytes(32).toString('hex'),
   jwtSecret: crypto.randomBytes(64).toString('hex')
 };
