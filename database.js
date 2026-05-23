@@ -5,15 +5,12 @@ const IS_VERCEL = process.env.VERCEL || process.env.VERCEL_ENV;
 
 class Database {
   constructor() {
-    if (IS_VERCEL) {
-      this.dataDir = '/tmp/kdx-data';
-    } else {
-      try {
-        const config = require('./config');
-        this.dataDir = path.join(__dirname, 'data');
-      } catch(e) {
-        this.dataDir = path.join(__dirname, 'data');
-      }
+    // 在 Vercel 上也使用实际的 data 目录，避免数据丢失
+    try {
+      const config = require('./config');
+      this.dataDir = path.join(__dirname, 'data');
+    } catch(e) {
+      this.dataDir = path.join(__dirname, 'data');
     }
     this.ensureDataDir();
   }
@@ -35,12 +32,11 @@ class Database {
         const data = fs.readFileSync(filePath, 'utf8');
         return JSON.parse(data);
       }
-      if (!IS_VERCEL) {
-        const fallbackPath = path.join(__dirname, 'data', fileName);
-        if (fs.existsSync(fallbackPath)) {
-          const data = fs.readFileSync(fallbackPath, 'utf8');
-          return JSON.parse(data);
-        }
+      // 从原始 data 目录读取作为后备
+      const fallbackPath = path.join(__dirname, 'data', fileName);
+      if (fs.existsSync(fallbackPath)) {
+        const data = fs.readFileSync(fallbackPath, 'utf8');
+        return JSON.parse(data);
       }
       return [];
     } catch(e) {
