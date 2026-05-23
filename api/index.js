@@ -1345,4 +1345,411 @@ app.post('/api/ai', async function(req, res) {
   }
 });
 
+// ==========================================
+// AI 工具函数 - 执行实际操作
+// ==========================================
+
+// 查找订单
+function findOrder(orderId) {
+  try {
+    if (!db) return null;
+    const orders = db.getOrders();
+    for (var i = 0; i < orders.length; i++) {
+      if (orders[i].id === orderId || orders[i].alipayTradeNo === orderId) {
+        return orders[i];
+      }
+    }
+    return null;
+  } catch(e) {
+    return null;
+  }
+}
+
+// 修改订单价格
+function updateOrderPrice(orderId, newPrice) {
+  try {
+    if (!db) return { success: false, message: '数据库不可用' };
+    const orders = db.getOrders();
+    var found = false;
+    for (var i = 0; i < orders.length; i++) {
+      if (orders[i].id === orderId || orders[i].alipayTradeNo === orderId) {
+        orders[i].total = parseFloat(newPrice);
+        orders[i].updatedAt = new Date().toISOString();
+        found = true;
+        break;
+      }
+    }
+    if (found) {
+      db.saveOrders(orders);
+      return { success: true, message: '订单价格已更新', order: orders[i] };
+    }
+    return { success: false, message: '未找到订单' };
+  } catch(e) {
+    return { success: false, message: '更新失败: ' + e.message };
+  }
+}
+
+// 修改订单状态
+function updateOrderStatus(orderId, newStatus) {
+  try {
+    if (!db) return { success: false, message: '数据库不可用' };
+    const orders = db.getOrders();
+    var found = false;
+    for (var i = 0; i < orders.length; i++) {
+      if (orders[i].id === orderId || orders[i].alipayTradeNo === orderId) {
+        orders[i].status = newStatus;
+        orders[i].updatedAt = new Date().toISOString();
+        found = true;
+        break;
+      }
+    }
+    if (found) {
+      db.saveOrders(orders);
+      return { success: true, message: '订单状态已更新', order: orders[i] };
+    }
+    return { success: false, message: '未找到订单' };
+  } catch(e) {
+    return { success: false, message: '更新失败: ' + e.message };
+  }
+}
+
+// 查找商品
+function findProduct(productId) {
+  try {
+    if (!db) return null;
+    const products = db.getProducts();
+    for (var i = 0; i < products.length; i++) {
+      if (products[i].id === productId) {
+        return products[i];
+      }
+    }
+    return null;
+  } catch(e) {
+    return null;
+  }
+}
+
+// 修改商品价格
+function updateProductPrice(productId, newPrice) {
+  try {
+    if (!db) return { success: false, message: '数据库不可用' };
+    const products = db.getProducts();
+    var found = false;
+    for (var i = 0; i < products.length; i++) {
+      if (products[i].id === productId) {
+        products[i].price = parseFloat(newPrice);
+        products[i].updatedAt = new Date().toISOString();
+        found = true;
+        break;
+      }
+    }
+    if (found) {
+      db.saveProducts(products);
+      return { success: true, message: '商品价格已更新', product: products[i] };
+    }
+    return { success: false, message: '未找到商品' };
+  } catch(e) {
+    return { success: false, message: '更新失败: ' + e.message };
+  }
+}
+
+// 获取统计数据
+function getStats() {
+  try {
+    if (!db) return { totalProducts: 0, totalOrders: 0, totalRevenue: 0 };
+    const products = db.getProducts();
+    const orders = db.getOrders();
+    const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0);
+    return {
+      totalProducts: products.length,
+      totalOrders: orders.length,
+      totalRevenue: totalRevenue,
+      recentOrders: orders.slice(-5).map(o => ({ id: o.id, status: o.status, total: o.total }))
+    };
+  } catch(e) {
+    return { totalProducts: 0, totalOrders: 0, totalRevenue: 0 };
+  }
+}
+
+// ==========================================
+// AI 指令解析与处理
+// ==========================================
+
+function parseAndExecuteInstruction(message) {
+  var result = {
+    success: true,
+    message: '',
+    action: null,
+    data: null
+  };
+
+  var msg = message.toLowerCase();
+
+  // 1. 查询订单
+  var orderMatch = message.match(/订单[#号]*([A-Za-z0-9_-]+)/i);
+  if (!orderMatch) orderMatch = message.match(/([A-Za-z0-9_-]{8,})/i); // 尝试匹配8位以上ID
+  
+  if (orderMatch && (msg.includes('查') || msg.includes('查询') || msg.includes('看') || msg.includes('状态'))) {
+    var orderId = orderMatch[1];
+    var order = findOrder(orderId);
+    if (order) {
+      result.message = `✅ 找到订单：\n订单号：${order.id}\n状态：${order.status}\n金额：¥${order.total}\n创建时间：${order.createdAt}`;
+      result.data = order;
+      result.action = 'query_order';
+    } else {
+      result.success = false;
+      result.message = `❌ 未找到订单 ${orderId}`;
+    }
+    return result;
+  }
+
+  // 2. 修改订单价格
+  if ((msg.includes('修改') || msg.includes('改')) && msg.includes('价格') && orderMatch) {
+    var priceMatch = message.match(/(\d+(\.\d+)?)/);
+    if (priceMatch) {
+      var orderId = orderMatch[1];
+      var newPrice = parseFloat(priceMatch[1]);
+      var updateResult = updateOrderPrice(orderId, newPrice);
+      if (updateResult.success) {
+        result.message = `✅ ${updateResult.message}\n订单 ${orderId} 价格已改为 ¥${newPrice}`;
+        result.data = updateResult.order;
+        result.action = 'update_order_price';
+      } else {
+        result.success = false;
+        result.message = `❌ ${updateResult.message}`;
+      }
+    } else {
+      result.success = false;
+      result.message = '❌ 请告诉我新的价格是多少';
+    }
+    return result;
+  }
+
+  // 3. 修改订单状态
+  if ((msg.includes('发货') || msg.includes('发了') || msg.includes('已发')) && orderMatch) {
+    var orderId = orderMatch[1];
+    var updateResult = updateOrderStatus(orderId, 'shipped');
+    if (updateResult.success) {
+      result.message = `✅ ${updateResult.message}\n订单 ${orderId} 状态已改为"已发货"`;
+      result.data = updateResult.order;
+      result.action = 'update_order_status';
+    } else {
+      result.success = false;
+      result.message = `❌ ${updateResult.message}`;
+    }
+    return result;
+  }
+
+  // 4. 查询统计
+  if (msg.includes('统计') || msg.includes('数据') || msg.includes('销量') || msg.includes('收入')) {
+    var stats = getStats();
+    result.message = `📊 当前数据统计：\n商品总数：${stats.totalProducts}\n订单总数：${stats.totalOrders}\n总收入：¥${stats.totalRevenue.toFixed(2)}`;
+    if (stats.recentOrders && stats.recentOrders.length > 0) {
+      result.message += '\n\n最近5个订单：';
+      stats.recentOrders.forEach(o => {
+        result.message += `\n• ${o.id} - ${o.status} - ¥${o.total}`;
+      });
+    }
+    result.data = stats;
+    result.action = 'get_stats';
+    return result;
+  }
+
+  // 5. 查询商品
+  var productMatch = message.match(/商品[#号]*([A-Za-z0-9_-]+)/i);
+  if (productMatch && (msg.includes('查') || msg.includes('查询') || msg.includes('看'))) {
+    var productId = productMatch[1];
+    var product = findProduct(productId);
+    if (product) {
+      result.message = `✅ 找到商品：\n商品名：${product.name}\n价格：¥${product.price}\n库存：${product.stock}\n分类：${product.category}`;
+      result.data = product;
+      result.action = 'query_product';
+    } else {
+      result.success = false;
+      result.message = `❌ 未找到商品 ${productId}`;
+    }
+    return result;
+  }
+
+  // 6. 修改商品价格
+  if ((msg.includes('修改') || msg.includes('改')) && msg.includes('商品') && msg.includes('价格') && productMatch) {
+    var priceMatch = message.match(/(\d+(\.\d+)?)/);
+    if (priceMatch) {
+      var productId = productMatch[1];
+      var newPrice = parseFloat(priceMatch[1]);
+      var updateResult = updateProductPrice(productId, newPrice);
+      if (updateResult.success) {
+        result.message = `✅ ${updateResult.message}\n商品 ${productId} 价格已改为 ¥${newPrice}`;
+        result.data = updateResult.product;
+        result.action = 'update_product_price';
+      } else {
+        result.success = false;
+        result.message = `❌ ${updateResult.message}`;
+      }
+    } else {
+      result.success = false;
+      result.message = '❌ 请告诉我新的价格是多少';
+    }
+    return result;
+  }
+
+  // 未识别的指令
+  result.success = false;
+  result.message = `🙋 我理解您想做点什么，但还不太确定。\n\n您可以试试这些指令：\n\n1. 查询订单："查询订单 ABC123456"\n2. 修改订单价格："修改订单 ABC123456 价格为 99.9"\n3. 发货："订单 ABC123456 已发货"\n4. 查看统计："查看统计数据"\n5. 查询商品："查询商品 PROD123"\n6. 修改商品价格："修改商品 PROD123 价格为 199"`;
+  
+  return result;
+}
+
+// ==========================================
+// AI 指令 API
+// ==========================================
+
+// Webhook 接收指令（用于飞书/QQ机器人）
+app.post('/api/ai/webhook', async function(req, res) {
+  try {
+    var config = getAIConfig('system');
+    var { message, sender } = req.body;
+    
+    if (!message) {
+      return res.status(400).json({ success: false, message: '缺少消息内容' });
+    }
+
+    // 先尝试直接解析执行
+    var directResult = parseAndExecuteInstruction(message);
+    
+    if (directResult.success) {
+      return res.json(directResult);
+    }
+
+    // 如果直接解析失败，用 AI 理解
+    if (!config.apiKey) {
+      // 无 API Key，直接返回帮助信息
+      return res.json({
+        success: true,
+        message: directResult.message,
+        action: 'help'
+      });
+    }
+
+    // 让 AI 理解意图并决定调用哪个工具
+    var systemPrompt = `你是 KDX 电商管理系统的 AI 助手。你需要理解用户的指令并决定调用什么工具。
+
+可用工具：
+1. query_order(orderId) - 查询订单
+2. update_order_price(orderId, price) - 修改订单价格
+3. update_order_status(orderId, status) - 修改订单状态
+4. get_stats() - 获取统计数据
+5. query_product(productId) - 查询商品
+6. update_product_price(productId, price) - 修改商品价格
+
+请用 JSON 格式回复，格式如下：
+{
+  "tool": "工具名称",
+  "params": {
+    "orderId": "订单号",
+    "productId": "商品ID",
+    "price": 99.9,
+    "status": "shipped"
+  },
+  "message": "友好的回复内容"
+}
+
+如果不明确，先询问用户更多信息。`;
+
+    var messages = [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: message }
+    ];
+
+    var response = await fetch(config.apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + config.apiKey
+      },
+      body: JSON.stringify({
+        model: config.model,
+        messages: messages,
+        temperature: 0.3,
+        max_tokens: 500
+      })
+    });
+
+    if (!response.ok) {
+      return res.json(directResult); // AI 失败，返回直接解析结果
+    }
+
+    var data = await response.json();
+    var aiResponse = data.choices?.[0]?.message?.content || '';
+
+    // 尝试解析 AI 返回的 JSON
+    try {
+      var jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        var toolCall = JSON.parse(jsonMatch[0]);
+        
+        // 执行工具调用
+        var toolResult = null;
+        if (toolCall.tool === 'query_order' && toolCall.params?.orderId) {
+          var order = findOrder(toolCall.params.orderId);
+          if (order) {
+            toolResult = { success: true, message: `✅ 找到订单：\n订单号：${order.id}\n状态：${order.status}\n金额：¥${order.total}`, data: order };
+          } else {
+            toolResult = { success: false, message: '❌ 未找到订单' };
+          }
+        } else if (toolCall.tool === 'update_order_price' && toolCall.params?.orderId && toolCall.params?.price) {
+          toolResult = updateOrderPrice(toolCall.params.orderId, toolCall.params.price);
+        } else if (toolCall.tool === 'update_order_status' && toolCall.params?.orderId) {
+          toolResult = updateOrderStatus(toolCall.params.orderId, toolCall.params?.status || 'shipped');
+        } else if (toolCall.tool === 'get_stats') {
+          var stats = getStats();
+          toolResult = { success: true, message: `📊 统计数据：\n商品：${stats.totalProducts}\n订单：${stats.totalOrders}\n收入：¥${stats.totalRevenue.toFixed(2)}`, data: stats };
+        } else if (toolCall.tool === 'query_product' && toolCall.params?.productId) {
+          var product = findProduct(toolCall.params.productId);
+          if (product) {
+            toolResult = { success: true, message: `✅ 找到商品：${product.name} - ¥${product.price}`, data: product };
+          } else {
+            toolResult = { success: false, message: '❌ 未找到商品' };
+          }
+        } else if (toolCall.tool === 'update_product_price' && toolCall.params?.productId && toolCall.params?.price) {
+          toolResult = updateProductPrice(toolCall.params.productId, toolCall.params.price);
+        }
+
+        if (toolResult) {
+          return res.json(toolResult);
+        }
+      }
+    } catch (e) {
+      // JSON 解析失败，使用 AI 直接回复
+    }
+
+    return res.json({
+      success: true,
+      message: aiResponse || directResult.message,
+      action: 'chat'
+    });
+
+  } catch (error) {
+    console.error('[AI Webhook] Error:', error);
+    return res.status(500).json({ success: false, message: '系统错误' });
+  }
+});
+
+// 简化版指令 API（直接解析）
+app.post('/api/ai/instruction', async function(req, res) {
+  try {
+    var { message } = req.body;
+    if (!message) {
+      return res.status(400).json({ success: false, message: '缺少消息内容' });
+    }
+    
+    var result = parseAndExecuteInstruction(message);
+    return res.json(result);
+    
+  } catch (error) {
+    console.error('[AI Instruction] Error:', error);
+    return res.status(500).json({ success: false, message: '系统错误' });
+  }
+});
+
 module.exports = app;

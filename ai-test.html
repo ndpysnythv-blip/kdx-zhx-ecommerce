@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI 指令测试 - KDX 电商</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://cdn.staticfile.org/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .chat-bubble-user { background: #667eea; color: white; border-radius: 20px 20px 4px 20px; }
+    .chat-bubble-ai { background: #f3f4f6; color: #1f2937; border-radius: 20px 20px 20px 4px; }
+    .message-enter { animation: slideIn 0.3s ease; }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .typing-dots span { display: inline-block; width: 8px; height: 8px; background: #9ca3af; border-radius: 50%; margin: 0 2px; animation: typing 1.4s infinite; }
+    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typing { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-10px); } }
+    .instruction-card { transition: all 0.2s ease; }
+    .instruction-card:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <div class="container mx-auto px-4 py-8 max-w-5xl">
+    <div class="text-center mb-8">
+      <h1 class="text-3xl font-bold text-gray-800 mb-2">
+        <i class="fas fa-robot text-purple-600 mr-2"></i>
+        AI 指令测试控制台
+      </h1>
+      <p class="text-gray-600">通过自然语言指令管理您的电商系统</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="lg:col-span-2">
+        <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+          <div class="gradient-bg px-6 py-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                  <i class="fas fa-robot text-white"></i>
+                </div>
+                <div>
+                  <h2 class="text-white font-semibold">KDX AI 助手</h2>
+                  <p class="text-white/80 text-sm">在线</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+              </div>
+            </div>
+          </div>
+
+          <div id="chatContainer" class="h-96 overflow-y-auto p-6 space-y-4">
+            <div class="flex gap-3 message-enter">
+              <div class="w-8 h-8 gradient-bg rounded-full flex items-center justify-center flex-shrink-0">
+                <i class="fas fa-robot text-white text-xs"></i>
+              </div>
+              <div class="chat-bubble-ai px-4 py-3 max-w-xs">
+                <p class="text-sm">👋 您好！我是您的 AI 管理助手，有什么可以帮您的吗？</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="border-t p-4">
+            <div class="flex gap-3">
+              <input type="text" id="messageInput" placeholder="输入指令，例如：查询订单 ABC123" 
+                     class="flex-1 px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
+                     onkeypress="if(event.key === 'Enter') sendMessage()">
+              <button onclick="sendMessage()" class="px-6 py-3 gradient-bg text-white rounded-xl font-semibold hover:opacity-90 transition">
+                <i class="fas fa-paper-plane mr-2"></i>
+                发送
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-6">
+        <div class="bg-white rounded-2xl shadow-lg p-6">
+          <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <i class="fas fa-lightbulb text-yellow-500"></i>
+            快捷指令
+          </h3>
+          <div class="space-y-3">
+            <button onclick="sendQuickMessage('查看统计数据')" class="w-full text-left px-4 py-3 bg-purple-50 text-purple-700 rounded-xl hover:bg-purple-100 transition instruction-card">
+              <div class="flex items-center gap-3">
+                <i class="fas fa-chart-line"></i>
+                <div>
+                  <p class="font-medium">查看统计数据</p>
+                  <p class="text-xs text-purple-600">获取店铺数据概览</p>
+                </div>
+              </div>
+            </button>
+            <button onclick="sendQuickMessage('查询订单 订单1')" class="w-full text-left px-4 py-3 bg-blue-50 text-blue-700 rounded-xl hover:bg-blue-100 transition instruction-card">
+              <div class="flex items-center gap-3">
+                <i class="fas fa-search"></i>
+                <div>
+                  <p class="font-medium">查询订单</p>
+                  <p class="text-xs text-blue-600">查看订单详情</p>
+                </div>
+              </div>
+            </button>
+            <button onclick="sendQuickMessage('订单 订单1 已发货')" class="w-full text-left px-4 py-3 bg-green-50 text-green-700 rounded-xl hover:bg-green-100 transition instruction-card">
+              <div class="flex items-center gap-3">
+                <i class="fas fa-truck"></i>
+                <div>
+                  <p class="font-medium">标记发货</p>
+                  <p class="text-xs text-green-600">更新订单状态</p>
+                </div>
+              </div>
+            </button>
+            <button onclick="sendQuickMessage('修改订单 订单1 价格为 88.8')" class="w-full text-left px-4 py-3 bg-orange-50 text-orange-700 rounded-xl hover:bg-orange-100 transition instruction-card">
+              <div class="flex items-center gap-3">
+                <i class="fas fa-edit"></i>
+                <div>
+                  <p class="font-medium">修改订单价格</p>
+                  <p class="text-xs text-orange-600">更新订单金额</p>
+                </div>
+              </div>
+            </button>
+            <button onclick="sendQuickMessage('查询商品 prod1')" class="w-full text-left px-4 py-3 bg-pink-50 text-pink-700 rounded-xl hover:bg-pink-100 transition instruction-card">
+              <div class="flex items-center gap-3">
+                <i class="fas fa-box"></i>
+                <div>
+                  <p class="font-medium">查询商品</p>
+                  <p class="text-xs text-pink-600">查看商品信息</p>
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-lg p-6">
+          <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <i class="fas fa-book text-blue-500"></i>
+            使用说明
+          </h3>
+          <div class="space-y-3 text-sm text-gray-600">
+            <div class="flex gap-2">
+              <span class="text-purple-600 font-semibold">1.</span>
+              <p><strong>查询订单：</strong>查询订单 [订单号]</p>
+            </div>
+            <div class="flex gap-2">
+              <span class="text-purple-600 font-semibold">2.</span>
+              <p><strong>改价格：</strong>修改订单 [订单号] 价格为 [金额]</p>
+            </div>
+            <div class="flex gap-2">
+              <span class="text-purple-600 font-semibold">3.</span>
+              <p><strong>发货：</strong>订单 [订单号] 已发货</p>
+            </div>
+            <div class="flex gap-2">
+              <span class="text-purple-600 font-semibold">4.</span>
+              <p><strong>查商品：</strong>查询商品 [商品ID]</p>
+            </div>
+            <div class="flex gap-2">
+              <span class="text-purple-600 font-semibold">5.</span>
+              <p><strong>看统计：</strong>查看统计数据</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl p-6 text-white">
+          <h3 class="font-bold mb-4 flex items-center gap-2">
+            <i class="fas fa-link"></i>
+            API 集成
+          </h3>
+          <p class="text-sm text-white/90 mb-4">用于飞书/QQ机器人集成</p>
+          <div class="bg-white/20 rounded-lg p-3 font-mono text-xs">
+            <p class="mb-1">POST /api/ai/webhook</p>
+            <p class="text-white/70">Body: {"message": "..."}</p>
+          </div>
+          <button onclick="copyWebhookUrl()" class="mt-4 w-full py-2 bg-white/20 rounded-lg hover:bg-white/30 transition text-sm">
+            <i class="fas fa-copy mr-2"></i>
+            复制 Webhook URL
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let chatHistory = [];
+
+    function addMessage(content, isUser = false) {
+      const container = document.getElementById('chatContainer');
+      const div = document.createElement('div');
+      div.className = `flex gap-3 message-enter ${isUser ? 'justify-end' : ''}`;
+
+      if (isUser) {
+        div.innerHTML = `
+          <div class="chat-bubble-user px-4 py-3 max-w-xs">
+            <p class="text-sm">${content}</p>
+          </div>
+          <div class="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-user text-white text-xs"></i>
+          </div>
+        `;
+      } else {
+        div.innerHTML = `
+          <div class="w-8 h-8 gradient-bg rounded-full flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-robot text-white text-xs"></i>
+          </div>
+          <div class="chat-bubble-ai px-4 py-3 max-w-xs">
+            <p class="text-sm whitespace-pre-wrap">${content}</p>
+          </div>
+        `;
+      }
+
+      container.appendChild(div);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function addTypingIndicator() {
+      const container = document.getElementById('chatContainer');
+      const div = document.createElement('div');
+      div.id = 'typingIndicator';
+      div.className = 'flex gap-3';
+      div.innerHTML = `
+        <div class="w-8 h-8 gradient-bg rounded-full flex items-center justify-center flex-shrink-0">
+          <i class="fas fa-robot text-white text-xs"></i>
+        </div>
+        <div class="chat-bubble-ai px-4 py-3">
+          <div class="typing-dots">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+      `;
+      container.appendChild(div);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function removeTypingIndicator() {
+      const indicator = document.getElementById('typingIndicator');
+      if (indicator) indicator.remove();
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById('messageInput');
+      const message = input.value.trim();
+      if (!message) return;
+
+      addMessage(message, true);
+      input.value = '';
+      addTypingIndicator();
+
+      try {
+        const response = await fetch('/api/ai/instruction', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message })
+        });
+
+        const data = await response.json();
+        removeTypingIndicator();
+        addMessage(data.message);
+      } catch (error) {
+        removeTypingIndicator();
+        addMessage('❌ 抱歉，系统出错了，请稍后再试。');
+        console.error(error);
+      }
+    }
+
+    function sendQuickMessage(msg) {
+      document.getElementById('messageInput').value = msg;
+      sendMessage();
+    }
+
+    function copyWebhookUrl() {
+      const url = window.location.origin + '/api/ai/webhook';
+      navigator.clipboard.writeText(url).then(() => {
+        alert('Webhook URL 已复制！');
+      }).catch(() => {
+        prompt('请手动复制:', url);
+      });
+    }
+  </script>
+</body>
+</html>
