@@ -210,8 +210,6 @@ function cleanup() {
   }
 }
 
-setInterval(cleanup, 30 * 60 * 1000);
-
 module.exports = {
   SECURITY_CONFIG,
   hashPassword,
