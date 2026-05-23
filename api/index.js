@@ -12,9 +12,9 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.staticfile.org"],
       imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'"],
+      connectSrc: ["'self'", "https://open.bigmodel.cn"],
       fontSrc: ["'self'", "data:", "https://cdn.staticfile.org"],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
