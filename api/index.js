@@ -1,13 +1,12 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 const uuid = require('uuid');
 const helmet = require('helmet');
-const serverless = require('serverless-http');
 
 const app = express();
 
-// ==================== 安全中间件 ====================
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -24,14 +23,9 @@ app.use(helmet({
   }
 }));
 
-// CORS配置
 app.use(cors());
-
-// Body解析器限制
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
-
-// 静态文件服务 - 让 Express 能够服务根目录下的所有静态文件
 app.use(express.static(path.join(__dirname, '..')));
 
 let db = null;
@@ -80,6 +74,41 @@ try {
   alipayConfig = { enabled: false };
 }
 
+function getAIConfig() {
+  try {
+    var configPath = path.join(__dirname, '..', 'data', 'ai-config.json');
+    if (fs.existsSync(configPath)) {
+      var data = fs.readFileSync(configPath, 'utf8');
+      return JSON.parse(data);
+    }
+  } catch(e) {
+    console.error('read ai-config failed:', e.message);
+  }
+  return {
+    apiKey: process.env.ZHIPU_API_KEY || process.env.AI_API_KEY || '',
+    apiUrl: process.env.AI_API_URL || 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
+    model: process.env.AI_MODEL || 'glm-4',
+    temperature: 0.8,
+    maxTokens: 500,
+    systemPrompt: '你是KDX丨ZHX官方商城的智能客服小K。用自然、友好的方式回答用户问题，像真人客服一样对话。回答简洁，可以带emoji。不要说"作为AI"之类的话，就当自己是真正的客服。'
+  };
+}
+
+function saveAIConfig(config) {
+  try {
+    var configPath = path.join(__dirname, '..', 'data', 'ai-config.json');
+    var dir = path.dirname(configPath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+    return true;
+  } catch(e) {
+    console.error('save ai-config failed:', e.message);
+    return false;
+  }
+}
+
 const smsCodes = new Map();
 
 function generateSmsCode() {
@@ -90,7 +119,6 @@ app.get('/api/health', function(req, res) {
   res.json({ status: 'ok', timestamp: new Date().toISOString(), db: !!db });
 });
 
-// 首页重定向到 shop
 app.get('/', function(req, res) {
   res.redirect(302, '/shop');
 });
@@ -746,79 +774,177 @@ if (db) {
   app.post('/api/login', function(req, res) { res.status(503).json({ error: '数据库不可用' }); });
 }
 
-// ==================== 页面路由 ====================
-app.get('/', function(req, res) {
-  res.redirect('/shop');
+app.get('/api/ai-config', function(req, res) {
+  var config = getAIConfig();
+  var maskedKey = '';
+  if (config.apiKey) {
+    maskedKey = config.apiKey.substring(0, 8) + '****' + config.apiKey.substring(config.apiKey.length - 4);
+  }
+  res.json({
+    apiUrl: config.apiUrl,
+    model: config.model,
+    temperature: config.temperature,
+    maxTokens: config.maxTokens,
+    systemPrompt: config.systemPrompt,
+    hasApiKey: !!config.apiKey,
+    apiKeyMasked: maskedKey
+  });
 });
 
-app.get('/shop', function(req, res) {
-  res.sendFile(path.join(__dirname, '..', 'shop.html'));
+app.post('/api/ai-config', function(req, res) {
+  try {
+    var currentConfig = getAIConfig();
+    if (req.body.apiKey && req.body.apiKey !== '****') {
+      currentConfig.apiKey = req.body.apiKey;
+    }
+    if (req.body.apiUrl) {
+      currentConfig.apiUrl = req.body.apiUrl;
+    }
+    if (req.body.model) {
+      currentConfig.model = req.body.model;
+    }
+    if (req.body.temperature !== undefined) {
+      currentConfig.temperature = parseFloat(req.body.temperature);
+    }
+    if (req.body.maxTokens !== undefined) {
+      currentConfig.maxTokens = parseInt(req.body.maxTokens);
+    }
+    if (req.body.systemPrompt) {
+      currentConfig.systemPrompt = req.body.systemPrompt;
+    }
+    var result = saveAIConfig(currentConfig);
+    if (result) {
+      res.json({ success: true, message: 'AI配置已保存' });
+    } else {
+      res.status(500).json({ error: '保存配置失败' });
+    }
+  } catch(e) {
+    res.status(500).json({ error: '保存配置失败' });
+  }
 });
 
-app.get('/customize', function(req, res) {
-  res.sendFile(path.join(__dirname, '..', 'customize.html'));
+app.post('/api/ai/test', async function(req, res) {
+  try {
+    var config = getAIConfig();
+    if (!config.apiKey) {
+      return res.json({ success: false, message: '未配置API密钥' });
+    }
+    var testMessages = [
+      { role: 'system', content: config.systemPrompt },
+      { role: 'user', content: '你好' }
+    ];
+    var startTime = Date.now();
+    var response = await fetch(config.apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + config.apiKey
+      },
+      body: JSON.stringify({
+        model: config.model,
+        messages: testMessages,
+        temperature: config.temperature,
+        max_tokens: 50
+      })
+    });
+    var elapsed = Date.now() - startTime;
+    if (!response.ok) {
+      var errText = await response.text();
+      return res.json({ success: false, message: 'API调用失败: HTTP ' + response.status, detail: errText, elapsed: elapsed });
+    }
+    var data = await response.json();
+    var reply = '';
+    if (data.choices && data.choices[0] && data.choices[0].message) {
+      reply = data.choices[0].message.content;
+    }
+    res.json({ success: true, message: 'AI连接正常', reply: reply, model: data.model, elapsed: elapsed, usage: data.usage });
+  } catch(e) {
+    res.json({ success: false, message: '连接失败: ' + e.message });
+  }
 });
 
-app.get('/chat', function(req, res) {
-  res.sendFile(path.join(__dirname, '..', 'chat.html'));
+app.post('/api/ai', async function(req, res) {
+  try {
+    var config = getAIConfig();
+    const { messages } = req.body;
+
+    const apiMessages = [{ role: 'system', content: config.systemPrompt || '你是KDX丨ZHX官方商城的智能客服小K。' }];
+
+    const recentMessages = messages.slice(-10);
+    for (let i = 0; i < recentMessages.length; i++) {
+      const msg = recentMessages[i];
+      if (msg.role === 'user') {
+        apiMessages.push({ role: 'user', content: msg.content });
+      } else if (msg.role === 'assistant') {
+        apiMessages.push({ role: 'assistant', content: msg.content });
+      }
+    }
+
+    if (!config.apiKey) {
+      const fallbackReplies = [
+        '您好！我是小K，很高兴为您服务～有什么可以帮您的吗？😊',
+        '收到您的问题！让我为您查一下～',
+        '感谢您的咨询！我们的商品都是经过严格质检的，请放心选购哦～✨',
+        '好的，我来帮您处理！请问还有其他问题吗？',
+        '明白啦！如果您有任何其他问题，随时告诉我哦～💪'
+      ];
+      return res.json({
+        id: 'msg-' + Date.now(),
+        object: 'chat.completion',
+        created: Date.now(),
+        model: 'kdgpt-turbo',
+        choices: [{
+          index: 0,
+          message: { role: 'assistant', content: fallbackReplies[Math.floor(Math.random() * fallbackReplies.length)] },
+          finish_reason: 'stop'
+        }],
+        usage: { prompt_tokens: 10, completion_tokens: 20, total_tokens: 30 }
+      });
+    }
+
+    const response = await fetch(config.apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + config.apiKey
+      },
+      body: JSON.stringify({
+        model: config.model,
+        messages: apiMessages,
+        temperature: config.temperature || 0.8,
+        max_tokens: config.maxTokens || 500
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('AI API request failed: ' + response.status);
+    }
+
+    const data = await response.json();
+
+    res.json({
+      id: data.id || 'msg-' + Date.now(),
+      object: 'chat.completion',
+      created: Date.now(),
+      model: data.model || config.model,
+      choices: data.choices || [],
+      usage: data.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 }
+    });
+  } catch (error) {
+    console.error('[AI API] Error:', error.message);
+    res.json({
+      id: 'msg-' + Date.now(),
+      object: 'chat.completion',
+      created: Date.now(),
+      model: 'kdgpt-turbo',
+      choices: [{
+        index: 0,
+        message: { role: 'assistant', content: '抱歉，我现在有点忙，请稍后再试～😊' },
+        finish_reason: 'stop'
+      }],
+      usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 }
+    });
+  }
 });
 
-app.get('/auth', function(req, res) {
-  res.sendFile(path.join(__dirname, '..', 'auth.html'));
-});
-
-app.get('/product/:id', function(req, res) {
-  res.sendFile(path.join(__dirname, '..', 'product-detail.html'));
-});
-
-app.get('/cart', function(req, res) {
-  res.sendFile(path.join(__dirname, '..', 'cart.html'));
-});
-
-app.get('/checkout', function(req, res) {
-  res.sendFile(path.join(__dirname, '..', 'checkout.html'));
-});
-
-app.get('/my-orders', function(req, res) {
-  res.sendFile(path.join(__dirname, '..', 'my-orders.html'));
-});
-
-app.get('/orders', function(req, res) {
-  res.sendFile(path.join(__dirname, '..', 'my-orders.html'));
-});
-
-app.get('/payment-success', function(req, res) {
-  res.sendFile(path.join(__dirname, '..', 'payment-success.html'));
-});
-
-app.get('/manual-payment', function(req, res) {
-  res.sendFile(path.join(__dirname, '..', 'manual-payment.html'));
-});
-
-app.get('/admin', function(req, res) {
-  res.sendFile(path.join(__dirname, '..', 'admin-shop.html'));
-});
-
-app.get('/contact-us', function(req, res) {
-  res.sendFile(path.join(__dirname, '..', 'contact-us.html'));
-});
-
-app.get('/user-center', function(req, res) {
-  res.sendFile(path.join(__dirname, '..', 'user-center.html'));
-});
-
-app.get('/test-payment', function(req, res) {
-  res.sendFile(path.join(__dirname, '..', 'test-payment.html'));
-});
-
-// ==================== 静态字体文件路由 ====================
-app.get('/webfonts/:file', function(req, res) {
-  var file = req.params.file;
-  var filePath = path.join(__dirname, '..', 'webfonts', file);
-  console.log('[webfonts] Request for:', file);
-  console.log('[webfonts] __dirname:', __dirname);
-  console.log('[webfonts] Full path:', filePath);
-  res.sendFile(filePath);
-});
-
-module.exports = serverless(app);
+module.exports = app;
