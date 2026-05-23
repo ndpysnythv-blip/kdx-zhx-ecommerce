@@ -19,10 +19,5 @@
       "src": "/((?!api/).*)",
       "dest": "/$1"
     }
-  ],
-  "deploymentEnvironments": {
-    "production": {
-      "protected": false
-    }
-  }
+  ]
 }
