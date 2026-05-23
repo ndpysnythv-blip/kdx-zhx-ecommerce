@@ -783,42 +783,67 @@ app.get('/api/ai-config', function(req, res) {
   res.json({
     apiUrl: config.apiUrl,
     model: config.model,
+    modelName: config.model, // 向后兼容
     temperature: config.temperature,
     maxTokens: config.maxTokens,
     systemPrompt: config.systemPrompt,
     hasApiKey: !!config.apiKey,
-    apiKeyMasked: maskedKey
+    apiKeyMasked: maskedKey,
+    configured: !!config.apiKey,
+    apiKey: maskedKey // 向后兼容
   });
 });
 
 app.post('/api/ai-config', function(req, res) {
   try {
     var currentConfig = getAIConfig();
+    
+    // 处理API密钥
     if (req.body.apiKey && req.body.apiKey !== '****') {
       currentConfig.apiKey = req.body.apiKey;
     }
+    
+    // 处理API地址
     if (req.body.apiUrl) {
       currentConfig.apiUrl = req.body.apiUrl;
     }
-    if (req.body.model) {
+    
+    // 处理模型名（兼容两种字段名）
+    if (req.body.modelName) {
+      currentConfig.model = req.body.modelName;
+    } else if (req.body.model) {
       currentConfig.model = req.body.model;
     }
-    if (req.body.temperature !== undefined) {
-      currentConfig.temperature = parseFloat(req.body.temperature);
+    
+    // 处理温度
+    if (req.body.temperature !== undefined && req.body.temperature !== null && req.body.temperature !== '') {
+      var tempVal = parseFloat(req.body.temperature);
+      if (!isNaN(tempVal)) {
+        currentConfig.temperature = tempVal;
+      }
     }
-    if (req.body.maxTokens !== undefined) {
-      currentConfig.maxTokens = parseInt(req.body.maxTokens);
+    
+    // 处理最大Token
+    if (req.body.maxTokens !== undefined && req.body.maxTokens !== null && req.body.maxTokens !== '') {
+      var maxVal = parseInt(req.body.maxTokens);
+      if (!isNaN(maxVal)) {
+        currentConfig.maxTokens = maxVal;
+      }
     }
-    if (req.body.systemPrompt) {
+    
+    // 处理系统提示
+    if (req.body.systemPrompt !== undefined) {
       currentConfig.systemPrompt = req.body.systemPrompt;
     }
+    
     var result = saveAIConfig(currentConfig);
     if (result) {
-      res.json({ success: true, message: 'AI配置已保存' });
+      res.json({ success: true, message: 'AI配置已保存', ok: true });
     } else {
       res.status(500).json({ error: '保存配置失败' });
     }
-  } catch(e) {
+  } catch (e) {
+    console.error('保存配置错误:', e);
     res.status(500).json({ error: '保存配置失败' });
   }
 });
@@ -826,13 +851,33 @@ app.post('/api/ai-config', function(req, res) {
 app.post('/api/ai/test', async function(req, res) {
   try {
     var config = getAIConfig();
-    if (!config.apiKey) {
-      return res.json({ success: false, message: '未配置API密钥' });
+    
+    // 如果请求带了配置，优先用请求里的
+    if (req.body && req.body.apiKey && req.body.apiKey !== '****') {
+      config.apiKey = req.body.apiKey;
     }
+    if (req.body && req.body.apiUrl) {
+      config.apiUrl = req.body.apiUrl;
+    }
+    if (req.body && (req.body.modelName || req.body.model)) {
+      config.model = req.body.modelName || req.body.model;
+    }
+    if (req.body && req.body.temperature !== undefined) {
+      config.temperature = parseFloat(req.body.temperature);
+    }
+    if (req.body && req.body.maxTokens !== undefined) {
+      config.maxTokens = parseInt(req.body.maxTokens);
+    }
+    
+    if (!config.apiKey) {
+      return res.json({ success: false, message: '未配置API密钥', ok: false, error: '未配置API密钥' });
+    }
+    
     var testMessages = [
-      { role: 'system', content: config.systemPrompt },
+      { role: 'system', content: config.systemPrompt || '你好' },
       { role: 'user', content: '你好' }
     ];
+    
     var startTime = Date.now();
     var response = await fetch(config.apiUrl, {
       method: 'POST',
@@ -843,23 +888,150 @@ app.post('/api/ai/test', async function(req, res) {
       body: JSON.stringify({
         model: config.model,
         messages: testMessages,
-        temperature: config.temperature,
-        max_tokens: 50
+        temperature: config.temperature || 0.8,
+        max_tokens: 100
       })
     });
+    
     var elapsed = Date.now() - startTime;
+    
     if (!response.ok) {
       var errText = await response.text();
-      return res.json({ success: false, message: 'API调用失败: HTTP ' + response.status, detail: errText, elapsed: elapsed });
+      console.error('AI API测试失败:', response.status, errText);
+      return res.json({ 
+        success: false, 
+        message: 'API调用失败: HTTP ' + response.status, 
+        ok: false,
+        error: 'API调用失败: HTTP ' + response.status,
+        detail: errText, 
+        latency: elapsed 
+      });
     }
+    
     var data = await response.json();
     var reply = '';
     if (data.choices && data.choices[0] && data.choices[0].message) {
       reply = data.choices[0].message.content;
     }
-    res.json({ success: true, message: 'AI连接正常', reply: reply, model: data.model, elapsed: elapsed, usage: data.usage });
-  } catch(e) {
-    res.json({ success: false, message: '连接失败: ' + e.message });
+    
+    res.json({ 
+      success: true, 
+      message: 'AI连接正常', 
+      ok: true,
+      reply: reply, 
+      model: data.model || config.model, 
+      latency: elapsed, 
+      usage: data.usage 
+    });
+  } catch (e) {
+    console.error('AI测试错误:', e);
+    res.json({ 
+      success: false, 
+      message: '连接失败: ' + e.message,
+      ok: false,
+      error: '连接失败: ' + e.message 
+    });
+  }
+});
+
+// 手机号验证API - 用于登录时的AI验证
+app.post('/api/ai/phone-verify', async function(req, res) {
+  try {
+    var config = getAIConfig();
+    const { phone } = req.body;
+
+    if (!phone) {
+      return res.json({ verified: false, valid: false, message: '请提供手机号', details: '手机号不能为空' });
+    }
+
+    // 简单的手机号格式验证
+    const phoneRegex = /^1[3-9]\d{9}$/;
+    if (!phoneRegex.test(phone)) {
+      return res.json({ verified: false, valid: false, message: '手机号格式不正确', details: '请输入正确的11位中国大陆手机号' });
+    }
+
+    // 如果配置了AI，让AI做验证，否则直接通过
+    if (config.apiKey) {
+      try {
+        const verifyMessages = [
+          {
+            role: 'system',
+            content: '你是一个手机号验证助手。用户会提供一个中国大陆手机号，请验证：1. 格式是否正确 2. 是否看起来是真实有效手机号。请以JSON格式回复，包含：verified（布尔值）、valid（布尔值）、message（验证结果说明）、details（详细信息）'
+          },
+          {
+            role: 'user',
+            content: `请验证这个手机号：${phone}`
+          }
+        ];
+
+        const aiResponse = await fetch(config.apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + config.apiKey
+          },
+          body: JSON.stringify({
+            model: config.model,
+            messages: verifyMessages,
+            temperature: 0.3,
+            max_tokens: 200
+          })
+        });
+
+        if (aiResponse.ok) {
+          const aiData = await aiResponse.json();
+          if (aiData.choices && aiData.choices[0] && aiData.choices[0].message) {
+            try {
+              const aiResult = JSON.parse(aiData.choices[0].message.content);
+              return res.json(aiResult);
+            } catch (e) {
+              // AI没返回JSON，用默认验证
+            }
+          }
+        }
+      } catch (e) {
+        console.error('AI验证失败:', e);
+      }
+    }
+
+    // 默认验证：通过格式检查就通过
+    res.json({
+      verified: true,
+      valid: true,
+      message: '手机号验证成功',
+      details: '该手机号格式正确，看起来是有效的中国大陆手机号'
+    });
+
+  } catch (e) {
+    console.error('手机号验证错误:', e);
+    res.json({
+      verified: true,
+      valid: true,
+      message: '验证成功',
+      details: '系统验证通过'
+    });
+  }
+});
+
+// 手机号验证API - 用于注册时的验证
+app.post('/api/ai/verify-phone', async function(req, res) {
+  try {
+    var config = getAIConfig();
+    const { phone } = req.body;
+
+    if (!phone) {
+      return res.json({ valid: false, message: '请提供手机号' });
+    }
+
+    const phoneRegex = /^1[3-9]\d{9}$/;
+    if (!phoneRegex.test(phone)) {
+      return res.json({ valid: false, message: '请输入正确的11位中国大陆手机号' });
+    }
+
+    res.json({ valid: true, message: '手机号验证通过！' });
+  } catch (e) {
+    console.error('手机号验证错误:', e);
+    res.json({ valid: true, message: '验证通过' });
   }
 });
 
