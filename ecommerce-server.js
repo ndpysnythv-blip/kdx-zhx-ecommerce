@@ -4,50 +4,72 @@ const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const bodyParser = require('body-parser');
 const helmet = require('helmet');
+
+// 加载环境变量（必须在加载配置之前）
+require('dotenv').config();
+
 const config = require('./config');
-const db = require('./database');
+const Database = require('./database');
+const db = new Database();
 const fs = require('fs');
 const crypto = require('crypto');
 const notificationService = require('./notification-service');
 const security = require('./security');
 const appleShortcuts = require('./apple-shortcuts');
-const AlipaySdk = require('alipay-sdk').default;
-const AlipayFormData = require('alipay-sdk/lib/form').default;
+
+// 支付宝SDK（安全加载）
+let AlipaySdk = null;
+let AlipayFormData = null;
+let alipaySdk = null;
 const alipayConfig = require('./alipay-config');
 
-// 加载环境变量
-require('dotenv').config();
+function initAlipaySdk() {
+  if (!alipayConfig.enabled) {
+    console.log('💡 支付宝配置未启用，使用模拟支付模式');
+    return null;
+  }
+  try {
+    if (!AlipaySdk) {
+      AlipaySdk = require('alipay-sdk').default;
+      AlipayFormData = require('alipay-sdk/lib/form').default;
+    }
+    const sdk = new AlipaySdk({
+      appId: alipayConfig.appId,
+      privateKey: alipayConfig.privateKey,
+      alipayPublicKey: alipayConfig.alipayPublicKey,
+      gateway: alipayConfig.gateway,
+      signType: alipayConfig.signType,
+      charset: alipayConfig.charset
+    });
+    console.log('✅ 支付宝SDK初始化成功');
+    return sdk;
+  } catch (error) {
+    console.error('❌ 支付宝SDK初始化失败:', error.message);
+    console.log('⚠️ 将使用模拟支付模式');
+    return null;
+  }
+}
+
+if (alipayConfig.enabled) {
+  console.log('🚀 正在初始化支付宝SDK...');
+  alipaySdk = initAlipaySdk();
+} else {
+  console.log('💡 使用模拟支付模式（无需支付宝配置）');
+}
 
 const app = express();
 const PORT = config.server.port;
-
-// 初始化支付宝SDK
-let alipaySdk = null;
-try {
-  alipaySdk = new AlipaySdk({
-    appId: alipayConfig.appId,
-    privateKey: alipayConfig.privateKey,
-    alipayPublicKey: alipayConfig.alipayPublicKey,
-    gateway: alipayConfig.gateway,
-    signType: alipayConfig.signType,
-    charset: alipayConfig.charset
-  });
-  console.log('✅ 支付宝SDK初始化成功');
-} catch (error) {
-  console.error('❌ 支付宝SDK初始化失败:', error);
-  console.log('⚠️ 将使用模拟支付模式');
-}
 
 // ==================== 安全中间件 ====================
 // Helmet安全头
 app.use(helmet.contentSecurityPolicy({
   directives: {
     defaultSrc: ["'self'"],
-    scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdn.jsdelivr.net"],
-    styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
-    imgSrc: ["'self'", "data:", "https://*"],
-    connectSrc: ["'self'"],
-    fontSrc: ["'self'"],
+    scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdn.jsdelivr.net", "https://cdn.tailwindcss.com", "https://cdnjs.cloudflare.com", "https://cdn.staticfile.org"],
+    styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com", "https://cdn.staticfile.org"],
+    imgSrc: ["'self'", "data:", "https:"],
+    connectSrc: ["'self'", "https://kdxzhx.top", "http://kdxzhx.top"],
+    fontSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://cdn.staticfile.org"],
     objectSrc: ["'none'"],
     mediaSrc: ["'self'"],
     frameSrc: ["'none'"]
@@ -59,7 +81,21 @@ app.use(helmet.noSniff());
 app.use(helmet.frameguard({ action: 'deny' }));
 
 // CORS配置
-app.use(cors({ origin: [`http://localhost:${PORT}`], credentials: true }));
+const allowedOrigins = [
+  `http://localhost:${PORT}`,
+  'https://kdxzhx.top',
+  'http://kdxzhx.top'
+];
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, true);
+    }
+  },
+  credentials: true
+}));
 
 // Body解析器限制
 app.use(bodyParser.json({ limit: '10kb' }));

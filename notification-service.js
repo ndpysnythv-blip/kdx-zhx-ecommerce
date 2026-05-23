@@ -35,15 +35,7 @@ if (EMAIL_PROVIDER === 'sendgrid' && SENDGRID_CONFIG.apiKey) {
     console.log('📧 SendGrid 已初始化');
 }
 
-// 调试：打印当前配置
-console.log('========== 配置调试 ==========');
-console.log('[环境变量加载的:', process.env);
-console.log('EMAIL_PROVIDER:', EMAIL_PROVIDER);
-console.log('EMAILJS_CONFIG.publicKey:', EMAILJS_CONFIG.publicKey?.substring(0, 8) + '...');
-console.log('EMAILJS_CONFIG.serviceId:', EMAILJS_CONFIG.serviceId);
-console.log('EMAILJS_CONFIG.otpTemplateId:', EMAILJS_CONFIG.otpTemplateId);
-console.log('EMAILJS_CONFIG.orderTemplateId:', EMAILJS_CONFIG.orderTemplateId);
-console.log('================================');
+console.log('📧 邮件服务提供商:', EMAIL_PROVIDER);
 
 // 创建邮件传输器（nodemailer）
 let mailTransporter = null;

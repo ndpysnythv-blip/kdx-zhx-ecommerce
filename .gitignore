@@ -1,11 +1,16 @@
 # 环境变量和密钥文件（绝对不要提交！）
 .env
+.env.*
+*.env
+*.env.*
 .env.local
 .env.production
 *.key
 *.pem
 *.p12
 key-manager.js
+vercel-env.json
+*vercel-env.json
 
 # 数据库文件
 data/*.json
