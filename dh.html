@@ -7,435 +7,525 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{width:100%;height:100%;background:#000;overflow:hidden}
-body{font-family:'Segoe UI',sans-serif;color:#fff;user-select:none}
-canvas{display:block;position:fixed;top:0;left:0}
-#bg{z-index:0}#main{z-index:1}#bloom{z-index:2;pointer-events:none}#ov{z-index:3;pointer-events:none}
-#cam{position:fixed;bottom:16px;right:16px;width:180px;height:135px;border-radius:12px;
-overflow:hidden;border:1px solid rgba(255,255,255,.08);z-index:10;background:#080808;
-box-shadow:0 6px 30px rgba(0,0,0,.5);display:none;opacity:.8}
-#cam video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
-#lbl{position:fixed;top:28px;left:50%;transform:translateX(-50%);font-size:22px;
-font-weight:200;letter-spacing:7px;z-index:5;text-shadow:0 0 30px rgba(255,255,255,.25);
-opacity:0;transition:opacity .4s;pointer-events:none;text-transform:uppercase}
-#lbl.show{opacity:1}
-#st{position:fixed;top:28px;left:28px;z-index:5;font-size:11px;line-height:1.8;
-opacity:.25;pointer-events:none;font-weight:200}
-#keys{position:fixed;bottom:24px;left:24px;z-index:5;font-size:11px;line-height:2.2;
-opacity:.2;pointer-events:none;font-weight:200}
-#keys span{display:inline-block;padding:2px 10px;margin:2px 3px;
-background:rgba(255,255,255,.03);border-radius:16px;border:1px solid rgba(255,255,255,.05)}
+body{font-family:sans-serif;color:#fff;user-select:none}
+#c1{position:fixed;top:0;left:0;width:100%;height:100%;z-index:1}
+#camBox{position:fixed;bottom:16px;right:16px;width:200px;height:150px;
+border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.1);
+z-index:20;background:#000;box-shadow:0 4px 20px rgba(0,0,0,.5);display:none}
+#camBox video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+#status{position:fixed;top:20px;left:50%;transform:translateX(-50%);
+z-index:30;font-size:13px;color:rgba(255,255,255,.6);text-align:center;
+pointer-events:none;letter-spacing:2px}
+#gestureName{position:fixed;top:50px;left:50%;transform:translateX(-50%);
+z-index:30;font-size:22px;font-weight:200;color:rgba(255,255,255,.8);
+text-align:center;pointer-events:none;letter-spacing:6px;
+text-shadow:0 0 20px rgba(255,255,255,.3);opacity:0;transition:opacity .3s}
+#gestureName.show{opacity:1}
+#hint{position:fixed;bottom:20px;left:20px;z-index:30;font-size:11px;
+color:rgba(255,255,255,.25);line-height:2;pointer-events:none}
 </style>
 </head>
 <body>
-<canvas id="bg"></canvas>
-<canvas id="main"></canvas>
-<canvas id="bloom"></canvas>
-<canvas id="ov"></canvas>
-<div id="cam"><video id="v" autoplay playsinline muted></video></div>
-<div id="lbl"></div>
-<div id="st"></div>
-<div id="keys">
-<span>✋ 张开 — 扩散</span><span>✊ 握拳 — 收缩</span><span>🤏 捏合 — 漩涡</span>
-<span>☝️ 指向 — 追踪</span><span>🖐️🖐️ 双手 — 引力场</span><span>键盘1-5切换</span>
+<canvas id="c1"></canvas>
+<div id="camBox"><video id="vid" autoplay playsinline muted></video></div>
+<div id="status">初始化中...</div>
+<div id="gestureName"></div>
+<div id="hint">
+✋ 张开手 — 粒子扩散 &nbsp; ✊ 握拳 — 粒子收缩 &nbsp; 🤏 捏合 — 漩涡<br>
+☝️ 指向 — 粒子追踪 &nbsp; 键盘 1-5 切换手势 &nbsp; +/- 调节粒子数
 </div>
 
 <script>
 (function(){
 'use strict';
 
-/* ── DOM ── */
-const $=id=>document.getElementById(id);
-const video=$('v'),camBox=$('cam');
-const oc=$('ov'),ox=oc.getContext('2d');
-const mc=$('main'),mx=mc.getContext('2d');
-const bc=$('bg'),bx=bc.getContext('2d');
-const blc=$('bloom'),blx=blc.getContext('2d');
-const lbl=$('lbl'),st=$('st');
+// ============ DOM ============
+var c1 = document.getElementById('c1');
+var ctx = c1.getContext('2d');
+var vid = document.getElementById('vid');
+var camBox = document.getElementById('camBox');
+var statusEl = document.getElementById('status');
+var gestureEl = document.getElementById('gestureName');
 
-/* ── Canvas sizing ── */
-let W,H;
-function resize(){
-  W=innerWidth;H=innerHeight;
-  [mc,bc,oc,blc].forEach(c=>{c.width=W;c.height=H});
-  stars.forEach(s=>{s.x=Math.random()*W;s.y=Math.random()*H});
+var W = window.innerWidth;
+var H = window.innerHeight;
+c1.width = W;
+c1.height = H;
+
+window.addEventListener('resize', function(){
+  W = window.innerWidth;
+  H = window.innerHeight;
+  c1.width = W;
+  c1.height = H;
+});
+
+statusEl.textContent = '粒子引擎启动中...';
+
+// ============ PARTICLES ============
+var MAX = 2000;
+var particleCount = 800;
+var particles = [];
+
+function Particle(){
+  this.x = Math.random() * W;
+  this.y = Math.random() * H;
+  this.vx = (Math.random() - 0.5) * 1.5;
+  this.vy = (Math.random() - 0.5) * 1.5;
+  this.radius = Math.random() * 3 + 1;
+  this.baseRadius = this.radius;
+  this.hue = Math.random() * 360;
+  this.alpha = Math.random() * 0.6 + 0.3;
+  this.baseAlpha = this.alpha;
+  this.phase = Math.random() * Math.PI * 2;
+  this.life = 1;
+  this.trail = [];
+  this.trailLen = 5;
 }
-resize();addEventListener('resize',resize);
 
-/* ── Hidden canvas for camera processing ── */
-const procW=160,procH=120;
-const hCvs=document.createElement('canvas');
-hCvs.width=procW;hCvs.height=procH;
-const hx=hCvs.getContext('2d',{willReadFrequently:true});
+for(var i = 0; i < MAX; i++){
+  particles.push(new Particle());
+}
 
-/* ══════════════════════════════════════
-   GESTURE SYSTEM
-   ══════════════════════════════════════ */
-const G={NONE:'none',OPEN:'open',FIST:'fist',PINCH:'pinch',POINT:'point',TWO:'two'};
-const GN={[G.NONE]:'',[G.OPEN]:'张开 · 扩散',[G.FIST]:'握拳 · 收缩',
-  [G.PINCH]:'捏合 · 漩涡',[G.POINT]:'指向 · 追踪',[G.TWO]:'双手 · 引力场'};
-const GC={
-  [G.NONE]:{h:210,s:40,l:55},[G.OPEN]:{h:38,s:100,l:62},
-  [G.FIST]:{h:345,s:100,l:52},[G.PINCH]:{h:265,s:95,l:58},
-  [G.POINT]:{h:165,s:90,l:52},[G.TWO]:{h:195,s:100,l:60}
+// ============ GESTURE STATE ============
+var gesture = 'none'; // none, open, fist, pinch, point, two
+var handX = 0.5, handY = 0.5;
+var handX2 = 0.5, handY2 = 0.5;
+var hasHand = false;
+var handDirX = 0, handDirY = 0;
+var prevHX = 0.5, prevHY = 0.5;
+
+var gestureNames = {
+  none: '', open: '张开 · 扩散', fist: '握拳 · 收缩',
+  pinch: '捏合 · 漩涡', point: '指向 · 追踪', two: '双手 · 引力场'
+};
+var gestureColors = {
+  none: {h:210, s:40}, open: {h:38, s:100}, fist: {h:345, s:100},
+  pinch: {h:265, s:95}, point: {h:165, s:90}, two: {h:195, s:100}
 };
 
-let gs={type:G.NONE,prev:G.NONE,hc:[],t:0,blend:0};
-function setGesture(type){if(type!==gs.type){gs.prev=gs.type;gs.type=type;gs.blend=0}}
-
-/* ══════════════════════════════════════
-   PARTICLE SYSTEM — 2500 particles
-   ══════════════════════════════════════ */
-const MAX=2500;let cnt=1000;const pool=[];
-class P{
-  constructor(){this.reset()}
-  reset(){
-    this.x=Math.random()*W;this.y=Math.random()*H;
-    this.vx=(Math.random()-.5)*.6;this.vy=(Math.random()-.5)*.6;
-    this.r=Math.random()*2+.4;this.br=this.r;this.life=1;
-    this.h=Math.random()*360;this.s=70;this.l=55;
-    this.a=Math.random()*.45+.12;this.ba=this.a;
-    this.tl=[];this.tlen=4;this.on=true;
-    this.ph=Math.random()*6.28;this.ph2=Math.random()*6.28;
-  }
-  update(){
-    if(!this.on)return;
-    this.tl.push({x:this.x,y:this.y});
-    if(this.tl.length>this.tlen)this.tl.shift();
-    this.x+=this.vx;this.y+=this.vy;
-    if(this.x<-30)this.x=W+30;if(this.x>W+30)this.x=-30;
-    if(this.y<-30)this.y=H+30;if(this.y>H+30)this.y=-30;
-  }
-  draw(c){
-    if(!this.on)return;const al=this.a*this.life;if(al<.01)return;
-    if(this.tl.length>1){
-      c.beginPath();c.moveTo(this.tl[0].x,this.tl[0].y);
-      for(let i=1;i<this.tl.length;i++)c.lineTo(this.tl[i].x,this.tl[i].y);
-      c.strokeStyle=`hsla(${this.h},${this.s}%,${this.l}%,${al*.2})`;
-      c.lineWidth=this.r*.5;c.lineCap='round';c.stroke();
-    }
-    const g=c.createRadialGradient(this.x,this.y,0,this.x,this.y,this.r*4);
-    g.addColorStop(0,`hsla(${this.h},${this.s}%,${this.l+12}%,${al})`);
-    g.addColorStop(.35,`hsla(${this.h},${this.s}%,${this.l}%,${al*.35})`);
-    g.addColorStop(1,`hsla(${this.h},${this.s}%,${this.l}%,0)`);
-    c.beginPath();c.arc(this.x,this.y,this.r*4,0,6.28);c.fillStyle=g;c.fill();
-    c.beginPath();c.arc(this.x,this.y,this.r*.4,0,6.28);
-    c.fillStyle=`hsla(${this.h},100%,93%,${al*.85})`;c.fill();
-  }
-}
-for(let i=0;i<MAX;i++)pool.push(new P);
-
-/* ══════════════════════════════════════
-   PHYSICS
-   ══════════════════════════════════════ */
-function physics(dt){
-  gs.t+=dt;gs.blend=Math.min(1,gs.blend+dt*3);
-  const col=GC[gs.type],pc=GC[gs.prev],b=gs.blend;
-  const ch=col.h*b+pc.h*(1-b),cs=col.s*b+pc.s*(1-b),cl=col.l*b+pc.l*(1-b);
-
-  for(let i=0;i<cnt;i++){
-    const p=pool[i];if(!p.on)continue;
-    p.h+=(ch+Math.sin(gs.t*2+p.ph)*12-p.h)*.03;
-    p.s+=(cs-p.s)*.03;p.l+=(cl-p.l)*.03;
-    switch(gs.type){
-      case G.OPEN:phOpen(p);break;case G.FIST:phFist(p);break;
-      case G.PINCH:phPinch(p);break;case G.POINT:phPoint(p);break;
-      case G.TWO:phTwo(p);break;default:phIdle(p);
-    }
-    p.vx+=Math.sin(gs.t*1.1+p.ph2)*.012;
-    p.vy+=Math.cos(gs.t*.9+p.ph)*.012;
-    p.vx*=.986;p.vy*=.986;
-  }
-}
-function phIdle(p){
-  p.vx+=Math.sin(gs.t*.4+p.ph)*.012+Math.cos(gs.t*.7+p.ph2)*.006;
-  p.vy+=Math.cos(gs.t*.35+p.ph*1.3)*.012+Math.sin(gs.t*.55+p.ph2)*.006;
-  p.r+=(p.br-p.r)*.04;p.a+=(p.ba-p.a)*.04;p.tlen=Math.max(3,p.tlen-1);
-}
-function phOpen(p){
-  if(!gs.hc.length){phIdle(p);return}
-  const h=gs.hc[0],hx=h.x*W,hy=h.y*H,dx=p.x-hx,dy=p.y-hy,d=Math.hypot(dx,dy),R=320;
-  if(d<R&&d>1){const f=(1-d/R)*(1-d/R)*3.5;p.vx+=dx/d*f;p.vy+=dy/d*f;
-    p.r=p.br*(1+(1-d/R)*2);p.a=Math.min(1,p.ba*(1.2+(1-d/R)));
-    const a=Math.atan2(dy,dx);p.vx+=Math.cos(a+1.57)*f*.3;p.vy+=Math.sin(a+1.57)*f*.3;
-    if(d<R*.3){p.vx*=1.02;p.vy*=1.02}}
-  p.tlen=11;
-}
-function phFist(p){
-  if(!gs.hc.length){phIdle(p);return}
-  const h=gs.hc[0],hx=h.x*W,hy=h.y*H,dx=hx-p.x,dy=hy-p.y,d=Math.hypot(dx,dy),R=380;
-  if(d<R&&d>22){const f=(1-d/R)*(1-d/R)*4.5;p.vx+=dx/d*f;p.vy+=dy/d*f;
-    p.r=p.br*(.2+d/R*.8);const a=Math.atan2(dy,dx);
-    p.vx+=Math.cos(a+1.57)*f*.18;p.vy+=Math.sin(a+1.57)*f*.18}
-  else if(d<=22){const a=Math.atan2(p.y-hy,p.x-hx),sp=1.8+Math.sin(gs.t*4+p.ph)*.4;
-    p.vx=Math.cos(a+1.8)*sp;p.vy=Math.sin(a+1.8)*sp;p.r=p.br*.2;p.a=Math.min(1,p.ba*2.2)}
-  p.tlen=3;
-}
-function phPinch(p){
-  if(!gs.hc.length){phIdle(p);return}
-  const h=gs.hc[0],px=h.x*W,py=h.y*H,dx=px-p.x,dy=py-p.y,d=Math.hypot(dx,dy),R=260;
-  if(d<R&&d>3){const f=(1-d/R)*(1-d/R)*5.5,a=Math.atan2(dy,dx);
-    p.vx+=Math.cos(a+1.57)*f*.85;p.vy+=Math.sin(a+1.57)*f*.85;
-    p.vx+=dx/d*f*.3;p.vy+=dy/d*f*.3;
-    p.r=p.br*(1+Math.sin(gs.t*6+p.ph)*.5);p.a=Math.min(1,p.ba*(1.3+(1-d/R)));
-    if(d<R*.2){p.vx*=1.03;p.vy*=1.03}}
-  p.tlen=16;
-}
-function phPoint(p){
-  if(!gs.hc.length){phIdle(p);return}
-  const h=gs.hc[0],hx=h.x*W,hy=h.y*H,dx=p.x-hx,dy=p.y-hy,d=Math.hypot(dx,dy),R=400;
-  if(d<R&&d>8){
-    // Use hand velocity as direction
-    const dir=gs.dir||{x:0,y:-1};
-    const nx=dir.x,ny=dir.y,cross=dx*ny-dy*nx;
-    if(Math.abs(cross)<90&&(dx*nx+dy*ny)>0){
-      p.vx+=nx*2;p.vy+=ny*2;p.vx-=cross*ny*.05;p.vy+=cross*nx*.05;
-      p.r=p.br*(1.2+(1-Math.abs(cross)/90));p.a=Math.min(1,p.ba*1.6);
-    }}
-  p.tlen=9;
-}
-function phTwo(p){
-  if(gs.hc.length<2){if(gs.hc.length===1){const h=gs.hc[0],dx=h.x*W-p.x,dy=h.y*H-p.y,d=Math.hypot(dx,dy);
-    if(d<320&&d>1){const f=(1-d/320)*(1-d/320)*2.8;p.vx+=dx/d*f;p.vy+=dy/d*f}}return}
-  const[h1,h2]=gs.hc;
-  for(const hand of[h1,h2]){const dx=hand.x*W-p.x,dy=hand.y*H-p.y,d=Math.hypot(dx,dy);
-    if(d<320&&d>1){const f=(1-d/320)*(1-d/320)*2.8;p.vx+=dx/d*f;p.vy+=dy/d*f}}
-  const mx=(h1.x+h2.x)/2*W,my=(h1.y+h2.y)/2*H,d=Math.hypot(mx-p.x,my-p.y);
-  if(d<100){p.vx-=(mx-p.x)/d*1.8;p.vy-=(my-p.y)/d*1.8}
-  p.r=p.br*(1+Math.sin(gs.t*3.5+p.ph)*.3);p.tlen=13;
-}
-
-/* ══════════════════════════════════════
-   BACKGROUND
-   ══════════════════════════════════════ */
-let stars=[];
-for(let i=0;i<200;i++)stars.push({x:Math.random()*W,y:Math.random()*H,
-  r:Math.random()*1+.2,a:Math.random()*.35+.06,tw:Math.random()*6.28,sp:Math.random()*.6+.3});
-function drawBg(dt){
-  bx.fillStyle='rgba(0,0,0,.1)';bx.fillRect(0,0,W,H);
-  for(const s of stars){s.tw+=dt*s.sp;const a=s.a*(.4+.6*Math.sin(s.tw));
-    bx.beginPath();bx.arc(s.x,s.y,s.r,0,6.28);bx.fillStyle=`rgba(255,255,255,${a})`;bx.fill()}
-  if(gs.hc.length){const h=gs.hc[0],col=GC[gs.type];
-    const g=bx.createRadialGradient(h.x*W,h.y*H,0,h.x*W,h.y*H,350);
-    g.addColorStop(0,`hsla(${col.h},${col.s}%,${col.l}%,.035)`);
-    g.addColorStop(1,'transparent');bx.fillStyle=g;bx.fillRect(0,0,W,H)}
-}
-
-/* ══════════════════════════════════════
-   BLOOM
-   ══════════════════════════════════════ */
-function drawBloom(){
-  blx.clearRect(0,0,W,H);blx.globalCompositeOperation='lighter';
-  blx.filter='blur(10px) brightness(1.1)';blx.globalAlpha=.3;blx.drawImage(mc,0,0,W,H);
-  blx.filter='blur(24px) brightness(.7)';blx.globalAlpha=.18;blx.drawImage(mc,0,0,W,H);
-  blx.filter='none';blx.globalAlpha=1;blx.globalCompositeOperation='source-over';
-}
-
-/* ══════════════════════════════════════
-   CONNECTIONS
-   ══════════════════════════════════════ */
-function drawConn(){
-  const md=65,mx2=200;let n=0;
-  for(let i=0;i<cnt&&n<mx2;i++){const a=pool[i];if(!a.on)continue;
-    for(let j=i+1;j<cnt&&n<mx2;j++){const b=pool[j];if(!b.on)continue;
-      const d=Math.hypot(a.x-b.x,a.y-b.y);
-      if(d<md){const al=(1-d/md)*.1*a.life*b.life;
-        mx.beginPath();mx.moveTo(a.x,a.y);mx.lineTo(b.x,b.y);
-        mx.strokeStyle=`hsla(${(a.h+b.h)/2},45%,50%,${al})`;mx.lineWidth=.35;mx.stroke();n++}}}
-}
-
-/* ══════════════════════════════════════
-   HAND OVERLAY — draw detected hand blobs
-   ══════════════════════════════════════ */
-function drawHandOverlay(){
-  ox.clearRect(0,0,W,H);
-  if(!gs.hc.length)return;
-  const col=GC[gs.type];
-  for(const h of gs.hc){
-    const x=h.x*W,y=h.y*H;
-    // outer glow
-    const g=ox.createRadialGradient(x,y,0,x,y,50);
-    g.addColorStop(0,`hsla(${col.h},${col.s}%,${col.l}%,.15)`);
-    g.addColorStop(1,'transparent');
-    ox.beginPath();ox.arc(x,y,50,0,6.28);ox.fillStyle=g;ox.fill();
-    // center dot
-    ox.beginPath();ox.arc(x,y,3,0,6.28);
-    ox.fillStyle=`hsla(${col.h},100%,85%,.6)`;ox.fill();
-    // ring
-    ox.beginPath();ox.arc(x,y,20,0,6.28);
-    ox.strokeStyle=`hsla(${col.h},${col.s}%,${col.l}%,.2)`;ox.lineWidth=1;ox.stroke();
+function setGesture(g){
+  if(g !== gesture){
+    gesture = g;
+    var name = gestureNames[g] || '';
+    gestureEl.textContent = name;
+    if(name){ gestureEl.classList.add('show'); }
+    else { gestureEl.classList.remove('show'); }
   }
 }
 
-/* ══════════════════════════════════════
-   CAMERA + SKIN COLOR HAND DETECTION
-   ══════════════════════════════════════ */
-let camOn=false,prevFrame=null;
+// ============ CAMERA + HAND DETECTION ============
+var camReady = false;
+var procCvs = document.createElement('canvas');
+procCvs.width = 120; procCvs.height = 90;
+var procCtx = procCvs.getContext('2d', {willReadFrequently: true});
 
-async function startCamera(){
-  try{
-    const stream=await navigator.mediaDevices.getUserMedia({video:{width:640,height:480,facingMode:'user'}});
-    video.srcObject=stream;camBox.style.display='block';
-    await new Promise(r=>{video.onloadedmetadata=()=>{video.play();r()}});
-    camOn=true;
-  }catch(e){console.warn('Camera:',e.message)}
+function startCamera(){
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    statusEl.textContent = '浏览器不支持摄像头 · 请用鼠标体验';
+    return;
+  }
+  statusEl.textContent = '请求摄像头权限...';
+  navigator.mediaDevices.getUserMedia({video:{width:640,height:480,facingMode:'user'}})
+    .then(function(stream){
+      vid.srcObject = stream;
+      camBox.style.display = 'block';
+      return vid.play();
+    })
+    .then(function(){
+      camReady = true;
+      statusEl.textContent = '摄像头就绪 · 请伸出手掌';
+      setTimeout(function(){ statusEl.style.opacity = '0.3'; }, 3000);
+    })
+    .catch(function(err){
+      if(err.name === 'NotAllowedError'){
+        statusEl.textContent = '摄像头权限被拒绝 · 用鼠标或键盘1-5体验';
+      } else if(err.name === 'NotFoundError'){
+        statusEl.textContent = '未检测到摄像头 · 用鼠标或键盘1-5体验';
+      } else {
+        statusEl.textContent = '摄像头错误: ' + err.message;
+      }
+    });
 }
 
-function detectHands(){
-  if(!camOn||video.readyState<2)return;
-  // Draw video to small processing canvas
-  hx.drawImage(video,0,0,procW,procH);
-  const img=hx.getImageData(0,0,procW,procH);
-  const d=img.data;
+// Skin color detection + blob analysis
+function detectHand(){
+  if(!camReady || vid.readyState < 2) return;
 
-  // Skin color detection (YCbCr space)
-  const skin=new Uint8Array(procW*procH);
-  for(let i=0;i<d.length;i+=4){
-    const r=d[i],g=d[i+1],b=d[i+2];
-    // Convert to YCbCr
-    const y=.299*r+.587*g+.114*b;
-    const cb=128-.169*r-.331*g+.5*b;
-    const cr=128+.5*r-.419*g-.081*b;
-    // Skin color range
-    if(cr>133&&cr<173&&cb>77&&cb<127&&y>80){
-      skin[i/4]=1;
+  procCtx.drawImage(vid, 0, 0, 120, 90);
+  var img = procCtx.getImageData(0, 0, 120, 90);
+  var d = img.data;
+  var PW = 120, PH = 90;
+
+  // Skin detection in YCbCr
+  var skin = [];
+  for(var i = 0; i < PW * PH; i++) skin[i] = 0;
+
+  for(var i = 0; i < d.length; i += 4){
+    var r = d[i], g = d[i+1], b = d[i+2];
+    var cb = 128 - 0.169*r - 0.331*g + 0.5*b;
+    var cr = 128 + 0.5*r - 0.419*g - 0.081*b;
+    if(cr > 135 && cr < 175 && cb > 85 && cb < 135){
+      skin[i/4] = 1;
     }
   }
 
-  // Find connected blobs using flood fill
-  const visited=new Uint8Array(procW*procH);
-  const blobs=[];
+  // Find blobs via flood fill
+  var visited = [];
+  for(var i = 0; i < PW * PH; i++) visited[i] = 0;
+  var blobs = [];
 
-  for(let y=2;y<procH-2;y++){
-    for(let x=2;x<procW-2;x++){
-      const idx=y*procW+x;
-      if(skin[idx]&&!visited[idx]){
-        // BFS flood fill
-        let sumX=0,sumY=0,count=0;
-        const q=[idx];visited[idx]=1;
-        let minX=x,maxX=x,minY=y,maxY=y;
-        while(q.length>0&&count<800){
-          const ci=q.shift();
-          const cx=ci%procW,cy=(ci-cx)/procW;
-          sumX+=cx;sumY+=cy;count++;
-          minX=Math.min(minX,cx);maxX=Math.max(maxX,cx);
-          minY=Math.min(minY,cy);maxY=Math.max(maxY,cy);
-          // 4-connected neighbors
-          for(const[dx,dy]of[[-1,0],[1,0],[0,-1],[0,1]]){
-            const nx=cx+dx,ny=cy+dy;
-            if(nx>=0&&nx<procW&&ny>=0&&ny<procH){
-              const ni=ny*procW+nx;
-              if(skin[ni]&&!visited[ni]){visited[ni]=1;q.push(ni)}
+  for(var y = 1; y < PH - 1; y++){
+    for(var x = 1; x < PW - 1; x++){
+      var idx = y * PW + x;
+      if(!skin[idx] || visited[idx]) continue;
+
+      var sumX = 0, sumY = 0, count = 0;
+      var queue = [idx];
+      visited[idx] = 1;
+
+      while(queue.length > 0 && count < 600){
+        var ci = queue.shift();
+        var cx = ci % PW;
+        var cy = (ci - cx) / PW;
+        sumX += cx; sumY += cy; count++;
+
+        var neighbors = [[cx-1,cy],[cx+1,cy],[cx,cy-1],[cx,cy+1]];
+        for(var n = 0; n < 4; n++){
+          var nx = neighbors[n][0], ny = neighbors[n][1];
+          if(nx >= 0 && nx < PW && ny >= 0 && ny < PH){
+            var ni = ny * PW + nx;
+            if(skin[ni] && !visited[ni]){
+              visited[ni] = 1;
+              queue.push(ni);
             }
           }
         }
-        // Filter: blob must be large enough to be a hand
-        if(count>150){
-          const bw=maxX-minX,bh=maxY-minY;
-          const area=bw*bh;
-          const density=count/(area||1);
-          blobs.push({
-            x:1-sumX/count/procW, // mirror X
-            y:sumY/count/procH,
-            count,area,density,
-            w:bw/procW,h:bh/procH,
-            spread:count/(Math.max(bw,bh)||1) // elongation
-          });
-        }
+      }
+
+      if(count > 80){
+        blobs.push({
+          x: 1 - sumX / count / PW, // mirror
+          y: sumY / count / PH,
+          count: count
+        });
       }
     }
   }
 
-  // Sort by size (largest first)
-  blobs.sort((a,b)=>b.count-a.count);
+  blobs.sort(function(a,b){ return b.count - a.count; });
 
-  // Determine gesture from blob properties
-  if(blobs.length>=2&&blobs[1].count>100){
-    gs.hc=[blobs[0],blobs[1]].map(b=>({x:b.x,y:b.y}));
-    setGesture(G.TWO);
-  }else if(blobs.length>=1&&blobs[0].count>150){
-    const b=blobs[0];
-    gs.hc=[{x:b.x,y:b.y}];
+  if(blobs.length >= 2 && blobs[1].count > 60){
+    handX = blobs[0].x; handY = blobs[0].y;
+    handX2 = blobs[1].x; handY2 = blobs[1].y;
+    hasHand = true;
+    setGesture('two');
+  } else if(blobs.length >= 1 && blobs[0].count > 100){
+    prevHX = handX; prevHY = handY;
+    handX = blobs[0].x; handY = blobs[0].y;
+    handDirX = handX - prevHX;
+    handDirY = handY - prevHY;
+    hasHand = true;
 
-    // Track velocity for pointing direction
-    if(gs._prevX!==undefined){
-      gs.dir={x:b.x-gs._prevX,y:b.y-gs._prevY};
+    var speed = Math.sqrt(handDirX*handDirX + handDirY*handDirY);
+    var size = blobs[0].count;
+
+    if(speed > 0.025){
+      setGesture('open');
+    } else if(size > 300){
+      setGesture('fist');
+    } else if(size > 150){
+      setGesture('pinch');
+    } else {
+      setGesture('point');
     }
-    gs._prevX=b.x;gs._prevY=b.y;
-
-    const spread=b.spread;
-    const density=b.density;
-    const speed=Math.hypot((gs.dir||{}).x||0,(gs.dir||{}).y||0);
-
-    // Classify gesture:
-    // High spread + low density = open hand (fingers spread)
-    // Low spread + high density = fist (compact)
-    // Fast movement = pointing/swiping
-    if(speed>.03&&spread>3){
-      setGesture(G.OPEN); // fast open hand = dispersal
-    }else if(spread>4.5&&density<.6){
-      setGesture(G.OPEN);
-    }else if(spread<3&&density>.7){
-      setGesture(G.FIST);
-    }else if(speed>.04){
-      setGesture(G.POINT);
-    }else if(spread>3.5){
-      setGesture(G.PINCH);
-    }else{
-      setGesture(G.FIST);
-    }
-  }else{
-    gs.hc=[];setGesture(G.NONE);
+  } else {
+    hasHand = false;
+    setGesture('none');
   }
 }
 
-/* ══════════════════════════════════════
-   MAIN LOOP
-   ══════════════════════════════════════ */
-let lt=0,fc=0,ft=0,fps=0,detT=0;
-function loop(ts){
-  const dt=Math.min((ts-lt)/1000,.05);lt=ts;fc++;ft+=dt;detT+=dt;
-  if(ft>=1){fps=fc;fc=0;ft=0}
+// ============ PHYSICS ============
+var time = 0;
 
-  // Detect hands every ~66ms (15fps) for performance
-  if(detT>.066){detectHands();detT=0}
+function applyPhysics(dt){
+  time += dt;
+  var col = gestureColors[gesture] || gestureColors.none;
 
-  mx.fillStyle='rgba(0,0,0,.06)';mx.fillRect(0,0,W,H);
-  drawBg(dt);physics(dt);
-  for(let i=0;i<cnt;i++){pool[i].update();pool[i].draw(mx)}
-  drawConn();drawBloom();drawHandOverlay();
+  for(var i = 0; i < particleCount; i++){
+    var p = particles[i];
 
-  st.innerHTML=`FPS ${fps} · ${cnt} 粒子`;
-  if(gs.type!==G.NONE){lbl.textContent=GN[gs.type];lbl.classList.add('show')}
-  else{lbl.classList.remove('show')}
+    // Smooth color transition
+    p.hue += (col.h + Math.sin(time * 2 + p.phase) * 12 - p.hue) * 0.03;
+
+    var hx = handX * W, hy = handY * H;
+    var dx, dy, dist, force, angle;
+
+    switch(gesture){
+      case 'open':
+        dx = p.x - hx; dy = p.y - hy;
+        dist = Math.sqrt(dx*dx + dy*dy);
+        if(dist < 300 && dist > 1){
+          force = (1 - dist/300) * (1 - dist/300) * 3;
+          p.vx += (dx/dist) * force;
+          p.vy += (dy/dist) * force;
+          p.radius = p.baseRadius * (1 + (1 - dist/300) * 2);
+          angle = Math.atan2(dy, dx);
+          p.vx += Math.cos(angle + 1.57) * force * 0.3;
+          p.vy += Math.sin(angle + 1.57) * force * 0.3;
+        }
+        p.trailLen = 10;
+        break;
+
+      case 'fist':
+        dx = hx - p.x; dy = hy - p.y;
+        dist = Math.sqrt(dx*dx + dy*dy);
+        if(dist < 350 && dist > 20){
+          force = (1 - dist/350) * (1 - dist/350) * 4;
+          p.vx += (dx/dist) * force;
+          p.vy += (dy/dist) * force;
+          p.radius = p.baseRadius * (0.3 + dist/350 * 0.7);
+          angle = Math.atan2(dy, dx);
+          p.vx += Math.cos(angle + 1.57) * force * 0.15;
+          p.vy += Math.sin(angle + 1.57) * force * 0.15;
+        } else if(dist <= 20){
+          angle = Math.atan2(p.y - hy, p.x - hx);
+          p.vx = Math.cos(angle + 1.8) * 1.8;
+          p.vy = Math.sin(angle + 1.8) * 1.8;
+          p.radius = p.baseRadius * 0.2;
+        }
+        p.trailLen = 3;
+        break;
+
+      case 'pinch':
+        dx = hx - p.x; dy = hy - p.y;
+        dist = Math.sqrt(dx*dx + dy*dy);
+        if(dist < 250 && dist > 3){
+          force = (1 - dist/250) * (1 - dist/250) * 5;
+          angle = Math.atan2(dy, dx);
+          p.vx += Math.cos(angle + 1.57) * force * 0.8;
+          p.vy += Math.sin(angle + 1.57) * force * 0.8;
+          p.vx += (dx/dist) * force * 0.3;
+          p.vy += (dy/dist) * force * 0.3;
+          p.radius = p.baseRadius * (1 + Math.sin(time * 5 + p.phase) * 0.5);
+        }
+        p.trailLen = 15;
+        break;
+
+      case 'point':
+        dx = p.x - hx; dy = p.y - hy;
+        dist = Math.sqrt(dx*dx + dy*dy);
+        if(dist < 350 && dist > 8){
+          var dl = Math.sqrt(handDirX*handDirX + handDirY*handDirY);
+          if(dl > 0.001){
+            var nx = handDirX/dl, ny = handDirY/dl;
+            p.vx += nx * 2; p.vy += ny * 2;
+            p.radius = p.baseRadius * 1.3;
+          }
+        }
+        p.trailLen = 8;
+        break;
+
+      case 'two':
+        var hx2 = handX2 * W, hy2 = handY2 * H;
+        for(var h = 0; h < 2; h++){
+          var hhx = h === 0 ? hx : hx2;
+          var hhy = h === 0 ? hy : hy2;
+          dx = hhx - p.x; dy = hhy - p.y;
+          dist = Math.sqrt(dx*dx + dy*dy);
+          if(dist < 300 && dist > 1){
+            force = (1 - dist/300) * (1 - dist/300) * 2.5;
+            p.vx += (dx/dist) * force;
+            p.vy += (dy/dist) * force;
+          }
+        }
+        p.trailLen = 12;
+        break;
+
+      default: // idle
+        p.vx += Math.sin(time * 0.4 + p.phase) * 0.012;
+        p.vy += Math.cos(time * 0.35 + p.phase * 1.3) * 0.012;
+        p.radius += (p.baseRadius - p.radius) * 0.04;
+        p.trailLen = Math.max(3, p.trailLen - 1);
+        break;
+    }
+
+    // Noise
+    p.vx += Math.sin(time * 1.1 + p.phase * 2) * 0.01;
+    p.vy += Math.cos(time * 0.9 + p.phase) * 0.01;
+    // Damping
+    p.vx *= 0.985;
+    p.vy *= 0.985;
+
+    // Move
+    p.trail.push({x: p.x, y: p.y});
+    if(p.trail.length > p.trailLen) p.trail.shift();
+    p.x += p.vx;
+    p.y += p.vy;
+
+    // Wrap
+    if(p.x < -20) p.x = W + 20;
+    if(p.x > W + 20) p.x = -20;
+    if(p.y < -20) p.y = H + 20;
+    if(p.y > H + 20) p.y = -20;
+  }
+}
+
+// ============ RENDER ============
+var stars = [];
+for(var i = 0; i < 150; i++){
+  stars.push({
+    x: Math.random() * W, y: Math.random() * H,
+    r: Math.random() * 1 + 0.3,
+    a: Math.random() * 0.3 + 0.05,
+    tw: Math.random() * 6.28
+  });
+}
+
+var lastTime = 0;
+var frameCount = 0;
+var fpsTime = 0;
+var currentFps = 0;
+var detTime = 0;
+
+function loop(timestamp){
+  var dt = Math.min((timestamp - lastTime) / 1000, 0.05);
+  lastTime = timestamp;
+  frameCount++;
+  fpsTime += dt;
+  if(fpsTime >= 1){ currentFps = frameCount; frameCount = 0; fpsTime = 0; }
+  detTime += dt;
+
+  // Hand detection at ~15fps
+  if(detTime > 0.066){ detectHand(); detTime = 0; }
+
+  // Clear with fade
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.08)';
+  ctx.fillRect(0, 0, W, H);
+
+  // Stars
+  for(var i = 0; i < stars.length; i++){
+    var s = stars[i];
+    s.tw += dt * 0.5;
+    var sa = s.a * (0.4 + 0.6 * Math.sin(s.tw));
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, 6.28);
+    ctx.fillStyle = 'rgba(255,255,255,' + sa + ')';
+    ctx.fill();
+  }
+
+  // Physics
+  applyPhysics(dt);
+
+  // Draw particles
+  var col = gestureColors[gesture] || gestureColors.none;
+  for(var i = 0; i < particleCount; i++){
+    var p = particles[i];
+    var al = p.alpha;
+
+    // Trail
+    if(p.trail.length > 1){
+      ctx.beginPath();
+      ctx.moveTo(p.trail[0].x, p.trail[0].y);
+      for(var j = 1; j < p.trail.length; j++){
+        ctx.lineTo(p.trail[j].x, p.trail[j].y);
+      }
+      ctx.strokeStyle = 'hsla(' + Math.floor(p.hue) + ',' + col.s + '%,55%,' + (al * 0.25) + ')';
+      ctx.lineWidth = p.radius * 0.5;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+    }
+
+    // Glow
+    var grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius * 4);
+    grad.addColorStop(0, 'hsla(' + Math.floor(p.hue) + ',' + col.s + '%,70%,' + al + ')');
+    grad.addColorStop(0.3, 'hsla(' + Math.floor(p.hue) + ',' + col.s + '%,55%,' + (al * 0.35) + ')');
+    grad.addColorStop(1, 'hsla(' + Math.floor(p.hue) + ',' + col.s + '%,50%,0)');
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.radius * 4, 0, 6.28);
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Core
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.radius * 0.4, 0, 6.28);
+    ctx.fillStyle = 'hsla(' + Math.floor(p.hue) + ',100%,93%,' + (al * 0.85) + ')';
+    ctx.fill();
+  }
+
+  // Bloom pass
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.filter = 'blur(15px) brightness(0.6)';
+  ctx.globalAlpha = 0.2;
+  ctx.drawImage(c1, 0, 0, W, H);
+  ctx.filter = 'none';
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.restore();
+
+  // FPS
+  ctx.fillStyle = 'rgba(255,255,255,0.2)';
+  ctx.font = '11px sans-serif';
+  ctx.fillText('FPS ' + currentFps + ' · ' + particleCount + ' 粒子', 20, 25);
+
   requestAnimationFrame(loop);
 }
-requestAnimationFrame(loop);
 
-/* ── Start camera immediately ── */
+requestAnimationFrame(loop);
+statusEl.textContent = '粒子已启动 · 正在请求摄像头...';
+
+// Start camera
 startCamera();
 
-/* ══════════════════════════════════════
-   MOUSE / TOUCH FALLBACK
-   ══════════════════════════════════════ */
-let mx2=W/2,my2=H/2,mDown=false,lx=mx2,ly=my2;
-mc.style.pointerEvents='auto';mc.style.zIndex='4';
-mc.addEventListener('mousemove',e=>{
-  lx=mx2;ly=my2;mx2=e.clientX;my2=e.clientY;if(camOn&&gs.hc.length)return;
-  gs.hc=[{x:mx2/W,y:my2/H}];const dx=mx2-lx,dy=my2-ly,sp=Math.hypot(dx,dy);
-  gs.dir={x:dx*.01,y:dy*.01};
-  if(mDown)setGesture(G.FIST);else if(sp>8)setGesture(G.OPEN);
-  else{setGesture(G.POINT)}
+// ============ MOUSE/TOUCH FALLBACK ============
+var mouseDown = false;
+var lastMX = W/2, lastMY = H/2;
+
+c1.style.cursor = 'crosshair';
+
+c1.addEventListener('mousemove', function(e){
+  if(camReady && hasHand) return;
+  lastMX = handX * W; lastMY = handY * H;
+  handX = e.clientX / W;
+  handY = e.clientY / H;
+  handDirX = handX - lastMX / W;
+  handDirY = handY - lastMY / H;
+  hasHand = true;
+
+  var speed = Math.sqrt(handDirX*handDirX + handDirY*handDirY);
+  if(mouseDown) setGesture('fist');
+  else if(speed > 0.01) setGesture('open');
+  else setGesture('point');
 });
-mc.addEventListener('mousedown',()=>{mDown=true;if(!camOn||!gs.hc.length)setGesture(G.FIST)});
-mc.addEventListener('mouseup',()=>{mDown=false;if(!camOn||!gs.hc.length)setGesture(G.OPEN)});
-mc.addEventListener('mouseleave',()=>{if(!camOn){setGesture(G.NONE);gs.hc=[]}});
-mc.addEventListener('touchmove',e=>{e.preventDefault();const t=e.touches[0];
-  lx=mx2;ly=my2;mx2=t.clientX;my2=t.clientY;
-  if(camOn&&gs.hc.length)return;gs.hc=[{x:mx2/W,y:my2/H}];setGesture(G.PINCH)},{passive:false});
-mc.addEventListener('touchend',()=>{if(!camOn){setGesture(G.NONE);gs.hc=[]}});
-const km={'0':G.NONE,'1':G.OPEN,'2':G.FIST,'3':G.PINCH,'4':G.POINT,'5':G.TWO};
-addEventListener('keydown',e=>{if(km[e.key]!==undefined)setGesture(km[e.key]);
-  if(e.key==='+'||e.key==='=')cnt=Math.min(MAX,cnt+100);if(e.key==='-')cnt=Math.max(200,cnt-100)});
+
+c1.addEventListener('mousedown', function(){ mouseDown = true; if(!camReady||!hasHand) setGesture('fist'); });
+c1.addEventListener('mouseup', function(){ mouseDown = false; if(!camReady||!hasHand) setGesture('open'); });
+c1.addEventListener('mouseleave', function(){ if(!camReady){ hasHand = false; setGesture('none'); }});
+
+c1.addEventListener('touchmove', function(e){
+  e.preventDefault();
+  if(camReady && hasHand) return;
+  var t = e.touches[0];
+  handX = t.clientX / W;
+  handY = t.clientY / H;
+  hasHand = true;
+  setGesture('pinch');
+}, {passive: false});
+
+c1.addEventListener('touchend', function(){
+  if(!camReady){ hasHand = false; setGesture('none'); }
+});
+
+// Keyboard
+var keyMap = {'0':'none','1':'open','2':'fist','3':'pinch','4':'point','5':'two'};
+document.addEventListener('keydown', function(e){
+  if(keyMap[e.key]){
+    hasHand = true;
+    setGesture(keyMap[e.key]);
+  }
+  if(e.key === '+' || e.key === '=') particleCount = Math.min(MAX, particleCount + 100);
+  if(e.key === '-') particleCount = Math.max(200, particleCount - 100);
+});
 
 })();
 </script>
