@@ -146,7 +146,7 @@
                 card.addEventListener('click', (e) => {
                     if (!e.target.closest('button')) {
                         const productId = card.dataset.productId;
-                        window.location.href = `product-detail.html?id=${productId}`;
+                        window.location.href = `/product-detail.html?id=${productId}`;
                     }
                 });
             });
@@ -212,7 +212,7 @@
                     userInfo.onclick = function(e) {
                         // 如果点击的是退出按钮，不跳转
                         if (!e.target.closest('button')) {
-                            window.location.href = 'user-center';
+                            window.location.href = '/user-center';
                         }
                     };
                 }
