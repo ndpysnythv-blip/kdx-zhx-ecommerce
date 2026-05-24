@@ -59,7 +59,35 @@ class Database {
   }
 
   getProducts() {
-    return this.readJSON('products.json');
+    const products = this.readJSON('products.json');
+    if (products.length === 0) {
+      // 返回默认测试商品
+      return [
+        {
+          "id": "test-product-001",
+          "name": "测试商品 - 1元体验",
+          "price": "1.00",
+          "originalPrice": "9.99",
+          "image": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800",
+          "description": "这是一个测试商品，价格仅需1元，用于测试商城购买流程和功能。商品包含完整的展示效果、规格参数和购买体验。",
+          "specs": [
+            "品牌:KDX丨ZHX",
+            "类型:测试商品",
+            "规格:标准",
+            "保修:30天"
+          ],
+          "tags": [
+            "新品",
+            "热销"
+          ],
+          "sold": 128,
+          "stock": 999,
+          "category": "other",
+          "createdAt": "2026-05-24T07:50:00.000Z"
+        }
+      ];
+    }
+    return products;
   }
 
   saveProducts(products) {
