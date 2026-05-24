@@ -2,7 +2,6 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
-const bodyParser = require('body-parser');
 const helmet = require('helmet');
 
 // 加载环境变量（必须在加载配置之前）
@@ -12,7 +11,6 @@ const config = require('./config');
 const Database = require('./database');
 const db = new Database();
 const fs = require('fs');
-const crypto = require('crypto');
 const notificationService = require('./notification-service');
 const security = require('./security');
 const appleShortcuts = require('./apple-shortcuts');
@@ -91,14 +89,13 @@ app.use(cors({
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(null, true);
+      callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true
 }));
 
 // Body解析器限制
-app.use(bodyParser.json({ limit: '10kb' }));
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(express.static(__dirname));
@@ -132,7 +129,6 @@ const loginLimiter = require('express-rate-limit')({
   keyGenerator: (req) => security.getClientKey(req)
 });
 
-let currentUser = null;
 
 // ==================== Apple Shortcuts 集成 ====================
 appleShortcuts.registerShortcutsRoutes(app, db);
@@ -145,65 +141,7 @@ function generateSmsCode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-// ========== 短信服务配置 ==========
-// 选择你想用的短信服务：'textbelt' | 'twilio' | 'vonage' | 'plivo' | 'ronglian' | 'yunpian' | 'submail' | 'netease'
-const SMS_PROVIDER = process.env.SMS_PROVIDER || '';
-
-// Textbelt配置（最简单！每天1条免费）
-const TEXTBELT_CONFIG = {
-    key: process.env.TEXTBELT_KEY || 'textbelt' // 'textbelt' 是测试key，每天1条免费
-};
-
-// Vonage (Nexmo) 配置
-const VONAGE_CONFIG = {
-    apiKey: process.env.VONAGE_API_KEY || '',
-    apiSecret: process.env.VONAGE_API_SECRET || '',
-    from: process.env.VONAGE_FROM || 'KDX'
-};
-
-// Plivo配置
-const PLIVO_CONFIG = {
-    authId: process.env.PLIVO_AUTH_ID || '',
-    authToken: process.env.PLIVO_AUTH_TOKEN || '',
-    from: process.env.PLIVO_FROM || ''
-};
-
-// 容联云通讯配置
-const RONGLIAN_CONFIG = {
-    accountSid: process.env.RONGLIAN_ACCOUNT_SID || '',
-    accountToken: process.env.RONGLIAN_ACCOUNT_TOKEN || '',
-    appId: process.env.RONGLIAN_APP_ID || '',
-    templateId: process.env.RONGLIAN_TEMPLATE_ID || '1'
-};
-
-// 云片网配置
-const YUNPIAN_CONFIG = {
-    apikey: process.env.YUNPIAN_APIKEY || '',
-    tplId: process.env.YUNPIAN_TPL_ID || ''
-};
-
-// SUBMAIL配置
-const SUBMAIL_CONFIG = {
-    appid: process.env.SUBMAIL_APPID || '',
-    appkey: process.env.SUBMAIL_APPKEY || '',
-    project: process.env.SUBMAIL_PROJECT || ''
-};
-
-// 网易云信配置
-const NETEASE_CONFIG = {
-    appKey: process.env.NETEASE_APP_KEY || '',
-    appSecret: process.env.NETEASE_APP_SECRET || '',
-    templateid: process.env.NETEASE_TEMPLATE_ID || ''
-};
-
-// 邮箱服务配置
-const EMAIL_CONFIG = {
-    user: process.env.EMAIL_USER || '',
-    pass: process.env.EMAIL_PASS || '',
-    // 自动判断是 Gmail 还是 QQ 邮箱
-    host: (process.env.EMAIL_USER || '').includes('gmail') ? 'smtp.gmail.com' : 'smtp.qq.com',
-    port: 587
-};// ========== 发送验证码主函数（只使用EmailJS） ==========
+// ========== 发送验证码主函数（只使用EmailJS） ==========
 async function sendVerificationCode(phone, code, type = 'login', email = null) {
     if (!email) {
         throw new Error('必须提供邮箱地址');
@@ -228,328 +166,6 @@ async function sendVerificationCode(phone, code, type = 'login', email = null) {
     }
     
     throw new Error('验证码发送失败');
-}
-
-// 兼容旧代码
-async function sendSms(phone, code, email = null) {
-    return sendVerificationCode(phone, code, 'login', email);
-}
-
-// ========== Textbelt（最简单！每天1条免费） ==========
-async function sendByTextbelt(phone, code) {
-    const axios = require('axios');
-    
-    let formattedPhone = phone;
-    if (!phone.startsWith('+')) {
-        if (phone.startsWith('1') && phone.length === 11) {
-            formattedPhone = '+86' + phone;
-        } else {
-            return { success: false, message: '手机号格式不正确' };
-        }
-    }
-    
-    try {
-        const response = await axios.post('https://textbelt.com/text', {
-            phone: formattedPhone,
-            message: `您的 KDX商城 验证码是：${code}，该验证码5分钟内有效，请勿泄露于他人。`,
-            key: TEXTBELT_CONFIG.key
-        });
-        
-        if (response.data.success) {
-            return { success: true, message: '验证码已发送' };
-        } else {
-            return { success: false, message: response.data.error || '发送失败' };
-        }
-    } catch (error) {
-        return { success: false, message: error.message };
-    }
-}
-
-// ========== Vonage (Nexmo) ==========
-async function sendByVonage(phone, code) {
-    if (!VONAGE_CONFIG.apiKey || !VONAGE_CONFIG.apiSecret) {
-        return { success: false, message: 'Vonage配置不完整' };
-    }
-    
-    const axios = require('axios');
-    
-    let formattedPhone = phone;
-    if (phone.startsWith('1') && phone.length === 11) {
-        formattedPhone = '86' + phone;
-    }
-    
-    try {
-        const response = await axios.post('https://rest.nexmo.com/sms/json', {
-            api_key: VONAGE_CONFIG.apiKey,
-            api_secret: VONAGE_CONFIG.apiSecret,
-            to: formattedPhone,
-            from: VONAGE_CONFIG.from,
-            text: `您的 KDX商城 验证码是：${code}，该验证码5分钟内有效，请勿泄露于他人。`
-        });
-        
-        if (response.data.messages[0].status === '0') {
-            return { success: true, message: '验证码已发送' };
-        } else {
-            return { success: false, message: '发送失败' };
-        }
-    } catch (error) {
-        return { success: false, message: error.message };
-    }
-}
-
-// ========== Plivo ==========
-async function sendByPlivo(phone, code) {
-    if (!PLIVO_CONFIG.authId || !PLIVO_CONFIG.authToken || !PLIVO_CONFIG.from) {
-        return { success: false, message: 'Plivo配置不完整' };
-    }
-    
-    const axios = require('axios');
-    const auth = Buffer.from(PLIVO_CONFIG.authId + ':' + PLIVO_CONFIG.authToken).toString('base64');
-    
-    let formattedPhone = phone;
-    if (!phone.startsWith('+')) {
-        if (phone.startsWith('1') && phone.length === 11) {
-            formattedPhone = '+86' + phone;
-        } else {
-            return { success: false, message: '手机号格式不正确' };
-        }
-    }
-    
-    try {
-        const response = await axios.post(`https://api.plivo.com/v1/Account/${PLIVO_CONFIG.authId}/Message/`, {
-            src: PLIVO_CONFIG.from,
-            dst: formattedPhone,
-            text: `您的 KDX商城 验证码是：${code}，该验证码5分钟内有效，请勿泄露于他人。`
-        }, {
-            headers: {
-                'Authorization': `Basic ${auth}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        if (response.data.api_id) {
-            return { success: true, message: '验证码已发送' };
-        } else {
-            return { success: false, message: '发送失败' };
-        }
-    } catch (error) {
-        return { success: false, message: error.message };
-    }
-}
-
-// ========== 容联云通讯 ==========
-async function sendByRonglian(phone, code) {
-    if (!RONGLIAN_CONFIG.accountSid || !RONGLIAN_CONFIG.accountToken || !RONGLIAN_CONFIG.appId) {
-        return { success: false, message: '容联云配置不完整' };
-    }
-    
-    const axios = require('axios');
-    const crypto = require('crypto');
-    
-    const timestamp = new Date().toISOString().replace(/[-T:.]/g, '').slice(0, 14);
-    const sig = crypto.createHash('md5')
-        .update(RONGLIAN_CONFIG.accountSid + RONGLIAN_CONFIG.accountToken + timestamp)
-        .digest('hex')
-        .toUpperCase();
-    
-    const url = `https://app.cloopen.com:8883/2013-12-26/Accounts/${RONGLIAN_CONFIG.accountSid}/SMS/TemplateSMS?sig=${sig}`;
-    
-    const auth = Buffer.from(RONGLIAN_CONFIG.accountSid + ':' + timestamp).toString('base64');
-    
-    try {
-        const response = await axios.post(url, {
-            to: phone,
-            appId: RONGLIAN_CONFIG.appId,
-            templateId: RONGLIAN_CONFIG.templateId,
-            datas: [code, '5']
-        }, {
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json;charset=utf-8',
-                'Authorization': auth
-            }
-        });
-        
-        if (response.data.statusCode === '000000') {
-            return { success: true, message: '验证码已发送' };
-        } else {
-            return { success: false, message: response.data.statusMsg || '发送失败' };
-        }
-    } catch (error) {
-        return { success: false, message: error.message };
-    }
-}
-
-// ========== 云片网 ==========
-async function sendByYunpian(phone, code) {
-    if (!YUNPIAN_CONFIG.apikey) {
-        return { success: false, message: '云片网配置不完整' };
-    }
-    
-    const axios = require('axios');
-    
-    try {
-        const text = `【KDX商城】您的验证码是${code}，该验证码5分钟内有效，请勿泄露于他人。`;
-        
-        const response = await axios.post('https://sms.yunpian.com/v2/sms/single_send.json',
-            new URLSearchParams({
-                apikey: YUNPIAN_CONFIG.apikey,
-                mobile: phone,
-                text: text
-            }),
-            {
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                }
-            }
-        );
-        
-        if (response.data.code === 0) {
-            return { success: true, message: '验证码已发送' };
-        } else {
-            return { success: false, message: response.data.msg || '发送失败' };
-        }
-    } catch (error) {
-        return { success: false, message: error.message };
-    }
-}
-
-// ========== SUBMAIL ==========
-async function sendBySubmail(phone, code) {
-    if (!SUBMAIL_CONFIG.appid || !SUBMAIL_CONFIG.appkey) {
-        return { success: false, message: 'SUBMAIL配置不完整' };
-    }
-    
-    const axios = require('axios');
-    
-    try {
-        const response = await axios.post('https://api-v4.mysubmail.com/sms/xsend', {
-            appid: SUBMAIL_CONFIG.appid,
-            project: SUBMAIL_CONFIG.project,
-            to: phone,
-            vars: JSON.stringify({ code: code })
-        });
-        
-        if (response.data.status === 'success') {
-            return { success: true, message: '验证码已发送' };
-        } else {
-            return { success: false, message: response.data.msg || '发送失败' };
-        }
-    } catch (error) {
-        return { success: false, message: error.message };
-    }
-}
-
-// ========== 网易云信 ==========
-async function sendByNetease(phone, code) {
-    if (!NETEASE_CONFIG.appKey || !NETEASE_CONFIG.appSecret) {
-        return { success: false, message: '网易云信配置不完整' };
-    }
-    
-    const axios = require('axios');
-    const crypto = require('crypto');
-    
-    const nonce = Math.random().toString(36).substring(2);
-    const curTime = Math.floor(Date.now() / 1000).toString();
-    const checkSum = crypto.createHash('sha1')
-        .update(NETEASE_CONFIG.appSecret + nonce + curTime)
-        .digest('hex');
-    
-    try {
-        const response = await axios.post('https://api.netease.im/sms/sendcode.action',
-            new URLSearchParams({
-                mobile: phone,
-                authCode: code,
-                templateid: NETEASE_CONFIG.templateid
-            }),
-            {
-                headers: {
-                    'AppKey': NETEASE_CONFIG.appKey,
-                    'Nonce': nonce,
-                    'CurTime': curTime,
-                    'CheckSum': checkSum,
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                }
-            }
-        );
-        
-        if (response.data.code === 200) {
-            return { success: true, message: '验证码已发送' };
-        } else {
-            return { success: false, message: response.data.msg || '发送失败' };
-        }
-    } catch (error) {
-        return { success: false, message: error.message };
-    }
-}
-
-// ========== Twilio ==========
-async function sendByTwilio(phone, code) {
-    const TWILIO_CONFIG = {
-        accountSid: process.env.TWILIO_ACCOUNT_SID || '',
-        authToken: process.env.TWILIO_AUTH_TOKEN || '',
-        phoneNumber: process.env.TWILIO_PHONE_NUMBER || ''
-    };
-    
-    if (!TWILIO_CONFIG.accountSid || !TWILIO_CONFIG.authToken || !TWILIO_CONFIG.phoneNumber) {
-        return { success: false, message: 'Twilio配置不完整' };
-    }
-    
-    const twilio = require('twilio');
-    const client = twilio(TWILIO_CONFIG.accountSid, TWILIO_CONFIG.authToken);
-    
-    let formattedPhone = phone;
-    if (!phone.startsWith('+')) {
-        if (phone.startsWith('1') && phone.length === 11) {
-            formattedPhone = '+86' + phone;
-        } else {
-            return { success: false, message: '手机号格式不正确' };
-        }
-    }
-    
-    try {
-        const message = await client.messages.create({
-            body: `您的 KDX商城 验证码是：${code}，该验证码5分钟内有效，请勿泄露于他人。`,
-            from: TWILIO_CONFIG.phoneNumber,
-            to: formattedPhone
-        });
-        
-        return { success: true, message: '验证码已发送' };
-    } catch (error) {
-        return { success: false, message: error.message };
-    }
-}
-
-// ========== 邮箱 ==========
-async function sendByEmail(phone, code, email) {
-    if (!EMAIL_CONFIG.user || !EMAIL_CONFIG.pass) {
-        return { success: false, message: '邮箱配置不完整' };
-    }
-    
-    const nodemailer = require('nodemailer');
-    
-    const transporter = nodemailer.createTransport({
-        host: EMAIL_CONFIG.host,
-        port: EMAIL_CONFIG.port,
-        secure: false,
-        auth: {
-            user: EMAIL_CONFIG.user,
-            pass: EMAIL_CONFIG.pass
-        }
-    });
-    
-    const toEmail = email || (phone + '@qq.com');
-    
-    const mailOptions = {
-        from: `KDX商城 <${EMAIL_CONFIG.user}>`,
-        to: toEmail,
-        subject: '【KDX商城】验证码',
-        text: `您的验证码是：${code}，该验证码5分钟内有效，请勿泄露于他人。`,
-        html: `<p>您的验证码是：<strong style="font-size: 24px; color: #333;">${code}</strong></p><p>该验证码5分钟内有效，请勿泄露于他人。</p>`
-    };
-    
-    const info = await transporter.sendMail(mailOptions);
-    return { success: true, message: '验证码已发送到邮箱' };
 }
 
 // 首页重定向
@@ -847,99 +463,6 @@ app.post('/api/alipay/create', async (req, res) => {
   }
 });
 
-// 模拟支付函数
-function createMockPayment(res, orderId, outTradeNo, totalAmount, subject) {
-  // 更新订单信息
-  const orders = db.getOrders();
-  const orderIndex = orders.findIndex(o => o.id === orderId);
-  if (orderIndex !== -1) {
-    orders[orderIndex] = {
-      ...orders[orderIndex],
-      outTradeNo: outTradeNo,
-      paymentStatus: 'pending',
-      paymentMethod: 'alipay'
-    };
-    db.saveOrders(orders);
-  }
-  
-  // 返回模拟支付页面URL
-  const mockPayUrl = `/mock-payment?orderId=${orderId}&outTradeNo=${outTradeNo}&totalAmount=${totalAmount}&subject=${encodeURIComponent(subject)}`;
-  
-  console.log(`[支付] 模拟支付订单创建成功: ${outTradeNo}`);
-  res.json({
-    success: true,
-    payUrl: mockPayUrl,
-    outTradeNo: outTradeNo,
-    isMock: true
-  });
-}
-
-// 模拟支付页面
-app.get('/mock-payment', (req, res) => {
-  const { orderId, outTradeNo, totalAmount, subject } = req.query;
-  
-  res.send(`
-    <!DOCTYPE html>
-    <html lang="zh-CN">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>模拟支付宝支付</title>
-      <script src="https://cdn.tailwindcss.com"></script>
-    </head>
-    <body class="bg-gray-100 min-h-screen flex items-center justify-center">
-      <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center">
-        <div class="w-20 h-20 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-6">
-          <span class="text-4xl">💰</span>
-        </div>
-        <h1 class="text-2xl font-bold text-gray-800 mb-2">模拟支付宝支付</h1>
-        <p class="text-gray-500 mb-6">这是开发环境的模拟支付</p>
-        
-        <div class="bg-gray-50 rounded-xl p-6 mb-6 text-left">
-          <div class="flex justify-between mb-3">
-            <span class="text-gray-500">订单号:</span>
-            <span class="font-mono text-gray-800">${outTradeNo}</span>
-          </div>
-          <div class="flex justify-between mb-3">
-            <span class="text-gray-500">商品:</span>
-            <span class="text-gray-800">${decodeURIComponent(subject)}</span>
-          </div>
-          <div class="flex justify-between border-t pt-3 mt-3">
-            <span class="text-gray-800 font-semibold">支付金额:</span>
-            <span class="text-blue-600 font-bold text-xl">¥${totalAmount}</span>
-          </div>
-        </div>
-        
-        <button id="payBtn" onclick="completePayment()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-xl transition-all transform hover:scale-[1.02]">
-          <span id="btnText">确认支付 ¥${totalAmount}</span>
-        </button>
-        
-        <p class="text-xs text-gray-400 mt-4">这是模拟支付，不会产生真实扣款</p>
-      </div>
-      
-      <script>
-        let paid = false;
-        
-        function completePayment() {
-          if (paid) return;
-          paid = true;
-          
-          const btn = document.getElementById('payBtn');
-          const btnText = document.getElementById('btnText');
-          
-          btn.disabled = true;
-          btn.classList.add('opacity-50', 'cursor-not-allowed');
-          btnText.innerHTML = '<span class="animate-pulse">处理中...</span>';
-          
-          setTimeout(() => {
-            window.location.href = '/payment-success?orderId=${orderId}&outTradeNo=${outTradeNo}&totalAmount=${totalAmount}';
-          }, 1500);
-        }
-      </script>
-    </body>
-    </html>
-  `);
-});
 
 // 支付宝同步回调（支付成功后跳转）
 app.get('/payment-success', async (req, res) => {
@@ -1123,10 +646,9 @@ app.post('/api/sms/send', async (req, res) => {
     const smsResult = await sendVerificationCode(phone, code, type, email);
     
     if (smsResult.success) {
-        res.json({ 
-            success: true, 
+        res.json({
+            success: true,
             message: smsResult.message || '验证码已发送，请查收',
-            code: smsResult.code, // 把验证码返回给前端，作为备用
             via: smsResult.via
         });
     } else {
@@ -1200,8 +722,8 @@ app.post('/api/register', async (req, res) => {
     // 安全输入过滤
     const safeEmail = security.sanitizeInput(email);
     const safePhone = security.sanitizeInput(phone);
-    const safePassword = security.sanitizeInput(password);
-    
+    const safePassword = password; // 密码不做HTML编码，直接使用原值
+
     // 验证手机号格式
     if (!safePhone || !security.validatePhone(safePhone)) {
       return res.status(400).json({ error: '请输入正确的11位手机号' });
@@ -1262,8 +784,7 @@ app.post('/api/register', async (req, res) => {
 
     users.push(newUser);
     db.saveUsers(users);
-    
-    currentUser = newUser;
+
     res.json({ user: { ...newUser, password: undefined }, token: 'demo-token' });
   } catch (error) {
     console.error('Error registering:', error);
@@ -1380,55 +901,88 @@ app.post('/api/forgot-password', (req, res) => {
         const { type, email, orderNo } = req.body;
         const users = db.getUsers();
         const orders = db.getOrders();
-        
+
         if (type === 'email') {
             if (!email) {
                 return res.status(400).json({ error: '请输入邮箱' });
             }
-            
+
             const user = users.find(u => u.email === email);
-            
+
             if (!user) {
                 return res.status(404).json({ error: '该邮箱未注册' });
             }
-            
-            // 显示密码给用户（演示用途）
-            res.json({ 
-                password: user.password 
-            });
+
+            var resetCode = generateSmsCode();
+            smsCodes.set('reset:' + email, { code: resetCode, sentAt: Date.now(), type: 'reset', userId: user.id });
+            setTimeout(function() { smsCodes.delete('reset:' + email); }, 300000);
+            res.json({ success: true, message: '重置验证码已发送到您的邮箱', code: resetCode });
         } else if (type === 'order') {
             if (!orderNo) {
                 return res.status(400).json({ error: '请输入支付宝订单号' });
             }
-            
-            // 通过订单号找用户
-            const order = orders.find(o => 
-                o.alipayTradeNo === orderNo || 
+
+            const order = orders.find(o =>
+                o.alipayTradeNo === orderNo ||
                 o.id === orderNo ||
                 (o.payment && o.payment.tradeNo === orderNo)
             );
-            
+
             if (!order) {
                 return res.status(404).json({ error: '未找到该订单，请确认订单号是否正确' });
             }
-            
+
             const userPhone = order.userPhone || order.phone;
             const user = users.find(u => u.phone === userPhone || u.id === order.userId);
-            
+
             if (!user) {
                 return res.status(404).json({ error: '找到订单，但未找到关联账号' });
             }
-            
-            res.json({
-                phone: user.phone,
-                password: user.password
-            });
+
+            var resetCode = generateSmsCode();
+            smsCodes.set('reset:' + user.phone, { code: resetCode, sentAt: Date.now(), type: 'reset', userId: user.id });
+            setTimeout(function() { smsCodes.delete('reset:' + user.phone); }, 300000);
+            res.json({ success: true, message: '重置验证码已发送', phone: user.phone ? user.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2') : '', code: resetCode });
         } else {
             res.status(400).json({ error: '无效的找回方式' });
         }
     } catch (error) {
         console.error('Error in forgot password:', error);
         res.status(500).json({ error: '找回密码失败' });
+    }
+});
+
+app.post('/api/reset-password', async (req, res) => {
+    try {
+        const identifier = req.body.email || req.body.phone;
+        const code = req.body.code;
+        const newPassword = req.body.newPassword;
+        if (!identifier || !code || !newPassword) {
+            return res.status(400).json({ error: '请提供完整信息' });
+        }
+        if (newPassword.length < 4) {
+            return res.status(400).json({ error: '密码至少4位' });
+        }
+        var stored = smsCodes.get('reset:' + identifier);
+        if (!stored || stored.code !== code) {
+            return res.status(400).json({ error: '验证码错误或已过期' });
+        }
+        smsCodes.delete('reset:' + identifier);
+        const users = db.getUsers();
+        const userIdx = users.findIndex(u => u.id === stored.userId);
+        if (userIdx === -1) {
+            return res.status(404).json({ error: '用户不存在' });
+        }
+        var hashed = newPassword;
+        if (security) {
+            hashed = await security.hashPassword(newPassword);
+        }
+        users[userIdx].password = hashed;
+        db.saveUsers(users);
+        res.json({ success: true, message: '密码重置成功' });
+    } catch (error) {
+        console.error('Error in reset password:', error);
+        res.status(500).json({ error: '重置密码失败' });
     }
 });
 
@@ -1441,7 +995,7 @@ app.post('/api/login', loginLimiter, async (req, res) => {
     
     // 安全输入过滤
     const safeUsername = security.sanitizeInput(username);
-    const safePassword = security.sanitizeInput(password);
+    const safePassword = password; // 密码不做HTML编码，直接使用原值
     
     // 验证必填项
     if (!safeUsername || !safePassword) {
@@ -1508,9 +1062,8 @@ app.post('/api/login', loginLimiter, async (req, res) => {
         db.saveUsers(allUsers);
     }
     
-    currentUser = user;
-    res.json({ 
-        user: { ...user, password: undefined }, 
+    res.json({
+        user: { ...user, password: undefined },
         token: 'demo-token',
         unusualLogin: isUnusual,
         loginLocation: location
@@ -1521,55 +1074,23 @@ app.post('/api/login', loginLimiter, async (req, res) => {
   }
 });
 
-// 自动登录API
+// 自动登录API（已禁用IP自动登录，存在安全风险）
 app.post('/api/auto-login', (req, res) => {
-    try {
-        const location = getLoginLocation(req);
-        const clientIp = location.ip;
-        const users = db.getUsers();
-        
-        // 查找最近在该IP登录过的用户
-        const user = users.find(u => 
-            u.lastLoginIp === clientIp && 
-            u.autoLoginEnabled && 
-            u.lastLoginAt &&
-            (new Date() - new Date(u.lastLoginAt)) < 7 * 24 * 60 * 60 * 1000 // 7天内
-        );
-        
-        if (user) {
-            res.json({
-                success: true,
-                user: { ...user, password: undefined },
-                token: 'demo-token'
-            });
-        } else {
-            res.json({ success: false });
-        }
-    } catch (error) {
-        console.error('Auto login error:', error);
-        res.json({ success: false });
-    }
+    res.json({ success: false });
 });
 
 // 后台权限验证中间件
 function requireAdmin(req, res, next) {
-    // 如果已经有currentUser，检查是否是管理员
-    if (currentUser && currentUser.role === 'admin') {
-        return next();
+    const userId = req.query.userId || req.headers['x-user-id'];
+    if (!userId) {
+        return res.status(401).json({ error: '未登录' });
     }
-    
-    // 否则，检查是否是从本地访问或已知的管理员IP
-    const location = getLoginLocation(req);
-    const adminPhones = ['13800138000']; // 管理员手机号
-    const adminEmails = ['admin@example.com'];
-    
-    // 检查当前用户是否是管理员
-    if (currentUser && (adminPhones.includes(currentUser.phone) || adminEmails.includes(currentUser.email))) {
-        return next();
+    const users = db.getUsers();
+    const user = users.find(u => u.id === userId);
+    if (!user || user.role !== 'admin') {
+        return res.status(403).json({ error: '无管理员权限' });
     }
-    
-    // 如果没有登录，返回403
-    res.status(403).sendFile(path.join(__dirname, 'auth.html'));
+    next();
 }
 
 // 后台页面（需要管理员权限）
@@ -1884,30 +1405,37 @@ app.post('/api/ai/phone-verify', async function(req, res) {
 });
 
 app.post('/api/logout', (req, res) => {
-  currentUser = null;
   res.json({ success: true });
 });
 
 app.get('/api/me', (req, res) => {
-  if (currentUser) {
-    res.json({ ...currentUser, password: undefined });
-  } else {
-    res.status(401).json({ error: '未登录' });
+  const userId = req.query.userId || req.headers['x-user-id'];
+  if (!userId) {
+    return res.status(401).json({ error: '未登录' });
   }
+  const users = db.getUsers();
+  const user = users.find(u => u.id === userId);
+  if (!user) {
+    return res.status(404).json({ error: '用户不存在' });
+  }
+  res.json({ ...user, password: undefined });
 });
 
 // GitHub登录路由
 app.get('/api/github/login', (req, res) => {
-  const clientId = 'Ov23li217q26U3QJ75Dv'; // 临时使用测试ID
-  const redirectUri = encodeURIComponent(`http://localhost:${PORT}/api/github/callback`);
+  const clientId = process.env.GITHUB_CLIENT_ID || '';
+  if (!clientId) {
+    return res.status(503).json({ error: 'GitHub登录未配置' });
+  }
+  const redirectUri = encodeURIComponent(`${req.protocol}://${req.get('host')}/api/github/callback`);
   res.redirect(`https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user:email`);
 });
 
 // GitHub登录回调
 app.get('/api/github/callback', async (req, res) => {
   const { code } = req.query;
-  const clientId = 'Ov23li217q26U3QJ75Dv';
-  const clientSecret = '0123456789abcdef0123456789abcdef01234567';
+  const clientId = process.env.GITHUB_CLIENT_ID || '';
+  const clientSecret = process.env.GITHUB_CLIENT_SECRET || '';
   
   try {
     const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
@@ -2253,6 +1781,8 @@ async function encryptExistingPasswords() {
   }
 }
 
+// 仅在直接运行时启动服务器（非被require时）
+if (require.main === module) {
 encryptExistingPasswords().then(() => {
   app.listen(PORT, () => {
     console.log('✅ 支付宝SDK初始化成功');
@@ -2285,3 +1815,6 @@ encryptExistingPasswords().then(() => {
     console.log('');
   });
 });
+} // end if require.main === module
+
+module.exports = app;

@@ -8,20 +8,16 @@
     "dev": "nodemon --openssl-legacy-provider ecommerce-server.js"
   },
   "dependencies": {
-    "@alicloud/pop-core": "^1.8.0",
     "alipay-sdk": "^3.6.0",
-    "axios": "^1.6.2",
     "bcryptjs": "^2.4.3",
-    "body-parser": "^1.20.2",
     "cors": "^2.8.5",
-    "dotenv": "^17.4.2",
-    "express": "^4.18.2",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
     "express-rate-limit": "^7.1.5",
     "helmet": "^7.1.0",
-    "moment": "^2.29.4",
     "serverless-http": "^3.2.0",
-    "twilio": "^6.0.0",
-    "uuid": "^9.0.1"
+    "uuid": "^10.0.0",
+    "qs": "^6.13.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"

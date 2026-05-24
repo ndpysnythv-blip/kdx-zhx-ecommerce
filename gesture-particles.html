@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>手势交互粒子光感特效</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+background: #000;
+overflow: hidden;
+font-family: 'Segoe UI', sans-serif;
+color: #fff;
+user-select: none;
+}
+#bgCanvas, #mainCanvas, #overlay {
+position: fixed; top: 0; left: 0;
+width: 100%; height: 100%;
+}
+#bgCanvas { z-index: 0; }
+#mainCanvas { z-index: 1; }
+#overlay { z-index: 2; pointer-events: none; }
+
+#videoContainer {
+position: fixed; bottom: 20px; right: 20px;
+width: 240px; height: 180px;
+border-radius: 16px; overflow: hidden;
+border: 2px solid rgba(255,255,255,0.15);
+z-index: 10; background: #111;
+box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+display: none;
+}
+#webcam { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+
+#gestureLabel {
+position: fixed; top: 30px; left: 50%; transform: translateX(-50%);
+font-size: 28px; font-weight: 300; letter-spacing: 6px;
+z-index: 5; text-shadow: 0 0 30px rgba(255,255,255,0.5);
+opacity: 0; transition: opacity 0.4s; pointer-events: none;
+}
+#gestureLabel.visible { opacity: 1; }
+
+#stats {
+position: fixed; top: 30px; left: 30px;
+z-index: 5; font-size: 13px; line-height: 1.8;
+opacity: 0.5; pointer-events: none;
+}
+
+#startBtn {
+position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+z-index: 20; padding: 18px 48px; font-size: 18px; font-weight: 300;
+letter-spacing: 4px; background: rgba(255,255,255,0.08);
+border: 1px solid rgba(255,255,255,0.2); color: #fff;
+border-radius: 50px; cursor: pointer; backdrop-filter: blur(20px);
+transition: all 0.3s;
+}
+#startBtn:hover {
+background: rgba(255,255,255,0.15);
+border-color: rgba(255,255,255,0.4);
+box-shadow: 0 0 40px rgba(255,255,255,0.1);
+}
+#startBtn:disabled { opacity: 0.5; cursor: wait; }
+
+#statusMsg {
+position: fixed; top: 50%; left: 50%; transform: translate(-50%, calc(-50% + 60px));
+z-index: 21; font-size: 14px; color: rgba(255,255,255,0.6);
+pointer-events: none; text-align: center; max-width: 400px;
+line-height: 1.8;
+}
+
+#gestureGuide {
+position: fixed; bottom: 30px; left: 30px;
+z-index: 5; font-size: 12px; line-height: 2;
+opacity: 0.4; pointer-events: none;
+}
+#gestureGuide span {
+display: inline-block; padding: 2px 10px; margin: 2px 4px;
+background: rgba(255,255,255,0.06); border-radius: 20px;
+border: 1px solid rgba(255,255,255,0.1);
+}
+
+#loadingOverlay {
+position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+background: rgba(0,0,0,0.85); z-index: 30;
+display: none; justify-content: center; align-items: center;
+flex-direction: column; gap: 20px;
+}
+#loadingOverlay .spinner {
+width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.1);
+border-top-color: rgba(255,255,255,0.7); border-radius: 50%;
+animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+#loadingOverlay .text { font-size: 16px; opacity: 0.7; }
+</style>
+</head>
+<body>
+
+<canvas id="bgCanvas"></canvas>
+<canvas id="mainCanvas"></canvas>
+<canvas id="overlay"></canvas>
+
+<div id="videoContainer">
+<video id="webcam" autoplay playsinline></video>
+</div>
+
+<div id="gestureLabel"></div>
+<div id="stats"></div>
+<div id="statusMsg"></div>
+<button id="startBtn">启动手势感应</button>
+
+<div id="gestureGuide">
+<span>✋ 张开手 — 粒子扩散</span>
+<span>✊ 握拳 — 粒子收缩</span>
+<span>🤏 捏合 — 漩涡吸引</span>
+<span>☝️ 指向 — 粒子追踪</span>
+<span>🖐️🖐️ 双手 — 引力场</span>
+</div>
+
+<div id="loadingOverlay">
+<div class="spinner"></div>
+<div class="text" id="loadingText">正在加载手势识别模型...</div>
+</div>
+
+<!-- MediaPipe scripts (non-module, exposes globals) -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675466862/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1675466124/drawing_utils.js" crossorigin="anonymous"></script>
+
+<script>
+(function() {
+'use strict';
+
+// ──────────────────────────────────────────
+// DOM ELEMENTS
+// ──────────────────────────────────────────
+const videoEl = document.getElementById('webcam');
+const videoContainer = document.getElementById('videoContainer');
+const overlayCanvas = document.getElementById('overlay');
+const overlayCtx = overlayCanvas.getContext('2d');
+const gestureLabel = document.getElementById('gestureLabel');
+const startBtn = document.getElementById('startBtn');
+const statsEl = document.getElementById('stats');
+const statusMsg = document.getElementById('statusMsg');
+const loadingOverlay = document.getElementById('loadingOverlay');
+const loadingText = document.getElementById('loadingText');
+
+let cameraActive = false;
+let handsInstance = null;
+let cameraInstance = null;
+
+// Gesture types
+const GESTURE = {
+NONE: 'none',
+OPEN: 'open',
+FIST: 'fist',
+PINCH: 'pinch',
+POINT: 'point',
+TWO_HANDS: 'two_hands'
+};
+
+const GESTURE_NAMES = {
+[GESTURE.NONE]: '等待手势',
+[GESTURE.OPEN]: '张开 · 扩散',
+[GESTURE.FIST]: '握拳 · 收缩',
+[GESTURE.PINCH]: '捏合 · 漩涡',
+[GESTURE.POINT]: '指向 · 追踪',
+[GESTURE.TWO_HANDS]: '双手 · 引力场'
+};
+
+const GESTURE_COLORS = {
+[GESTURE.NONE]: { h: 200, s: 30, l: 60 },
+[GESTURE.OPEN]: { h: 45, s: 100, l: 65 },
+[GESTURE.FIST]: { h: 350, s: 100, l: 55 },
+[GESTURE.PINCH]: { h: 270, s: 90, l: 60 },
+[GESTURE.POINT]: { h: 160, s: 90, l: 55 },
+[GESTURE.TWO_HANDS]: { h: 200, s: 100, l: 65 }
+};
+
+// ──────────────────────────────────────────
+// 2. GESTURE RECOGNITION
+// ──────────────────────────────────────────
+function getFingerState(landmarks) {
+const tips = [4, 8, 12, 16, 20];
+const pips = [3, 6, 10, 14, 18];
+const extended = [];
+
+const thumbTip = landmarks[4];
+const thumbIp = landmarks[3];
+const thumbMcp = landmarks[2];
+extended.push(Math.abs(thumbTip.x - thumbMcp.x) > Math.abs(thumbIp.x - thumbMcp.x) * 1.2);
+
+for (let i = 1; i < 5; i++) {
+extended.push(landmarks[tips[i]].y < landmarks[pips[i]].y);
+}
+return extended;
+}
+
+function recognizeGesture(landmarks) {
+const fingers = getFingerState(landmarks);
+const allExtended = fingers.every(f => f);
+const noneExtended = fingers.slice(1).every(f => !f);
+const indexOnly = fingers[1] && !fingers[2] && !fingers[3] && !fingers[4];
+
+const thumbTip = landmarks[4];
+const indexTip = landmarks[8];
+const pinchDist = Math.hypot(thumbTip.x - indexTip.x, thumbTip.y - indexTip.y);
+
+if (pinchDist < 0.06) return GESTURE.PINCH;
+if (allExtended) return GESTURE.OPEN;
+if (noneExtended && !fingers[0]) return GESTURE.FIST;
+if (indexOnly) return GESTURE.POINT;
+if (noneExtended && fingers[0]) return GESTURE.FIST;
+
+return GESTURE.NONE;
+}
+
+function getHandCenter(landmarks) {
+return { x: landmarks[9].x, y: landmarks[9].y };
+}
+
+function getPinchPoint(landmarks) {
+return {
+x: (landmarks[4].x + landmarks[8].x) / 2,
+y: (landmarks[4].y + landmarks[8].y) / 2
+};
+}
+
+function getPointDirection(landmarks) {
+return {
+x: landmarks[8].x - landmarks[6].x,
+y: landmarks[8].y - landmarks[6].y
+};
+}
+
+// ──────────────────────────────────────────
+// 3. CANVAS SETUP
+// ──────────────────────────────────────────
+const mainCanvas = document.getElementById('mainCanvas');
+const ctx = mainCanvas.getContext('2d');
+const bgCanvas = document.getElementById('bgCanvas');
+const bgCtx = bgCanvas.getContext('2d');
+
+let W, H;
+function resize() {
+W = window.innerWidth;
+H = window.innerHeight;
+mainCanvas.width = W; mainCanvas.height = H;
+bgCanvas.width = W; bgCanvas.height = H;
+overlayCanvas.width = W; overlayCanvas.height = H;
+for (const s of bgStars) { s.x = Math.random() * W; s.y = Math.random() * H; }
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ──────────────────────────────────────────
+// 4. PARTICLE SYSTEM
+// ──────────────────────────────────────────
+const MAX_PARTICLES = 2000;
+const particles = [];
+let activeParticleCount = 800;
+
+class Particle {
+constructor() { this.reset(); }
+
+reset() {
+this.x = Math.random() * W;
+this.y = Math.random() * H;
+this.vx = (Math.random() - 0.5) * 2;
+this.vy = (Math.random() - 0.5) * 2;
+this.radius = Math.random() * 2.5 + 0.5;
+this.baseRadius = this.radius;
+this.life = 1;
+this.decay = 0;
+this.hue = Math.random() * 360;
+this.saturation = 80;
+this.lightness = 60;
+this.alpha = Math.random() * 0.6 + 0.2;
+this.baseAlpha = this.alpha;
+this.trail = [];
+this.trailLength = 5;
+this.active = true;
+this.phase = Math.random() * Math.PI * 2;
+}
+
+update(dt) {
+if (!this.active) return;
+this.trail.push({ x: this.x, y: this.y });
+if (this.trail.length > this.trailLength) this.trail.shift();
+
+this.x += this.vx;
+this.y += this.vy;
+
+if (this.x < -20) this.x = W + 20;
+if (this.x > W + 20) this.x = -20;
+if (this.y < -20) this.y = H + 20;
+if (this.y > H + 20) this.y = -20;
+
+if (this.decay > 0) {
+this.life -= this.decay;
+if (this.life <= 0) this.active = false;
+}
+}
+
+draw(c) {
+if (!this.active) return;
+if (this.trail.length > 1) {
+c.beginPath();
+c.moveTo(this.trail[0].x, this.trail[0].y);
+for (let i = 1; i < this.trail.length; i++) c.lineTo(this.trail[i].x, this.trail[i].y);
+c.strokeStyle = `hsla(${this.hue},${this.saturation}%,${this.lightness}%,${this.alpha * 0.3 * this.life})`;
+c.lineWidth = this.radius * 0.5;
+c.stroke();
+}
+const g = c.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.radius * 3);
+g.addColorStop(0, `hsla(${this.hue},${this.saturation}%,${this.lightness}%,${this.alpha * this.life})`);
+g.addColorStop(0.5, `hsla(${this.hue},${this.saturation}%,${this.lightness}%,${this.alpha * 0.3 * this.life})`);
+g.addColorStop(1, `hsla(${this.hue},${this.saturation}%,${this.lightness}%,0)`);
+c.beginPath(); c.arc(this.x, this.y, this.radius * 3, 0, Math.PI * 2);
+c.fillStyle = g; c.fill();
+c.beginPath(); c.arc(this.x, this.y, this.radius * 0.5, 0, Math.PI * 2);
+c.fillStyle = `hsla(${this.hue},100%,90%,${this.alpha * this.life})`;
+c.fill();
+}
+}
+
+for (let i = 0; i < MAX_PARTICLES; i++) particles.push(new Particle());
+
+// ──────────────────────────────────────────
+// 5. GESTURE STATE & PHYSICS
+// ──────────────────────────────────────────
+let gestureState = {
+type: GESTURE.NONE,
+handCenters: [],
+pinchPoints: [],
+pointDirections: [],
+time: 0
+};
+
+function applyGesturePhysics(dt) {
+gestureState.time += dt;
+const { type } = gestureState;
+const color = GESTURE_COLORS[type];
+
+for (let i = 0; i < activeParticleCount; i++) {
+const p = particles[i];
+if (!p.active) continue;
+
+p.hue += (color.h + (Math.random() - 0.5) * 30 - p.hue) * 0.02;
+p.saturation += (color.s - p.saturation) * 0.02;
+p.lightness += (color.l - p.lightness) * 0.02;
+
+switch (type) {
+case GESTURE.OPEN: applyOpenHand(p); break;
+case GESTURE.FIST: applyFist(p); break;
+case GESTURE.PINCH: applyPinch(p); break;
+case GESTURE.POINT: applyPoint(p); break;
+case GESTURE.TWO_HANDS: applyTwoHands(p); break;
+default: applyIdle(p); break;
+}
+
+p.vx += (Math.random() - 0.5) * 0.1;
+p.vy += (Math.random() - 0.5) * 0.1;
+p.vx *= 0.98; p.vy *= 0.98;
+}
+}
+
+function applyIdle(p) {
+p.vx += Math.sin(gestureState.time * 0.5 + p.phase) * 0.02;
+p.vy += Math.cos(gestureState.time * 0.3 + p.phase * 1.3) * 0.02;
+p.radius += (p.baseRadius - p.radius) * 0.05;
+p.alpha += (p.baseAlpha - p.alpha) * 0.05;
+p.trailLength = Math.max(3, p.trailLength - 1);
+}
+
+function applyOpenHand(p) {
+if (!gestureState.handCenters.length) return;
+const h = gestureState.handCenters[0];
+const hx = h.x * W, hy = h.y * H;
+const dx = p.x - hx, dy = p.y - hy;
+const dist = Math.sqrt(dx * dx + dy * dy);
+if (dist < 300 && dist > 1) {
+const f = (1 - dist / 300) * 3;
+p.vx += (dx / dist) * f;
+p.vy += (dy / dist) * f;
+p.radius = p.baseRadius * (1 + (1 - dist / 300) * 2);
+p.alpha = Math.min(1, p.baseAlpha * (1 + (1 - dist / 300)));
+const a = Math.atan2(dy, dx);
+p.vx += Math.cos(a + Math.PI / 2) * f * 0.3;
+p.vy += Math.sin(a + Math.PI / 2) * f * 0.3;
+}
+p.trailLength = 10;
+}
+
+function applyFist(p) {
+if (!gestureState.handCenters.length) return;
+const h = gestureState.handCenters[0];
+const hx = h.x * W, hy = h.y * H;
+const dx = hx - p.x, dy = hy - p.y;
+const dist = Math.sqrt(dx * dx + dy * dy);
+if (dist < 350 && dist > 20) {
+const f = (1 - dist / 350) * 4;
+p.vx += (dx / dist) * f;
+p.vy += (dy / dist) * f;
+p.radius = p.baseRadius * (0.3 + dist / 350 * 0.7);
+const a = Math.atan2(dy, dx);
+p.vx += Math.cos(a + Math.PI / 2) * f * 0.15;
+p.vy += Math.sin(a + Math.PI / 2) * f * 0.15;
+} else if (dist <= 20) {
+const a = Math.atan2(p.y - hy, p.x - hx);
+p.vx = Math.cos(a + 1.5) * 2;
+p.vy = Math.sin(a + 1.5) * 2;
+p.radius = p.baseRadius * 0.3;
+p.alpha = Math.min(1, p.baseAlpha * 2);
+}
+p.trailLength = 4;
+}
+
+function applyPinch(p) {
+if (!gestureState.pinchPoints.length) return;
+const pt = gestureState.pinchPoints[0];
+const px = pt.x * W, py = pt.y * H;
+const dx = px - p.x, dy = py - p.y;
+const dist = Math.sqrt(dx * dx + dy * dy);
+if (dist < 250 && dist > 5) {
+const f = (1 - dist / 250) * 5;
+const a = Math.atan2(dy, dx);
+p.vx += Math.cos(a + Math.PI / 2) * f * 0.8;
+p.vy += Math.sin(a + Math.PI / 2) * f * 0.8;
+p.vx += (dx / dist) * f * 0.3;
+p.vy += (dy / dist) * f * 0.3;
+p.radius = p.baseRadius * (1 + Math.sin(gestureState.time * 5 + p.phase) * 0.5);
+p.alpha = Math.min(1, p.baseAlpha * (1 + (1 - dist / 250)));
+}
+p.trailLength = 15;
+}
+
+function applyPoint(p) {
+if (!gestureState.handCenters.length || !gestureState.pointDirections.length) return;
+const h = gestureState.handCenters[0];
+const dir = gestureState.pointDirections[0];
+const hx = h.x * W, hy = h.y * H;
+const dx = p.x - hx, dy = p.y - hy;
+const dist = Math.sqrt(dx * dx + dy * dy);
+if (dist < 400 && dist > 10) {
+const dl = Math.sqrt(dir.x * dir.x + dir.y * dir.y);
+if (dl > 0) {
+const nx = dir.x / dl, ny = dir.y / dl;
+const cross = dx * ny - dy * nx;
+if (Math.abs(cross) < 80 && (dx * nx + dy * ny) > 0) {
+p.vx += nx * 2; p.vy += ny * 2;
+p.vx -= cross * ny * 0.05; p.vy += cross * nx * 0.05;
+p.radius = p.baseRadius * (1 + (1 - Math.abs(cross) / 80));
+p.alpha = Math.min(1, p.baseAlpha * 1.5);
+}
+}
+}
+p.trailLength = 8;
+}
+
+function applyTwoHands(p) {
+if (gestureState.handCenters.length < 2) {
+if (gestureState.handCenters.length === 1) {
+const h = gestureState.handCenters[0];
+const dx = h.x * W - p.x, dy = h.y * H - p.y;
+const dist = Math.sqrt(dx * dx + dy * dy);
+if (dist < 300 && dist > 1) {
+const f = (1 - dist / 300) * 3;
+p.vx += (dx / dist) * f; p.vy += (dy / dist) * f;
+}
+}
+return;
+}
+const [h1, h2] = gestureState.handCenters;
+for (const hand of [h1, h2]) {
+const dx = hand.x * W - p.x, dy = hand.y * H - p.y;
+const dist = Math.sqrt(dx * dx + dy * dy);
+if (dist < 300 && dist > 1) {
+const f = (1 - dist / 300) * 2.5;
+p.vx += (dx / dist) * f; p.vy += (dy / dist) * f;
+}
+}
+const midX = (h1.x + h2.x) / 2 * W, midY = (h1.y + h2.y) / 2 * H;
+const dx = midX - p.x, dy = midY - p.y;
+const dist = Math.sqrt(dx * dx + dy * dy);
+if (dist < 100) { p.vx -= (dx / dist) * 1.5; p.vy -= (dy / dist) * 1.5; }
+p.radius = p.baseRadius * (1 + Math.sin(gestureState.time * 3 + p.phase) * 0.3);
+p.trailLength = 12;
+}
+
+// ──────────────────────────────────────────
+// 6. BACKGROUND STARS
+// ──────────────────────────────────────────
+let bgStars = [];
+for (let i = 0; i < 200; i++) {
+bgStars.push({
+x: Math.random() * W, y: Math.random() * H,
+r: Math.random() * 1.5 + 0.3,
+alpha: Math.random() * 0.5 + 0.1,
+twinkle: Math.random() * Math.PI * 2
+});
+}
+
+function drawBackground(dt) {
+bgCtx.fillStyle = 'rgba(0,0,0,0.15)';
+bgCtx.fillRect(0, 0, W, H);
+for (const s of bgStars) {
+s.twinkle += dt * 2;
+const a = s.alpha * (0.5 + 0.5 * Math.sin(s.twinkle));
+bgCtx.beginPath(); bgCtx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+bgCtx.fillStyle = `rgba(255,255,255,${a})`; bgCtx.fill();
+}
+const color = GESTURE_COLORS[gestureState.type];
+if (gestureState.handCenters.length > 0) {
+const h = gestureState.handCenters[0];
+const g = bgCtx.createRadialGradient(h.x * W, h.y * H, 0, h.x * W, h.y * H, 300);
+g.addColorStop(0, `hsla(${color.h},${color.s}%,${color.l}%,0.05)`);
+g.addColorStop(1, 'transparent');
+bgCtx.fillStyle = g; bgCtx.fillRect(0, 0, W, H);
+}
+}
+
+// ──────────────────────────────────────────
+// 7. CONNECTION LINES
+// ──────────────────────────────────────────
+function drawConnections() {
+const maxD = 80, maxC = 300;
+let cnt = 0;
+for (let i = 0; i < activeParticleCount && cnt < maxC; i++) {
+const a = particles[i]; if (!a.active) continue;
+for (let j = i + 1; j < activeParticleCount && cnt < maxC; j++) {
+const b = particles[j]; if (!b.active) continue;
+const dx = a.x - b.x, dy = a.y - b.y;
+const dist = Math.sqrt(dx * dx + dy * dy);
+if (dist < maxD) {
+const alpha = (1 - dist / maxD) * 0.15 * a.life * b.life;
+ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+ctx.strokeStyle = `hsla(${(a.hue + b.hue) / 2},60%,60%,${alpha})`;
+ctx.lineWidth = 0.5; ctx.stroke(); cnt++;
+}
+}
+}
+}
+
+// ──────────────────────────────────────────
+// 8. HAND OVERLAY
+// ──────────────────────────────────────────
+const HAND_CONNECTIONS = [
+[0,1],[1,2],[2,3],[3,4],
+[0,5],[5,6],[6,7],[7,8],
+[5,9],[9,10],[10,11],[11,12],
+[9,13],[13,14],[14,15],[15,16],
+[13,17],[0,17],[17,18],[18,19],[19,20]
+];
+
+function drawHandOverlay(multiHandLandmarks) {
+overlayCtx.clearRect(0, 0, W, H);
+if (!multiHandLandmarks) return;
+
+for (const landmarks of multiHandLandmarks) {
+const color = GESTURE_COLORS[gestureState.type];
+overlayCtx.strokeStyle = `hsla(${color.h},${color.s}%,${color.l}%,0.3)`;
+overlayCtx.lineWidth = 1;
+for (const [s, e] of HAND_CONNECTIONS) {
+overlayCtx.beginPath();
+overlayCtx.moveTo(landmarks[s].x * W, landmarks[s].y * H);
+overlayCtx.lineTo(landmarks[e].x * W, landmarks[e].y * H);
+overlayCtx.stroke();
+}
+for (const lm of landmarks) {
+const x = lm.x * W, y = lm.y * H;
+const g = overlayCtx.createRadialGradient(x, y, 0, x, y, 8);
+g.addColorStop(0, `hsla(${color.h},${color.s}%,${color.l}%,0.8)`);
+g.addColorStop(1, 'transparent');
+overlayCtx.beginPath(); overlayCtx.arc(x, y, 8, 0, Math.PI * 2);
+overlayCtx.fillStyle = g; overlayCtx.fill();
+overlayCtx.beginPath(); overlayCtx.arc(x, y, 2, 0, Math.PI * 2);
+overlayCtx.fillStyle = `hsla(${color.h},100%,90%,0.9)`; overlayCtx.fill();
+}
+}
+}
+
+// ──────────────────────────────────────────
+// 9. MAIN ANIMATION LOOP
+// ──────────────────────────────────────────
+let lastTime = 0, frameCount = 0, fpsTime = 0, currentFps = 0;
+
+function animate(timestamp) {
+const dt = Math.min((timestamp - lastTime) / 1000, 0.05);
+lastTime = timestamp;
+frameCount++; fpsTime += dt;
+if (fpsTime >= 1) { currentFps = frameCount; frameCount = 0; fpsTime = 0; }
+
+ctx.fillStyle = 'rgba(0,0,0,0.08)';
+ctx.fillRect(0, 0, W, H);
+drawBackground(dt);
+applyGesturePhysics(dt);
+
+for (let i = 0; i < activeParticleCount; i++) {
+particles[i].update(dt);
+particles[i].draw(ctx);
+}
+drawConnections();
+
+statsEl.innerHTML = `FPS: ${currentFps}<br>粒子: ${activeParticleCount}<br>手势: ${GESTURE_NAMES[gestureState.type]}`;
+requestAnimationFrame(animate);
+}
+requestAnimationFrame(animate);
+
+// ──────────────────────────────────────────
+// 10. MEDIAPIPE HANDS (camera mode)
+// ──────────────────────────────────────────
+async function initHands() {
+// Check if MediaPipe loaded
+if (typeof window.Hands === 'undefined') {
+throw new Error('MediaPipe Hands 库未加载，请检查网络连接');
+}
+
+handsInstance = new window.Hands({
+locateFile: (file) => {
+return `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${file}`;
+}
+});
+
+handsInstance.setOptions({
+maxNumHands: 2,
+modelComplexity: 1,
+minDetectionConfidence: 0.7,
+minTrackingConfidence: 0.5
+});
+
+let handResults = null;
+
+handsInstance.onResults((results) => {
+handResults = results;
+drawHandOverlay(results.multiHandLandmarks);
+
+if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+const hands = results.multiHandLandmarks;
+gestureState.handCenters = hands.map(h => getHandCenter(h));
+gestureState.pinchPoints = hands.map(h => getPinchPoint(h));
+gestureState.pointDirections = hands.map(h => getPointDirection(h));
+gestureState.type = hands.length >= 2 ? GESTURE.TWO_HANDS : recognizeGesture(hands[0]);
+} else {
+gestureState.type = GESTURE.NONE;
+gestureState.handCenters = [];
+gestureState.pinchPoints = [];
+gestureState.pointDirections = [];
+}
+
+const name = GESTURE_NAMES[gestureState.type];
+gestureLabel.textContent = name;
+gestureLabel.classList.toggle('visible', gestureState.type !== GESTURE.NONE);
+});
+
+// Request camera permission explicitly
+loadingText.textContent = '正在请求摄像头权限...';
+loadingOverlay.style.display = 'flex';
+
+let stream;
+try {
+stream = await navigator.mediaDevices.getUserMedia({
+video: { width: 640, height: 480, facingMode: 'user' }
+});
+} catch (e) {
+loadingOverlay.style.display = 'none';
+if (e.name === 'NotAllowedError') {
+throw new Error('摄像头权限被拒绝。请点击浏览器地址栏的摄像头图标，允许访问后重试。');
+} else if (e.name === 'NotFoundError') {
+throw new Error('未检测到摄像头设备。请连接摄像头后重试。');
+} else {
+throw new Error('摄像头访问失败: ' + e.message);
+}
+}
+
+// Attach stream to video element
+videoEl.srcObject = stream;
+videoContainer.style.display = 'block';
+
+// Wait for video to be ready
+await new Promise((resolve) => {
+videoEl.onloadedmetadata = () => {
+videoEl.play();
+resolve();
+};
+});
+
+loadingText.textContent = '正在加载手势识别模型（首次加载较慢）...';
+
+// Start sending frames to MediaPipe
+cameraInstance = new window.Camera(videoEl, {
+onFrame: async () => {
+if (handsInstance) {
+await handsInstance.send({ image: videoEl });
+}
+},
+width: 640,
+height: 480
+});
+
+await cameraInstance.start();
+loadingOverlay.style.display = 'none';
+cameraActive = true;
+}
+
+// ──────────────────────────────────────────
+// 11. MOUSE / TOUCH FALLBACK
+// ──────────────────────────────────────────
+let mouseX = W / 2, mouseY = H / 2;
+let mouseDown = false, lastMouseX = mouseX, lastMouseY = mouseY;
+
+mainCanvas.style.pointerEvents = 'auto';
+mainCanvas.style.zIndex = '3';
+
+mainCanvas.addEventListener('mousemove', (e) => {
+lastMouseX = mouseX; lastMouseY = mouseY;
+mouseX = e.clientX; mouseY = e.clientY;
+if (cameraActive) return;
+
+gestureState.handCenters = [{ x: mouseX / W, y: mouseY / H }];
+gestureState.pinchPoints = [{ x: mouseX / W, y: mouseY / H }];
+const dx = mouseX - lastMouseX, dy = mouseY - lastMouseY;
+const speed = Math.sqrt(dx * dx + dy * dy);
+
+if (mouseDown) {
+gestureState.type = GESTURE.FIST;
+} else if (speed > 10) {
+gestureState.type = GESTURE.OPEN;
+} else {
+gestureState.type = GESTURE.POINT;
+gestureState.pointDirections = [{ x: dx * 0.01, y: dy * 0.01 }];
+}
+gestureLabel.textContent = GESTURE_NAMES[gestureState.type] + ' (鼠标)';
+gestureLabel.classList.add('visible');
+});
+
+mainCanvas.addEventListener('mousedown', () => {
+mouseDown = true;
+if (!cameraActive) { gestureState.type = GESTURE.FIST; }
+});
+mainCanvas.addEventListener('mouseup', () => {
+mouseDown = false;
+if (!cameraActive) { gestureState.type = GESTURE.OPEN; }
+});
+mainCanvas.addEventListener('mouseleave', () => {
+if (!cameraActive) {
+gestureState.type = GESTURE.NONE; gestureState.handCenters = [];
+gestureLabel.classList.remove('visible');
+}
+});
+
+mainCanvas.addEventListener('touchmove', (e) => {
+e.preventDefault();
+const t = e.touches[0];
+lastMouseX = mouseX; lastMouseY = mouseY;
+mouseX = t.clientX; mouseY = t.clientY;
+if (cameraActive) return;
+gestureState.handCenters = [{ x: mouseX / W, y: mouseY / H }];
+gestureState.pinchPoints = [{ x: mouseX / W, y: mouseY / H }];
+gestureState.type = GESTURE.PINCH;
+gestureLabel.textContent = GESTURE_NAMES[GESTURE.PINCH] + ' (触摸)';
+gestureLabel.classList.add('visible');
+}, { passive: false });
+
+mainCanvas.addEventListener('touchend', () => {
+if (!cameraActive) {
+gestureState.type = GESTURE.NONE; gestureState.handCenters = [];
+gestureLabel.classList.remove('visible');
+}
+});
+
+// ──────────────────────────────────────────
+// 12. START BUTTON
+// ──────────────────────────────────────────
+startBtn.addEventListener('click', async () => {
+startBtn.disabled = true;
+startBtn.textContent = '正在启动...';
+statusMsg.textContent = '';
+
+try {
+await initHands();
+startBtn.style.display = 'none';
+statusMsg.textContent = '';
+} catch (err) {
+console.error('Init failed:', err);
+statusMsg.textContent = err.message;
+startBtn.textContent = '重试启动';
+startBtn.disabled = false;
+}
+});
+
+// ──────────────────────────────────────────
+// 13. KEYBOARD SHORTCUTS
+// ──────────────────────────────────────────
+document.addEventListener('keydown', (e) => {
+const map = { '0': GESTURE.NONE, '1': GESTURE.OPEN, '2': GESTURE.FIST, '3': GESTURE.PINCH, '4': GESTURE.POINT, '5': GESTURE.TWO_HANDS };
+if (map[e.key] !== undefined) {
+gestureState.type = map[e.key];
+gestureLabel.textContent = GESTURE_NAMES[gestureState.type] + ' (键盘)';
+gestureLabel.classList.toggle('visible', gestureState.type !== GESTURE.NONE);
+}
+if (e.key === '+' || e.key === '=') activeParticleCount = Math.min(MAX_PARTICLES, activeParticleCount + 100);
+if (e.key === '-') activeParticleCount = Math.max(100, activeParticleCount - 100);
+});
+
+})();
+</script>
+</body>
+</html>
