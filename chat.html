@@ -937,28 +937,25 @@
             addTypingIndicator();
             
             try {
-                const response = await fetch('/api/ai', {
+                const response = await fetch('/api/ai/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ messages: chatHistory })
+                    body: JSON.stringify({ message: message })
                 });
-                
+
                 if (!response.ok) throw new Error('API Error');
-                
+
                 const data = await response.json();
-                
-                if (data.choices && data.choices[0] && data.choices[0].message) {
-                    let assistantMessage = data.choices[0].message.content;
-                    
-                    if (containsForbiddenWords(assistantMessage)) {
-                        assistantMessage = '抱歉，我无法回答这个问题。';
-                    }
-                    
-                    chatHistory.push({ role: 'assistant', content: assistantMessage });
-                    saveChatToStorage();
-                    removeTypingIndicator();
-                    addMessage(assistantMessage, false);
+                let assistantMessage = data.response || '抱歉，我暂时无法处理您的请求。';
+
+                if (containsForbiddenWords(assistantMessage)) {
+                    assistantMessage = '抱歉，我无法回答这个问题。';
                 }
+
+                chatHistory.push({ role: 'assistant', content: assistantMessage });
+                saveChatToStorage();
+                removeTypingIndicator();
+                addMessage(assistantMessage, false);
             } catch (error) {
                 console.error('API error:', error);
                 removeTypingIndicator();

@@ -10,25 +10,14 @@
     var micPermissionGranted = false;
 
     async function init() {
-        // 检查用户是否登录且为管理员
+        // 检查用户是否登录
         var userStr = localStorage.getItem('user');
         if (!userStr) {
             console.log('AI助手：用户未登录，不显示助手');
             return;
         }
-        
-        try {
-            var user = JSON.parse(userStr);
-            if (!user.isAdmin) {
-                console.log('AI助手：非管理员用户，不显示助手');
-                return;
-            }
-        } catch (e) {
-            console.log('AI助手：解析用户信息失败', e);
-            return;
-        }
-        
-        console.log('AI助手：管理员已登录，初始化助手');
+
+        console.log('AI助手：用户已登录，初始化助手');
         createWidget();
         addStyles();
         await requestMicrophonePermission(true);
@@ -263,7 +252,7 @@
         });
     }
 
-    function sendMessage() {
+    async function sendMessage() {
         var input = document.getElementById('kd-input');
         var message = input.value.trim();
         if (!message) return;
@@ -271,11 +260,18 @@
         addMessage(message, 'user');
         input.value = '';
 
-        setTimeout(function() {
-            var replies = ['收到！我来帮您处理。', '好的，明白了！', '没问题，这就为您服务！', '感谢您的消息，我会尽快回复。'];
-            var reply = replies[Math.floor(Math.random() * replies.length)];
-            addMessage(reply, 'ai');
-        }, 500);
+        try {
+            var response = await fetch('/api/ai/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: message })
+            });
+            var data = await response.json();
+            addMessage(data.response || '抱歉，我暂时无法处理您的请求。', 'ai');
+        } catch (error) {
+            console.error('AI chat error:', error);
+            addMessage('抱歉，服务暂时不可用，请稍后再试。', 'ai');
+        }
     }
 
     function addMessage(text, type) {

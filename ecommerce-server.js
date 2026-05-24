@@ -66,7 +66,7 @@ app.use(helmet.contentSecurityPolicy({
     scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdn.jsdelivr.net", "https://cdn.tailwindcss.com", "https://cdnjs.cloudflare.com", "https://cdn.staticfile.org"],
     styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com", "https://cdn.staticfile.org"],
     imgSrc: ["'self'", "data:", "https:"],
-    connectSrc: ["'self'", "https://kdxzhx.top", "http://kdxzhx.top"],
+    connectSrc: ["'self'", "https://kdxzhx.top", "http://kdxzhx.top", "https://*.vercel.app"],
     fontSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://cdn.staticfile.org"],
     objectSrc: ["'none'"],
     mediaSrc: ["'self'"],
