@@ -1757,12 +1757,102 @@ app.get('/api/statistics', (req, res) => {
   });
 });
 
+// ==================== 初始化默认商品数据 ====================
+function initDefaultProducts() {
+  const products = db.getProducts();
+  if (products.length === 0) {
+    console.log('📦 初始化默认商品数据...');
+    const defaultProducts = [
+      {
+        id: 'prod-001',
+        name: '经典白色T恤',
+        price: 99.00,
+        originalPrice: 159.00,
+        description: '100%纯棉材质，舒适透气，经典百搭款式',
+        image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=500',
+        category: '服装',
+        stock: 100,
+        sales: 256,
+        status: 'active',
+        createdAt: '2024-01-15T00:00:00.000Z'
+      },
+      {
+        id: 'prod-002',
+        name: '时尚运动鞋',
+        price: 299.00,
+        originalPrice: 499.00,
+        description: '轻便舒适，防滑耐磨，适合日常运动',
+        image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500',
+        category: '鞋靴',
+        stock: 50,
+        sales: 189,
+        status: 'active',
+        createdAt: '2024-01-20T00:00:00.000Z'
+      },
+      {
+        id: 'prod-003',
+        name: '休闲牛仔裤',
+        price: 199.00,
+        originalPrice: 329.00,
+        description: '修身版型，弹力面料，时尚百搭',
+        image: 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=500',
+        category: '服装',
+        stock: 80,
+        sales: 312,
+        status: 'active',
+        createdAt: '2024-02-01T00:00:00.000Z'
+      },
+      {
+        id: 'prod-004',
+        name: '潮流卫衣',
+        price: 159.00,
+        originalPrice: 259.00,
+        description: '加绒保暖，宽松版型，街头潮流',
+        image: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=500',
+        category: '服装',
+        stock: 60,
+        sales: 178,
+        status: 'active',
+        createdAt: '2024-02-10T00:00:00.000Z'
+      },
+      {
+        id: 'prod-005',
+        name: '商务双肩包',
+        price: 189.00,
+        originalPrice: 299.00,
+        description: '大容量设计，防泼水面料，商务休闲两用',
+        image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=500',
+        category: '箱包',
+        stock: 45,
+        sales: 134,
+        status: 'active',
+        createdAt: '2024-02-15T00:00:00.000Z'
+      },
+      {
+        id: 'prod-006',
+        name: '无线蓝牙耳机',
+        price: 129.00,
+        originalPrice: 229.00,
+        description: '高清音质，长效续航，轻盈舒适',
+        image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500',
+        category: '数码',
+        stock: 120,
+        sales: 456,
+        status: 'active',
+        createdAt: '2024-03-01T00:00:00.000Z'
+      }
+    ];
+    db.saveProducts(defaultProducts);
+    console.log('✅ 已初始化 6 个默认商品');
+  }
+}
+
 // ==================== 初始化：加密现有用户密码 ====================
 async function encryptExistingPasswords() {
   try {
     const users = db.getUsers();
     let changed = 0;
-    
+
     for (let i = 0; i < users.length; i++) {
       const user = users[i];
       // 检查密码是否已加密
@@ -1771,7 +1861,7 @@ async function encryptExistingPasswords() {
         changed++;
       }
     }
-    
+
     if (changed > 0) {
       db.saveUsers(users);
       console.log(`🔐 已加密 ${changed} 个用户的密码`);
@@ -1780,6 +1870,9 @@ async function encryptExistingPasswords() {
     console.error('加密密码失败:', error);
   }
 }
+
+// 初始化默认商品数据（在模块加载时执行，确保 serverless 环境也有数据）
+initDefaultProducts();
 
 // 仅在直接运行时启动服务器（非被require时）
 if (require.main === module) {
