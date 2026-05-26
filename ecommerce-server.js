@@ -78,20 +78,9 @@ app.use(helmet.xssFilter());
 app.use(helmet.noSniff());
 app.use(helmet.frameguard({ action: 'deny' }));
 
-// CORS配置
-const allowedOrigins = [
-  `http://localhost:${PORT}`,
-  'https://kdxzhx.top',
-  'http://kdxzhx.top'
-];
+// CORS配置 - 允许所有来源（生产环境可收紧）
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: true,
   credentials: true
 }));
 
