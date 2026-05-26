@@ -216,6 +216,26 @@ app.get('/payment-success', (req, res) => {
   res.sendFile(path.join(__dirname, 'payment-success.html'));
 });
 
+app.get('/user-center', (req, res) => {
+  res.sendFile(path.join(__dirname, 'user-center.html'));
+});
+
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'admin-shop.html'));
+});
+
+app.get('/contact-us', (req, res) => {
+  res.sendFile(path.join(__dirname, 'contact-us.html'));
+});
+
+app.get('/gesture-particles', (req, res) => {
+  res.sendFile(path.join(__dirname, 'gesture-particles.html'));
+});
+
+app.get('/dh', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dh.html'));
+});
+
 // 商品API
 app.get('/api/products', (req, res) => {
   res.json(db.getProducts());
@@ -1909,5 +1929,39 @@ encryptExistingPasswords().then(() => {
   });
 });
 } // end if require.main === module
+
+// ==================== 404错误处理 ====================
+app.use((req, res, next) => {
+  // 检查是否是API请求
+  if (req.path.startsWith('/api/')) {
+    res.status(404).json({ error: 'API endpoint not found' });
+  } else {
+    // 对于页面请求，尝试直接提供静态文件，或者返回404
+    // 先尝试静态文件中间件
+    const fs = require('fs');
+    const path = require('path');
+    const filePath = path.join(__dirname, req.path);
+    
+    // 检查是否直接请求HTML文件
+    if (req.path.endsWith('.html') && fs.existsSync(filePath)) {
+      res.sendFile(filePath);
+    } else {
+      // 如果找不到页面，重定向到首页或返回友好的404
+      // 检查是否有.html后缀的文件存在
+      const htmlPath = path.join(__dirname, `${req.path}.html`);
+      if (fs.existsSync(htmlPath)) {
+        res.sendFile(htmlPath);
+      } else {
+        // 返回友好的404页面（如果有的话），否则重定向到shop
+        const notFoundPath = path.join(__dirname, '404.html');
+        if (fs.existsSync(notFoundPath)) {
+          res.status(404).sendFile(notFoundPath);
+        } else {
+          res.redirect('/shop');
+        }
+      }
+    }
+  }
+});
 
 module.exports = app;
