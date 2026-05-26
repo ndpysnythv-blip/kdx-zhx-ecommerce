@@ -6,9 +6,19 @@
       "use": "@vercel/node"
     }
   ],
+  "cleanUrls": true,
   "routes": [
-    { "src": "/api/(.*)", "dest": "/api/index.js" },
-    { "src": "/(.*\\.(html|css|js|json|png|jpg|jpeg|gif|svg|ico))", "dest": "/$1" },
-    { "src": "/(.*)", "dest": "/api/index.js" }
+    {
+      "src": "/(.*\\.(html|css|js|json|png|jpg|jpeg|gif|svg|ico))",
+      "dest": "/$1"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/api/index.js"
+    }
   ]
 }
