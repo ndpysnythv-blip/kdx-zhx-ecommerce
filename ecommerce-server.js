@@ -236,6 +236,10 @@ app.get('/dh', (req, res) => {
   res.sendFile(path.join(__dirname, 'dh.html'));
 });
 
+app.get('/hz', (req, res) => {
+  res.sendFile(path.join(__dirname, 'cooperation.html'));
+});
+
 app.get('/cooperation', (req, res) => {
   res.sendFile(path.join(__dirname, 'cooperation.html'));
 });
