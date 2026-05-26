@@ -237,6 +237,10 @@ app.get('/hezuo', (req, res) => {
   res.sendFile(path.join(__dirname, 'cooperation.html'));
 });
 
+app.get('/message', (req, res) => {
+  res.sendFile(path.join(__dirname, 'message.html'));
+});
+
 // 商品API
 app.get('/api/products', (req, res) => {
   res.json(db.getProducts());
