@@ -155,10 +155,10 @@ function decryptData(encryptedData, secret) {
 // ==================== 安全头 ====================
 function setSecurityHeaders(res) {
   res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('Content-Security-Policy', "default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data:; img-src 'self' data: https:;");
+  res.setHeader('Content-Security-Policy', "default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: blob:; connect-src 'self' https: http: wss: ws:; media-src 'self' blob: https: http:; img-src 'self' data: https: http: blob:;");
   res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
 }
 
@@ -167,9 +167,7 @@ const SUSPICIOUS_USER_AGENTS = [
   'sqlmap', 'nmap', 'nikto', 'nessus', 'havij', 'pangolin', 'hydra', 'zap',
   'w3af', 'arachni', 'skipfish', 'dirbuster', 'gobuster', 'dirb', 'wpscan',
   'fuzz', 'fuzzdb', 'burp', 'paros', 'webscarab', 'acunetix', 'netsparker',
-  'waf', 'qualys', 'ibm', 'hp', 'mcafee', 'symantec', 'fireeye', 'cenzic',
-  'qualysguard', 'webinspect', 'appscan', 'security', 'scanner', 'crawler',
-  'bot', 'spider', 'scraper', 'harvester', 'sitemap'
+  'qualysguard', 'webinspect', 'appscan'
 ];
 
 function isSuspiciousRequest(req) {
@@ -179,10 +177,6 @@ function isSuspiciousRequest(req) {
     if (ua.includes(keyword)) {
       return { suspicious: true, reason: `检测到恶意User-Agent: ${keyword}` };
     }
-  }
-  
-  if (req.headers['x-forwarded-for'] && req.headers['x-forwarded-for'].includes(',')) {
-    return { suspicious: true, reason: '检测到可疑代理' };
   }
   
   return { suspicious: false };

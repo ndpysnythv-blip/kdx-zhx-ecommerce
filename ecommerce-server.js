@@ -65,12 +65,12 @@ app.use(helmet.contentSecurityPolicy({
     defaultSrc: ["'self'"],
     scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdn.jsdelivr.net", "https://cdn.tailwindcss.com", "https://cdnjs.cloudflare.com", "https://cdn.staticfile.org"],
     styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com", "https://cdn.staticfile.org"],
-    imgSrc: ["'self'", "data:", "https:"],
-    connectSrc: ["'self'", "https://kdxzhx.top", "http://kdxzhx.top", "https://*.vercel.app"],
+    imgSrc: ["'self'", "data:", "https:", "http:", "blob:"],
+    connectSrc: ["'self'", "http://localhost:*", "https://kdxzhx.top", "http://kdxzhx.top", "https://*.vercel.app", "https://api.bilibili.com", "https://www.iesdouyin.com", "https://m.weibo.cn", "https://www.kuaishou.com", "https://m.gifshow.com", "https://www.xiaohongshu.com"],
     fontSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://cdn.staticfile.org"],
     objectSrc: ["'none'"],
-    mediaSrc: ["'self'"],
-    frameSrc: ["'none'"]
+    mediaSrc: ["'self'", "blob:", "https:"],
+    frameSrc: ["'self'", "blob:"]
   }
 }));
 app.use(helmet.hsts({ maxAge: 31536000, includeSubDomains: true }));
@@ -239,6 +239,10 @@ app.get('/hezuo', (req, res) => {
 
 app.get('/message', (req, res) => {
   res.sendFile(path.join(__dirname, 'message.html'));
+});
+
+app.get('/video-downloader', (req, res) => {
+  res.sendFile(path.join(__dirname, 'video-downloader.html'));
 });
 
 // 商品API
@@ -1901,7 +1905,9 @@ initDefaultProducts();
 
 // 仅在直接运行时启动服务器（非被require时）
 if (require.main === module) {
+console.log('🚀 正在启动服务器...');
 encryptExistingPasswords().then(() => {
+  console.log('✅ 密码加密完成，开始监听端口...');
   app.listen(PORT, () => {
     console.log('✅ 支付宝SDK初始化成功');
     console.log('');
@@ -1934,6 +1940,659 @@ encryptExistingPasswords().then(() => {
   });
 });
 } // end if require.main === module
+
+// ==================== 视频无水印解析 API ====================
+const https = require('https');
+const http = require('http');
+
+// 通用HTTP请求 - 针对国内平台优化
+function httpRequest(reqUrl, options = {}) {
+  return new Promise((resolve, reject) => {
+    const isHttps = reqUrl.startsWith('https');
+    const client = isHttps ? https : http;
+    let parsed;
+    try { parsed = new URL(reqUrl); } catch(e) { return reject(new Error('无效URL: ' + reqUrl)); }
+
+    const defaultHeaders = {
+      'User-Agent': 'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+      'Accept-Language': 'zh-CN,zh;q=0.9',
+      'Accept-Encoding': 'identity',
+      'Connection': 'keep-alive',
+      ...options.headers
+    };
+    // 不要手动设Host，让Node自动处理
+    delete defaultHeaders['Host'];
+
+    const reqOptions = {
+      hostname: parsed.hostname,
+      port: parsed.port || (isHttps ? 443 : 80),
+      path: parsed.pathname + parsed.search,
+      method: options.method || 'GET',
+      headers: defaultHeaders,
+      timeout: 10000,
+      rejectUnauthorized: false
+    };
+
+    const req = client.request(reqOptions, (res) => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        let loc = res.headers.location;
+        if (loc.startsWith('/')) loc = `${parsed.protocol}//${parsed.host}${loc}`;
+        res.resume();
+        return httpRequest(loc, options).then(resolve).catch(reject);
+      }
+      const chunks = [];
+      res.on('data', chunk => chunks.push(chunk));
+      res.on('end', () => {
+        const body = Buffer.concat(chunks).toString('utf8');
+        resolve({ statusCode: res.statusCode, headers: res.headers, body });
+      });
+    });
+
+    req.on('error', reject);
+    req.on('timeout', () => { req.destroy(); reject(new Error('timeout')); });
+    if (options.body) req.write(options.body);
+    req.end();
+  });
+}
+
+// HEAD请求跟随重定向
+function resolveRedirect(reqUrl, maxRedirects = 5) {
+  return new Promise((resolve) => {
+    if (maxRedirects <= 0 || !reqUrl) return resolve(reqUrl);
+    const isHttps = reqUrl.startsWith('https');
+    const client = isHttps ? https : http;
+    let parsed;
+    try { parsed = new URL(reqUrl); } catch { return resolve(reqUrl); }
+
+    const req = client.request({
+      hostname: parsed.hostname,
+      port: parsed.port || (isHttps ? 443 : 80),
+      path: parsed.pathname + parsed.search,
+      method: 'GET',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36',
+        'Accept': '*/*'
+      },
+      timeout: 8000,
+      rejectUnauthorized: false
+    }, (res) => {
+      res.resume();
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        let loc = res.headers.location;
+        if (loc.startsWith('/')) loc = `${parsed.protocol}//${parsed.host}${loc}`;
+        return resolveRedirect(loc, maxRedirects - 1).then(resolve);
+      }
+      resolve(reqUrl);
+    });
+    req.on('error', () => resolve(reqUrl));
+    req.on('timeout', () => { req.destroy(); resolve(reqUrl); });
+    req.end();
+  });
+}
+
+// ==================== 抖音解析 ====================
+async function parseDouyin(url) {
+  // 1. 处理短链接获取真实URL
+  let realUrl = url;
+  if (url.includes('v.douyin.com') || url.includes('iesdouyin.com/share')) {
+    realUrl = await resolveRedirect(url);
+  }
+
+  // 2. 提取视频ID
+  let videoId = '';
+  const idMatch = realUrl.match(/video[/](\d+)/) ||
+                  realUrl.match(/modal_id=(\d+)/) ||
+                  realUrl.match(/note[/](\d+)/) ||
+                  realUrl.match(/\/(\d{15,20})/);
+  if (idMatch) videoId = idMatch[1];
+
+  // 从页面提取ID
+  if (!videoId) {
+    try {
+      const pageResp = await httpRequest(realUrl, {
+        headers: { 'Referer': 'https://www.douyin.com/' }
+      });
+      const m = pageResp.body.match(/"aweme_id"\s*:\s*"?(\d+)"?/) ||
+                pageResp.body.match(/video\/(\d{15,})/) ||
+                pageResp.body.match(/itemId\s*[=:]\s*["']?(\d+)/);
+      if (m) videoId = m[1];
+    } catch {}
+  }
+
+  if (!videoId) throw new Error('无法提取抖音视频ID，请确认链接正确');
+
+  // 3. 调用抖音API
+  const apiUrl = `https://www.iesdouyin.com/web/api/v2/aweme/iteminfo/?item_ids=${videoId}`;
+  const resp = await httpRequest(apiUrl, {
+    headers: {
+      'Referer': 'https://www.douyin.com/',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    }
+  });
+
+  let data;
+  try { data = JSON.parse(resp.body); } catch { throw new Error('抖音API返回异常'); }
+
+  if (data.item_list && data.item_list[0]) {
+    const item = data.item_list[0];
+    let videoUrl = '';
+    if (item.video?.play_addr?.url_list) {
+      videoUrl = item.video.play_addr.url_list[0] || '';
+      videoUrl = videoUrl.replace('playwm', 'play');
+    }
+    if (!videoUrl && item.video?.play_addr_h265?.url_list) {
+      videoUrl = item.video.play_addr_h265.url_list[0] || '';
+      videoUrl = videoUrl.replace('playwm', 'play');
+    }
+    if (!videoUrl) throw new Error('无法获取视频地址');
+    return {
+      platform: 'douyin',
+      title: item.desc || '抖音视频',
+      cover: item.video?.cover?.url_list?.[0] || item.video?.origin_cover?.url_list?.[0] || '',
+      videoUrl,
+      duration: item.duration ? `${Math.floor(item.duration / 1000)}秒` : '未知',
+      author: item.author?.nickname || '未知'
+    };
+  }
+
+  // 备用：从页面提取
+  try {
+    const pageResp = await httpRequest(`https://www.douyin.com/video/${videoId}`, {
+      headers: { 'Referer': 'https://www.douyin.com/' }
+    });
+    const renderMatch = pageResp.body.match(/<script id="RENDER_DATA"[^>]*>([^<]+)<\/script>/);
+    if (renderMatch) {
+      const decoded = decodeURIComponent(renderMatch[1]);
+      const titleM = decoded.match(/"desc"\s*:\s*"([^"]+)"/);
+      const urlM = decoded.match(/"playApi"\s*:\s*"([^"]+)"/) ||
+                   decoded.match(/"play_addr_h265".*?"url_list"\s*:\s*\["([^"]+)"/);
+      if (urlM) {
+        return {
+          platform: 'douyin',
+          title: titleM ? titleM[1] : '抖音视频',
+          cover: '',
+          videoUrl: urlM[1].replace(/\\u002F/g, '/'),
+          duration: '未知',
+          author: '未知'
+        };
+      }
+    }
+  } catch {}
+
+  throw new Error('抖音视频解析失败，该视频可能已删除或设置了权限');
+}
+
+// ==================== B站解析 ====================
+async function parseBilibili(url) {
+  let bvid = '';
+  let realUrl = url;
+  if (url.includes('b23.tv')) realUrl = await resolveRedirect(url);
+  const bvMatch = realUrl.match(/BV[a-zA-Z0-9]{10}/);
+  if (bvMatch) bvid = bvMatch[0];
+  if (!bvid) throw new Error('无法提取B站视频BV号，请确认链接正确');
+
+  // 获取视频信息
+  const infoUrl = `https://api.bilibili.com/x/web-interface/view?bvid=${bvid}`;
+  const infoResp = await httpRequest(infoUrl, {
+    headers: {
+      'Referer': 'https://www.bilibili.com/',
+      'Origin': 'https://www.bilibili.com',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Cookie': 'buvid3=infoc; b_nut=100'
+    }
+  });
+
+  let infoData;
+  try { infoData = JSON.parse(infoResp.body); } catch { throw new Error('B站API返回异常'); }
+  if (infoData.code !== 0 || !infoData.data) throw new Error(infoData.message || '获取B站视频信息失败');
+
+  const info = infoData.data;
+  const cid = info.cid;
+
+  // 获取视频流地址
+  const playUrl = `https://api.bilibili.com/x/player/wbi/playurl?bvid=${bvid}&cid=${cid}&qn=80&fnval=4048&fourk=1`;
+  const playResp = await httpRequest(playUrl, {
+    headers: {
+      'Referer': `https://www.bilibili.com/video/${bvid}/`,
+      'Origin': 'https://www.bilibili.com',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Cookie': 'buvid3=infoc; b_nut=100'
+    }
+  });
+
+  let playData;
+  try { playData = JSON.parse(playResp.body); } catch { throw new Error('获取播放地址失败'); }
+
+  let videoUrl = '';
+  if (playData.code === 0 && playData.data) {
+    if (playData.data.dash?.video?.length > 0) {
+      const sorted = playData.data.dash.video.sort((a, b) => (b.bandwidth || 0) - (a.bandwidth || 0));
+      videoUrl = sorted[0].baseUrl || sorted[0].base_url || '';
+    } else if (playData.data.durl?.[0]) {
+      videoUrl = playData.data.durl[0].url;
+    }
+  }
+
+  // 旧版API备用
+  if (!videoUrl) {
+    try {
+      const oldResp = await httpRequest(`https://api.bilibili.com/x/player/playurl?bvid=${bvid}&cid=${cid}&qn=80&fnval=0`, {
+        headers: { 'Referer': `https://www.bilibili.com/video/${bvid}/`, 'Cookie': 'buvid3=infoc' }
+      });
+      const oldData = JSON.parse(oldResp.body);
+      if (oldData.code === 0 && oldData.data?.durl?.[0]) videoUrl = oldData.data.durl[0].url;
+    } catch {}
+  }
+
+  if (!videoUrl) throw new Error('获取视频下载地址失败');
+  return {
+    platform: 'bilibili',
+    title: info.title || 'B站视频',
+    cover: info.pic?.startsWith('//') ? 'https:' + info.pic : (info.pic || ''),
+    videoUrl,
+    duration: info.duration ? `${Math.floor(info.duration / 60)}分${info.duration % 60}秒` : '未知',
+    author: info.owner?.name || '未知'
+  };
+}
+
+// ==================== 快手解析 ====================
+async function parseKuaishou(url) {
+  let realUrl = url;
+  if (url.includes('v.kuaishou.com') || url.includes('v.m.chenzhongtech.com')) {
+    realUrl = await resolveRedirect(url);
+  }
+
+  let photoId = '';
+  const m1 = realUrl.match(/photo\/(\w+)/) || realUrl.match(/short-video\/(\w+)/) || realUrl.match(/fw\/(\w+)/);
+  if (m1) photoId = m1[1];
+
+  if (!photoId) {
+    try {
+      const pageResp = await httpRequest(realUrl, { headers: { 'Referer': 'https://www.kuaishou.com/' } });
+      const m = pageResp.body.match(/"photoId"\s*:\s*"(\w+)"/) || pageResp.body.match(/photoId[=:]([a-zA-Z0-9_-]+)/);
+      if (m) photoId = m[1];
+    } catch {}
+  }
+
+  if (!photoId) throw new Error('无法提取快手视频ID，请确认链接正确');
+
+  // 快手GraphQL API
+  const gqlUrl = 'https://www.kuaishou.com/graphql';
+  const gqlResp = await httpRequest(gqlUrl, {
+    method: 'POST',
+    headers: {
+      'Referer': 'https://www.kuaishou.com/',
+      'Content-Type': 'application/json',
+      'Origin': 'https://www.kuaishou.com',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Accept': 'application/json',
+      'Cookie': 'did=web_d0test; didv=1'
+    },
+    body: JSON.stringify({
+      operationName: 'visionVideoDetailPhoto',
+      variables: { photoId, page: 'detail' },
+      query: 'query visionVideoDetailPhoto($photoId: String, $type: String, $page: String) { visionVideoDetailPhoto(photoId: $photoId, type: $type, page: $page) { photo { id duration caption likeCount realLikeCount coverUrl photoUrl } } }'
+    })
+  });
+
+  let gqlData;
+  try { gqlData = JSON.parse(gqlResp.body); } catch {}
+
+  if (gqlData?.data?.visionVideoDetailPhoto?.photo) {
+    const photo = gqlData.data.visionVideoDetailPhoto.photo;
+    return {
+      platform: 'kuaishou',
+      title: photo.caption || '快手视频',
+      cover: photo.coverUrl || '',
+      videoUrl: photo.photoUrl || '',
+      duration: photo.duration ? `${Math.floor(photo.duration / 1000)}秒` : '未知',
+      author: '未知'
+    };
+  }
+
+  // 备用：移动端API
+  try {
+    const mobileResp = await httpRequest('https://m.gifshow.com/rest/wd/photo/info?is498=true', {
+      method: 'POST',
+      headers: {
+        'Referer': 'https://m.gifshow.com/',
+        'Content-Type': 'application/json',
+        'Origin': 'https://m.gifshow.com',
+        'User-Agent': 'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36'
+      },
+      body: JSON.stringify({ photoId, isLongVideo: false })
+    });
+    const mData = JSON.parse(mobileResp.body);
+    if (mData.result === 1 && mData.photo) {
+      return {
+        platform: 'kuaishou',
+        title: mData.photo.caption || '快手视频',
+        cover: mData.photo.coverUrl || '',
+        videoUrl: mData.photo.photoUrl || mData.photo.mainMvUrl || '',
+        duration: mData.photo.duration ? `${Math.floor(mData.photo.duration / 1000)}秒` : '未知',
+        author: mData.photo.userName || '未知'
+      };
+    }
+  } catch {}
+
+  throw new Error('快手视频解析失败，该视频可能已删除或设置了权限');
+}
+
+// ==================== 小红书解析 ====================
+async function parseXiaohongshu(url) {
+  let realUrl = url;
+  let noteId = '';
+
+  if (url.includes('xhslink.com')) realUrl = await resolveRedirect(url);
+
+  const m = realUrl.match(/explore\/([a-f0-9]+)/) ||
+            realUrl.match(/discovery\/item\/([a-f0-9]+)/) ||
+            realUrl.match(/note\/([a-f0-9]+)/) ||
+            realUrl.match(/\/([a-f0-9]{24})/);
+  if (m) noteId = m[1];
+  if (!noteId) throw new Error('无法提取小红书笔记ID，请确认链接正确');
+
+  const resp = await httpRequest(`https://www.xiaohongshu.com/explore/${noteId}`, {
+    headers: {
+      'Referer': 'https://www.xiaohongshu.com/',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+    }
+  });
+
+  // 从SSR数据提取
+  const stateMatch = resp.body.match(/__INITIAL_STATE__\s*=\s*({.+?})\s*<\/script>/s) ||
+                     resp.body.match(/window\.__INITIAL_SSR_STATE__\s*=\s*({.+?})\s*<\/script>/s);
+  if (stateMatch) {
+    try {
+      const jsonStr = stateMatch[1].replace(/undefined/g, 'null');
+      const state = JSON.parse(jsonStr);
+      const noteData = state.note?.noteDetailMap?.[noteId]?.note || state.note?.noteData;
+      if (noteData) {
+        let videoUrl = '';
+        if (noteData.video?.media?.stream?.h264?.[0]?.masterUrl) {
+          videoUrl = noteData.video.media.stream.h264[0].masterUrl;
+        } else if (noteData.video?.url) {
+          videoUrl = noteData.video.url;
+        }
+        if (videoUrl) {
+          return {
+            platform: 'xiaohongshu',
+            title: noteData.title || noteData.desc?.substring(0, 50) || '小红书笔记',
+            cover: noteData.cover?.url || noteData.imageList?.[0]?.url || '',
+            videoUrl,
+            duration: noteData.video?.duration ? `${Math.floor(noteData.video.duration / 1000)}秒` : '未知',
+            author: noteData.user?.nickname || '未知'
+          };
+        }
+      }
+    } catch {}
+  }
+
+  // 正则备用
+  const vMatch = resp.body.match(/"originVideoKey"\s*:\s*"([^"]+)"/) ||
+                 resp.body.match(/"url"\s*:\s*"(https?:\/\/[^"]*\.mp4[^"]*)"/) ||
+                 resp.body.match(/"masterUrl"\s*:\s*"([^"]+)"/);
+  if (vMatch) {
+    const titleM = resp.body.match(/"title"\s*:\s*"([^"]+)"/);
+    const authorM = resp.body.match(/"nickname"\s*:\s*"([^"]+)"/);
+    return {
+      platform: 'xiaohongshu',
+      title: titleM ? titleM[1] : '小红书笔记',
+      cover: '',
+      videoUrl: vMatch[1].replace(/\\u002F/g, '/').replace(/\\\\u002F/g, '/'),
+      duration: '未知',
+      author: authorM ? authorM[1] : '未知'
+    };
+  }
+
+  throw new Error('小红书笔记解析失败，该笔记可能为图文笔记或已删除');
+}
+
+// ==================== 微博解析 ====================
+async function parseWeibo(url) {
+  let realUrl = url;
+  if (url.includes('t.cn') || url.includes('weibo.com/s/')) realUrl = await resolveRedirect(url);
+
+  let statusId = '';
+  const m = realUrl.match(/\/(\d{16,})/) ||
+            realUrl.match(/detail\/(\d+)/) ||
+            realUrl.match(/statuses\/(\d+)/) ||
+            realUrl.match(/mid[=:](\d+)/);
+  if (m) statusId = m[1];
+  if (!statusId) throw new Error('无法提取微博ID，请确认链接正确');
+
+  // 移动端API
+  const resp = await httpRequest(`https://m.weibo.cn/statuses/show?id=${statusId}`, {
+    headers: {
+      'Referer': 'https://m.weibo.cn/',
+      'X-Requested-With': 'XMLHttpRequest',
+      'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1',
+      'Accept': 'application/json, text/plain, */*'
+    }
+  });
+
+  let data;
+  try { data = JSON.parse(resp.body); } catch { throw new Error('微博API返回异常'); }
+
+  if (data.ok === 1 && data.data) {
+    const status = data.data;
+    let videoUrl = '';
+
+    if (status.page_info) {
+      const pi = status.page_info;
+      if (pi.urls) videoUrl = pi.urls.mp4_720p_mp4 || pi.urls.mp4_hd_mp4 || pi.urls.mp4_ld_mp4 || '';
+      if (!videoUrl && pi.media_info) videoUrl = pi.media_info.stream_url_hd || pi.media_info.stream_url || '';
+      if (videoUrl) {
+        return {
+          platform: 'weibo',
+          title: status.status_title || (status.text || '').replace(/<[^>]+>/g, '').substring(0, 80) || '微博视频',
+          cover: pi.page_pic?.url || status.bmiddle_pic || '',
+          videoUrl,
+          duration: pi.media_info?.duration || '未知',
+          author: status.user?.screen_name || '未知'
+        };
+      }
+    }
+
+    // 转发微博
+    if (status.retweeted_status?.page_info) {
+      const rpi = status.retweeted_status.page_info;
+      if (rpi.urls) videoUrl = rpi.urls.mp4_720p_mp4 || rpi.urls.mp4_hd_mp4 || rpi.urls.mp4_ld_mp4 || '';
+      if (!videoUrl && rpi.media_info) videoUrl = rpi.media_info.stream_url_hd || rpi.media_info.stream_url || '';
+      if (videoUrl) {
+        return {
+          platform: 'weibo',
+          title: status.retweeted_status.status_title || '微博视频',
+          cover: rpi.page_pic?.url || '',
+          videoUrl,
+          duration: rpi.media_info?.duration || '未知',
+          author: status.retweeted_status.user?.screen_name || '未知'
+        };
+      }
+    }
+  }
+
+  // 备用：页面提取
+  try {
+    const pageResp = await httpRequest(`https://m.weibo.cn/detail/${statusId}`, {
+      headers: { 'Referer': 'https://m.weibo.cn/' }
+    });
+    const vMatch = pageResp.body.match(/"stream_url"\s*:\s*"([^"]+)"/) ||
+                   pageResp.body.match(/"stream_url_hd"\s*:\s*"([^"]+)"/);
+    if (vMatch) {
+      return {
+        platform: 'weibo',
+        title: '微博视频',
+        cover: '',
+        videoUrl: vMatch[1].replace(/\\\//g, '/'),
+        duration: '未知',
+        author: '未知'
+      };
+    }
+  } catch {}
+
+  throw new Error('微博视频解析失败，该微博可能不是视频微博或已删除');
+}
+
+// ==================== 主解析路由 ====================
+app.post('/api/video/parse', async (req, res) => {
+  try {
+    const { url } = req.body;
+    if (!url || !url.trim()) {
+      return res.status(400).json({ success: false, message: '请提供视频链接' });
+    }
+
+    const cleanUrl = url.trim();
+    console.log(`🔍 开始解析视频: ${cleanUrl}`);
+
+    // 识别平台
+    let platform = null;
+    let parser = null;
+
+    if (cleanUrl.includes('douyin.com') || cleanUrl.includes('iesdouyin.com')) {
+      platform = '抖音'; parser = parseDouyin;
+    } else if (cleanUrl.includes('bilibili.com') || cleanUrl.includes('b23.tv')) {
+      platform = 'B站'; parser = parseBilibili;
+    } else if (cleanUrl.includes('kuaishou.com') || cleanUrl.includes('gifshow.com') || cleanUrl.includes('chenzhongtech.com')) {
+      platform = '快手'; parser = parseKuaishou;
+    } else if (cleanUrl.includes('xiaohongshu.com') || cleanUrl.includes('xhslink.com')) {
+      platform = '小红书'; parser = parseXiaohongshu;
+    } else if (cleanUrl.includes('weibo.com') || cleanUrl.includes('weibo.cn') || cleanUrl.includes('t.cn')) {
+      platform = '微博'; parser = parseWeibo;
+    }
+
+    if (!parser) {
+      return res.status(400).json({
+        success: false,
+        message: '不支持的平台，目前支持：抖音、B站、快手、小红书、微博'
+      });
+    }
+
+    console.log(`📡 识别平台: ${platform}`);
+
+    const result = await parser(cleanUrl);
+
+    if (result && result.videoUrl) {
+      console.log(`✅ [${platform}] 解析成功: ${result.title}`);
+      res.json({ success: true, data: result });
+    } else {
+      res.status(400).json({ success: false, message: '无法获取视频地址' });
+    }
+
+  } catch (err) {
+    console.error('❌ 视频解析错误:', err.message);
+    res.status(400).json({
+      success: false,
+      message: err.message || '解析失败，请检查链接是否正确或稍后重试'
+    });
+  }
+});
+
+// ==================== 视频下载代理 ====================
+app.get('/api/video/download', async (req, res) => {
+  try {
+    const videoUrl = req.query.url;
+    if (!videoUrl) {
+      return res.status(400).json({ error: '缺少视频URL参数' });
+    }
+
+    console.log(`⬇️ 代理下载视频: ${videoUrl.substring(0, 100)}...`);
+
+    // 根据来源设置正确的Referer
+    let referer = '';
+    if (videoUrl.includes('bilivideo.com') || videoUrl.includes('bilibili.com') || videoUrl.includes('hdslb.com')) {
+      referer = 'https://www.bilibili.com/';
+    } else if (videoUrl.includes('douyin.com') || videoUrl.includes('bytecdn.cn') || videoUrl.includes('bytedance.com') || videoUrl.includes('byteimg.com') || videoUrl.includes('snssdk.com')) {
+      referer = 'https://www.douyin.com/';
+    } else if (videoUrl.includes('kuaishou.com') || videoUrl.includes('gifshow.com') || videoUrl.includes('ksapisrv.com') || videoUrl.includes('ks-cdn.com') || videoUrl.includes('kuaishoucdn.com')) {
+      referer = 'https://www.kuaishou.com/';
+    } else if (videoUrl.includes('xiaohongshu.com') || videoUrl.includes('xhscdn.com') || videoUrl.includes('sns-img-bd.xhscdn.com')) {
+      referer = 'https://www.xiaohongshu.com/';
+    } else if (videoUrl.includes('weibo.com') || videoUrl.includes('sinaimg.cn') || videoUrl.includes('weibocdn.com') || videoUrl.includes('sina.com')) {
+      referer = 'https://m.weibo.cn/';
+    } else {
+      try { referer = new URL(videoUrl).origin; } catch { referer = ''; }
+    }
+
+    const isHttps = videoUrl.startsWith('https');
+    const client = isHttps ? https : http;
+    const parsed = new URL(videoUrl);
+
+    // 根据来源设置Cookie
+    let cookie = '';
+    if (videoUrl.includes('bilivideo.com') || videoUrl.includes('bilibili.com') || videoUrl.includes('hdslb.com')) {
+      cookie = 'buvid3=infoc; b_nut=100';
+    }
+
+    const makeRequest = (reqUrl, redirects = 5) => {
+      return new Promise((resolve, reject) => {
+        if (redirects <= 0) return reject(new Error('重定向次数过多'));
+        const isH = reqUrl.startsWith('https');
+        const c = isH ? https : http;
+        const p = new URL(reqUrl);
+
+        const req = c.request({
+          hostname: p.hostname,
+          port: p.port || (isH ? 443 : 80),
+          path: p.pathname + p.search,
+          method: 'GET',
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Referer': referer,
+            'Origin': referer.replace(/\/$/, ''),
+            'Accept': '*/*',
+            'Accept-Encoding': 'identity',
+            'Connection': 'keep-alive',
+            ...(cookie ? { 'Cookie': cookie } : {})
+          },
+          timeout: 30000,
+          rejectUnauthorized: false
+        }, (response) => {
+          if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
+            let loc = response.headers.location;
+            if (loc.startsWith('/')) loc = `${p.protocol}//${p.host}${loc}`;
+            response.resume();
+            return makeRequest(loc, redirects - 1).then(resolve).catch(reject);
+          }
+          if (response.statusCode >= 400) {
+            response.resume();
+            return reject(new Error(`视频服务器返回 ${response.statusCode}`));
+          }
+          resolve(response);
+        });
+
+        req.on('error', reject);
+        req.on('timeout', () => { req.destroy(); reject(new Error('下载超时')); });
+        req.end();
+      });
+    };
+
+    const response = await makeRequest(videoUrl);
+
+    const contentType = response.headers['content-type'] || 'video/mp4';
+    const contentLength = response.headers['content-length'];
+
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', 'attachment; filename="video_no_watermark.mp4"');
+    if (contentLength) res.setHeader('Content-Length', contentLength);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cache-Control', 'no-cache');
+
+    response.pipe(res);
+    response.on('error', (err) => {
+      console.error('下载流错误:', err.message);
+      if (!res.headersSent) res.status(500).json({ error: '下载中断' });
+    });
+
+  } catch (err) {
+    console.error('视频下载代理错误:', err.message);
+    if (!res.headersSent) {
+      res.status(500).json({ error: '下载失败' });
+    }
+  }
+});
 
 // ==================== 404错误处理 ====================
 app.use((req, res, next) => {
