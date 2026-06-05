@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的应用中心</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="background-gradient">
+        <div class="bg-blob blob-1"></div>
+        <div class="bg-blob blob-2"></div>
+        <div class="bg-blob blob-3"></div>
+    </div>
+
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="6" y="6" width="36" height="36" rx="12" fill="url(#logo-gradient)" />
+                        <path d="M16 24L22 30L32 18" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                        <defs>
+                            <linearGradient id="logo-gradient" x1="0" y1="0" x2="48" y2="48">
+                                <stop offset="0%" stop-color="#667eea" />
+                                <stop offset="100%" stop-color="#764ba2" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <div class="logo-text">
+                    <h1>应用中心</h1>
+                    <p>App Center</p>
+                </div>
+            </div>
+            <div class="header-stats">
+                <div class="stat-item">
+                    <span class="stat-number" id="total-apps">1</span>
+                    <span class="stat-label">应用</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">100%</span>
+                    <span class="stat-label">可用</span>
+                </div>
+            </div>
+        </header>
+
+        <section class="hero">
+            <h2 class="hero-title">探索我的创意天地</h2>
+            <p class="hero-subtitle">精心设计的应用集合，为您带来卓越体验</p>
+        </section>
+
+        <section class="apps-grid">
+            <div class="app-card featured" data-app="shop">
+                <div class="app-card-glow"></div>
+                <div class="app-card-content">
+                    <div class="app-icon shop-icon">
+                        <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="12" y="16" width="40" height="36" rx="8" fill="url(#shop-gradient-1)" />
+                            <rect x="16" y="8" width="32" height="12" rx="6" fill="url(#shop-gradient-2)" />
+                            <circle cx="32" cy="34" r="8" fill="white" opacity="0.3" />
+                            <path d="M32 30V38M28 34H36" stroke="white" stroke-width="2.5" stroke-linecap="round" />
+                            <defs>
+                                <linearGradient id="shop-gradient-1" x1="12" y1="16" x2="52" y2="52">
+                                    <stop offset="0%" stop-color="#f093fb" />
+                                    <stop offset="100%" stop-color="#f5576c" />
+                                </linearGradient>
+                                <linearGradient id="shop-gradient-2" x1="16" y1="8" x2="48" y2="20">
+                                    <stop offset="0%" stop-color="#fa709a" />
+                                    <stop offset="100%" stop-color="#fee140" />
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+                    <div class="app-info">
+                        <div class="app-badge">精选</div>
+                        <h3 class="app-name">官方商城</h3>
+                        <p class="app-description">一站式在线购物体验，精选好物等你来</p>
+                        <div class="app-meta">
+                            <span class="app-tag">电商</span>
+                            <span class="app-status online">在线</span>
+                        </div>
+                    </div>
+                    <button class="app-button" onclick="openApp('shop')">
+                        <span>立即进入</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M5 12h14M12 5l7 7-7 7" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="app-card coming-soon" data-app="placeholder-1">
+                <div class="app-card-glow"></div>
+                <div class="app-card-content">
+                    <div class="app-icon placeholder-icon">
+                        <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="12" y="12" width="40" height="40" rx="12" fill="url(#placeholder-gradient-1)" />
+                            <path d="M32 20V44M20 32H44" stroke="white" stroke-width="3" stroke-linecap="round" />
+                            <defs>
+                                <linearGradient id="placeholder-gradient-1" x1="12" y1="12" x2="52" y2="52">
+                                    <stop offset="0%" stop-color="#a8edea" />
+                                    <stop offset="100%" stop-color="#fed6e3" />
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+                    <div class="app-info">
+                        <div class="app-badge soon">即将上线</div>
+                        <h3 class="app-name">应用二</h3>
+                        <p class="app-description">敬请期待，更多精彩即将呈现</p>
+                        <div class="app-meta">
+                            <span class="app-tag">工具</span>
+                            <span class="app-status offline">维护中</span>
+                        </div>
+                    </div>
+                    <button class="app-button disabled">
+                        <span>即将开放</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="app-card coming-soon" data-app="placeholder-2">
+                <div class="app-card-glow"></div>
+                <div class="app-card-content">
+                    <div class="app-icon placeholder-icon">
+                        <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="12" y="12" width="40" height="40" rx="12" fill="url(#placeholder-gradient-2)" />
+                            <circle cx="26" cy="28" r="4" fill="white" />
+                            <circle cx="38" cy="28" r="4" fill="white" />
+                            <path d="M22 40C22 40 27 46 32 46C37 46 42 40 42 40" stroke="white" stroke-width="3" stroke-linecap="round" />
+                            <defs>
+                                <linearGradient id="placeholder-gradient-2" x1="12" y1="12" x2="52" y2="52">
+                                    <stop offset="0%" stop-color="#667eea" />
+                                    <stop offset="100%" stop-color="#764ba2" />
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+                    <div class="app-info">
+                        <div class="app-badge soon">即将上线</div>
+                        <h3 class="app-name">应用三</h3>
+                        <p class="app-description">创新功能，改变您的使用体验</p>
+                        <div class="app-meta">
+                            <span class="app-tag">娱乐</span>
+                            <span class="app-status offline">维护中</span>
+                        </div>
+                    </div>
+                    <button class="app-button disabled">
+                        <span>即将开放</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="app-card add-new" data-app="add">
+                <div class="app-card-content">
+                    <div class="add-icon">
+                        <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="32" cy="32" r="24" stroke="currentColor" stroke-width="3" stroke-dasharray="8 4" />
+                            <path d="M32 22V42M22 32H42" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+                        </svg>
+                    </div>
+                    <h3 class="app-name">添加新应用</h3>
+                    <p class="app-description">未来将在这里添加更多精彩应用</p>
+                </div>
+            </div>
+        </section>
+
+        <footer class="footer">
+            <p>© 2024 应用中心. 精心打造，持续更新.</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
