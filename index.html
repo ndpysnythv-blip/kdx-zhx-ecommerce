@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>应用集合 - App Hub</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* 头部 */
+        header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .logo {
+            font-size: 4rem;
+            font-weight: 900;
+            background: linear-gradient(45deg, #fff, #f0f0f0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            text-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.9);
+            letter-spacing: 2px;
+        }
+
+        /* 应用网格 */
+        .apps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        /* 应用卡片 */
+        .app-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 24px;
+            padding: 40px 30px;
+            text-decoration: none;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .app-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--app-color-1), var(--app-color-2));
+        }
+
+        .app-card:hover {
+            transform: translateY(-12px) scale(1.02);
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
+        }
+
+        .app-icon {
+            width: 100px;
+            height: 100px;
+            border-radius: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            background: linear-gradient(135deg, var(--app-color-1), var(--app-color-2));
+        }
+
+        .app-name {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .app-description {
+            color: #666;
+            text-align: center;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        .app-meta {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            width: 100%;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .enter-btn {
+            margin-top: 24px;
+            padding: 14px 40px;
+            background: linear-gradient(135deg, var(--app-color-1), var(--app-color-2));
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .enter-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+        }
+
+        /* 页脚 */
+        footer {
+            text-align: center;
+            margin-top: 80px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .logo {
+                font-size: 2.5rem;
+            }
+
+            .apps-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .app-card {
+                padding: 30px 20px;
+            }
+        }
+
+        /* 动画效果 */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .app-card {
+            animation: fadeInUp 0.6s ease forwards;
+        }
+
+        .app-card:nth-child(1) { animation-delay: 0.1s; }
+        .app-card:nth-child(2) { animation-delay: 0.2s; }
+        .app-card:nth-child(3) { animation-delay: 0.3s; }
+        .app-card:nth-child(4) { animation-delay: 0.4s; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">🚀 App Hub</div>
+            <p class="subtitle">应用集合 · 一站式访问</p>
+        </header>
+
+        <div class="apps-grid">
+            <!-- 电商平台 -->
+            <a href="/store/" class="app-card" style="--app-color-1: #f093fb; --app-color-2: #f5576c;">
+                <div class="app-icon">🛍️</div>
+                <h3 class="app-name">官方商城</h3>
+                <p class="app-description">
+                    现代化电商平台，支持商品浏览、个性化定制、购物车管理、支付宝支付等功能
+                </p>
+                <div class="app-meta">
+                    <span class="meta-item">📦 商品管理</span>
+                    <span class="meta-item">💳 在线支付</span>
+                </div>
+                <button class="enter-btn">进入商城</button>
+            </a>
+
+            <!-- 占位应用1 -->
+            <div class="app-card" style="--app-color-1: #4facfe; --app-color-2: #00f2fe;">
+                <div class="app-icon">💡</div>
+                <h3 class="app-name">智能助手</h3>
+                <p class="app-description">
+                    AI 驱动的智能助手，提供各种服务支持
+                </p>
+                <div class="app-meta">
+                    <span class="meta-item">🤖 AI</span>
+                    <span class="meta-item">✨ 智能</span>
+                </div>
+                <button class="enter-btn" disabled>敬请期待</button>
+            </div>
+
+            <!-- 占位应用2 -->
+            <div class="app-card" style="--app-color-1: #43e97b; --app-color-2: #38f9d7;">
+                <div class="app-icon">📊</div>
+                <h3 class="app-name">数据仪表盘</h3>
+                <p class="app-description">
+                    数据分析与可视化平台，提供全面的数据洞察
+                </p>
+                <div class="app-meta">
+                    <span class="meta-item">📈 图表</span>
+                    <span class="meta-item">📉 分析</span>
+                </div>
+                <button class="enter-btn" disabled>敬请期待</button>
+            </div>
+
+            <!-- 占位应用3 -->
+            <div class="app-card" style="--app-color-1: #fa709a; --app-color-2: #fee140;">
+                <div class="app-icon">🎨</div>
+                <h3 class="app-name">创意工坊</h3>
+                <p class="app-description">
+                    创意设计与协作平台
+                </p>
+                <div class="app-meta">
+                    <span class="meta-item">🎭 创意</span>
+                    <span class="meta-item">👥 协作</span>
+                </div>
+                <button class="enter-btn" disabled>敬请期待</button>
+            </div>
+        </div>
+
+        <footer>
+            <p>© 2026 App Hub · 稳定可靠</p>
+        </footer>
+    </div>
+
+    <script>
+        // 平滑滚动
+        document.querySelectorAll('.app-card').forEach(card => {
+            card.addEventListener('click', function(e) {
+                const btn = e.target.closest('.enter-btn');
+                if (btn && btn.disabled) {
+                    e.preventDefault();
+                    return;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
